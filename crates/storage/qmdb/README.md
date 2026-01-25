@@ -1,38 +1,38 @@
 # `kora-qmdb`
 
-<a href="https://github.com/anthropics/kora/actions/workflows/ci.yml"><img src="https://github.com/anthropics/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/anthropics/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Minimal QMDB adapter implementing REVM's `Database` trait for the Kora execution client.
+Pure QMDB store logic for Kora.
 
-## Overview
+This crate provides low-level store management without synchronization.
+For thread-safe access, use `kora-handlers`.
 
-This crate provides a simple adapter bridging QMDB (Quick Merkle Database) to REVM's Database
-trait. Following commonware's REVM example patterns, the implementation is intentionally minimal
-(~150 lines) and delegates to QMDB's built-in APIs.
+## Key Types
 
-Key components:
-
-- **`QmdbDatabase`**: Wraps QMDB stores and implements REVM's `DatabaseRef` and `DatabaseCommit`.
-- **`QmdbError`**: Simple error type implementing REVM's `DBErrorMarker`.
-- **Encoding helpers**: Functions for account and storage key serialization.
+- `QmdbStore` - Owns three QMDB stores (accounts, storage, code)
+- `ChangeSet` - Accumulated state changes with merge capability
+- `StoreBatches` - Batch operations for atomic writes
+- `QmdbGettable` / `QmdbBatchable` - Traits for store backends
 
 ## Architecture
 
 ```text
 ┌─────────────────────────────────┐
-│         REVM Executor           │
+│       kora-handlers             │  (Layer 2: Sync + Public API)
+│       QmdbHandle                │
 └───────────────┬─────────────────┘
-                │ DatabaseRef / DatabaseCommit
+                │ Arc<RwLock<QmdbStore>>
                 ▼
 ┌─────────────────────────────────┐
-│        QmdbDatabase             │
+│         kora-qmdb               │  (Layer 1: Pure store logic)
+│         QmdbStore               │
 │  (accounts, storage, code)      │
 └───────────────┬─────────────────┘
-                │ Gettable / Batchable
+                │ QmdbGettable / QmdbBatchable
                 ▼
 ┌─────────────────────────────────┐
-│         QMDB Stores             │
+│       Backend Stores            │
 └─────────────────────────────────┘
 ```
 
@@ -45,22 +45,19 @@ Add to your `Cargo.toml`:
 kora-qmdb = { path = "crates/storage/qmdb" }
 ```
 
-Use with REVM:
+Use the store:
 
 ```rust,ignore
-use kora_qmdb::QmdbDatabase;
+use kora_qmdb::{QmdbStore, ChangeSet, AccountUpdate};
 
-// Create from QMDB stores
-let db = QmdbDatabase::new(accounts_store, storage_store, code_store);
+// Create store from backends
+let mut store = QmdbStore::new(accounts, storage, code);
 
-// Use with REVM
-let mut evm = Evm::builder().with_db(db).build();
-let result = evm.transact()?;
-
-// Commit changes using QMDB's built-in batching
-evm.db_mut().commit(result.state);
+// Build and apply changes
+let changes = ChangeSet::new();
+store.commit_changes(changes)?;
 ```
 
 ## License
 
-[MIT License](https://github.com/anthropics/kora/blob/main/LICENSE)
+[MIT License](https://github.com/refcell/kora/blob/main/LICENSE)

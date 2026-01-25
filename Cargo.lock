@@ -1512,7 +1512,6 @@ dependencies = [
  "clap",
  "eyre",
  "kora-cli",
- "kora-primitives",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.22",
@@ -1526,18 +1525,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "kora-primitives"
+name = "kora-handlers"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "kora-qmdb",
+ "revm",
+ "thiserror",
 ]
 
 [[package]]
 name = "kora-qmdb"
 version = "0.1.0"
 dependencies = [
- "kora-primitives",
- "revm",
+ "alloy-primitives",
  "rstest",
  "thiserror",
 ]

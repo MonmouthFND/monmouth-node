@@ -1,22 +1,24 @@
 //! Error types for QMDB operations.
 
-use kora_primitives::B256;
+use alloy_primitives::B256;
 use thiserror::Error;
 
-/// Error type for QMDB operations, implementing REVM's DBErrorMarker.
+/// Error type for QMDB store operations.
 #[derive(Debug, Error)]
 pub enum QmdbError {
-    /// Storage operation failed.
+    /// Storage backend error.
     #[error("storage error: {0}")]
     Storage(String),
 
-    /// Code not found for the given hash.
+    /// Stores unavailable during update.
+    #[error("stores unavailable")]
+    StoreUnavailable,
+
+    /// Account decoding failed.
+    #[error("account decode failed")]
+    DecodeError,
+
+    /// Code not found for hash.
     #[error("code not found: {0}")]
     CodeNotFound(B256),
-
-    /// Block hash not found for the given number.
-    #[error("block hash not found: {0}")]
-    BlockHashNotFound(u64),
 }
-
-impl revm::database_interface::DBErrorMarker for QmdbError {}

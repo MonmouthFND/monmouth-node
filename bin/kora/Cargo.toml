@@ -8,7 +8,6 @@ repository.workspace = true
 
 [dependencies]
 kora-cli.workspace = true
-kora-primitives.workspace = true
 
 clap.workspace = true
 tokio.workspace = true

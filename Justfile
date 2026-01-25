@@ -10,7 +10,7 @@ check: fmt clippy test
 
 # Run tests
 test:
-    cargo nextest run --all-features
+    cargo nextest run --workspace --all-features
 
 # Build in release mode
 build:

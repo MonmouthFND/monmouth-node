@@ -1,0 +1,17 @@
+[package]
+name = "kora-handlers"
+version = "0.1.0"
+edition = "2021"
+description = "Database handles with synchronization for Kora"
+license = "MIT"
+repository = "https://github.com/refcell/kora"
+
+[lints]
+workspace = true
+
+[dependencies]
+kora-qmdb = { path = "../qmdb" }
+
+alloy-primitives = { workspace = true }
+revm = { workspace = true }
+thiserror = { workspace = true }

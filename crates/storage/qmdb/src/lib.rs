@@ -1,16 +1,27 @@
+//! QMDB store logic for Kora.
+
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/anthropics/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-mod database;
-pub use database::QmdbDatabase;
+mod batch;
+pub use batch::StoreBatches;
+
+mod changes;
+pub use changes::{AccountUpdate, ChangeSet};
 
 mod encoding;
-pub use encoding::{StorageKey, decode_account, encode_account};
+pub use encoding::{AccountEncoding, StorageKey};
 
 mod error;
 pub use error::QmdbError;
+
+mod root;
+pub use root::StateRoot;
+
+mod store;
+pub use store::{QmdbStore, Stores};
 
 mod traits;
 pub use traits::{QmdbBatchable, QmdbGettable};

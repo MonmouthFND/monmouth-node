@@ -5,13 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "QMDB adapter implementing REVM Database traits for the Kora execution client"
+description = "Pure QMDB store logic for Kora"
 
 [dependencies]
-kora-primitives.workspace = true
-
-# Revm
-revm.workspace = true
+alloy-primitives.workspace = true
 
 # Error handling
 thiserror.workspace = true

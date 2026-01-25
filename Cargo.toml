@@ -1,5 +1,5 @@
 [workspace]
-members = ["bin/*", "crates/primitives", "crates/storage/*", "crates/utilities/*"]
+members = ["bin/*", "crates/storage/*", "crates/utilities/*"]
 default-members = ["bin/kora"]
 resolver = "2"
 
@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
-repository = "https://github.com/anthropics/kora"
+repository = "https://github.com/refcell/kora"
 
 [workspace.lints.rust]
 missing-debug-implementations = "warn"
@@ -47,7 +47,7 @@ codegen-units = 1
 [workspace.dependencies]
 # Local crates
 kora-cli = { path = "crates/utilities/cli" }
-kora-primitives = { path = "crates/primitives" }
+kora-handlers = { path = "crates/storage/handlers" }
 kora-qmdb = { path = "crates/storage/qmdb" }
 
 # Commonware
