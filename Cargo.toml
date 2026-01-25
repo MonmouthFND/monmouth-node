@@ -1,0 +1,91 @@
+[workspace]
+members = ["bin/*", "crates/primitives", "crates/storage/*", "crates/utilities/*"]
+default-members = ["bin/kora"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/anthropics/kora"
+
+[workspace.lints.rust]
+missing-debug-implementations = "warn"
+missing-docs = "warn"
+unreachable-pub = "warn"
+unused-must-use = "deny"
+rust-2018-idioms = "deny"
+unnameable-types = "warn"
+
+[workspace.lints.rustdoc]
+all = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+missing-const-for-fn = "warn"
+use-self = "warn"
+option-if-let-else = "warn"
+redundant-clone = "warn"
+
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "packed"
+incremental = false
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+debug = false
+strip = "symbols"
+
+[profile.maxperf]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+
+[workspace.dependencies]
+# Local crates
+kora-cli = { path = "crates/utilities/cli" }
+kora-primitives = { path = "crates/primitives" }
+kora-qmdb = { path = "crates/storage/qmdb" }
+
+# Commonware
+commonware-cryptography = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
+commonware-p2p = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
+commonware-runtime = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
+commonware-stream = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
+commonware-utils = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
+
+# Alloy
+alloy-primitives = "1.0"
+alloy-consensus = "1.0"
+alloy-eips = "1.0"
+alloy-rlp = "0.3"
+
+# Revm
+revm = { version = "24", default-features = false, features = ["std"] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Error handling
+thiserror = "2"
+eyre = "0.6"
+
+# Misc
+rand = "0.8"
+bytes = "1"
+hex = "0.4"
