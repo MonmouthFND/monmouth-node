@@ -28,7 +28,7 @@ impl ChangeSet {
     }
 
     /// Merge another change set into this one.
-    pub fn merge(&mut self, other: ChangeSet) {
+    pub fn merge(&mut self, other: Self) {
         for (address, update) in other.accounts {
             if let Some(existing) = self.accounts.get_mut(&address) {
                 existing.merge(update);
@@ -69,7 +69,7 @@ pub struct AccountUpdate {
 
 impl AccountUpdate {
     /// Merge another update into this one.
-    pub fn merge(&mut self, other: AccountUpdate) {
+    pub fn merge(&mut self, other: Self) {
         self.nonce = other.nonce;
         self.balance = other.balance;
         self.code_hash = other.code_hash;

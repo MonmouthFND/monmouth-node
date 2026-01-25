@@ -34,10 +34,10 @@ where
             return Ok(Bytecode::default());
         }
         let store = self.read()?;
-        match store.get_code(&code_hash)? {
-            Some(bytes) => Ok(Bytecode::new_raw(Bytes::from(bytes))),
-            None => Err(HandleError::CodeNotFound(code_hash)),
-        }
+        store.get_code(&code_hash)?.map_or_else(
+            || Err(HandleError::CodeNotFound(code_hash)),
+            |bytes| Ok(Bytecode::new_raw(Bytes::from(bytes))),
+        )
     }
 
     fn storage_ref(&self, address: Address, index: U256) -> Result<U256, Self::Error> {
@@ -45,15 +45,12 @@ where
 
         // Get account to find generation
         let generation = match store.get_account(&address)? {
-            Some((_, _, _, gen)) => gen,
+            Some((_, _, _, generation)) => generation,
             None => return Ok(U256::ZERO),
         };
 
         let key = StorageKey::new(address, generation, index);
-        match store.get_storage(&key)? {
-            Some(value) => Ok(value),
-            None => Ok(U256::ZERO),
-        }
+        Ok(store.get_storage(&key)?.unwrap_or(U256::ZERO))
     }
 
     fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
@@ -100,7 +97,7 @@ where
         }
 
         // Ignore errors in DatabaseCommit (matches REVM's signature)
-        let _ = QmdbHandle::commit(self, changeset);
+        let _ = Self::commit(self, changeset);
     }
 }
 

@@ -1,0 +1,27 @@
+[package]
+name = "kora-consensus"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Consensus application layer for Kora"
+
+[dependencies]
+# Local crates
+kora-traits = { path = "../../storage/traits" }
+kora-qmdb = { path = "../../storage/qmdb" }
+
+# Alloy
+alloy-primitives.workspace = true
+alloy-consensus.workspace = true
+alloy-rlp.workspace = true
+
+# Error handling
+thiserror.workspace = true
+
+[dev-dependencies]
+rstest = "0.24"
+
+[lints]
+workspace = true

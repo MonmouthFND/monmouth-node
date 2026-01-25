@@ -23,7 +23,7 @@ pub struct Stores<A, S, C> {
 
 impl<A, S, C> Stores<A, S, C> {
     /// Create new stores.
-    pub fn new(accounts: A, storage: S, code: C) -> Self {
+    pub const fn new(accounts: A, storage: S, code: C) -> Self {
         Self { accounts, storage, code }
     }
 }
@@ -39,7 +39,7 @@ pub struct QmdbStore<A, S, C> {
 
 impl<A, S, C> QmdbStore<A, S, C> {
     /// Create a new store from the three partitions.
-    pub fn new(accounts: A, storage: S, code: C) -> Self {
+    pub const fn new(accounts: A, storage: S, code: C) -> Self {
         Self { stores: Some(Stores::new(accounts, storage, code)) }
     }
 

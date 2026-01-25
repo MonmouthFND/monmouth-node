@@ -22,12 +22,12 @@ impl StoreBatches {
     }
 
     /// Check if all batches are empty.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.accounts.is_empty() && self.storage.is_empty() && self.code.is_empty()
     }
 
     /// Total number of operations across all batches.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.accounts.len() + self.storage.len() + self.code.len()
     }
 }

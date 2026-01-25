@@ -1,19 +1,18 @@
 [package]
-name = "kora-handlers"
+name = "kora-traits"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Database handles with synchronization for Kora"
+description = "Core trait abstractions for Kora storage and consensus"
+
+[dependencies]
+alloy-primitives.workspace = true
+kora-qmdb = { path = "../qmdb" }
+
+# Error handling
+thiserror.workspace = true
 
 [lints]
 workspace = true
-
-[dependencies]
-kora-qmdb = { path = "../qmdb" }
-kora-traits = { path = "../traits" }
-
-alloy-primitives.workspace = true
-revm.workspace = true
-thiserror.workspace = true
