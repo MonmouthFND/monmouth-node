@@ -51,6 +51,7 @@ kora-cli = { path = "crates/utilities/cli" }
 kora-config = { path = "crates/node/config" }
 kora-consensus = { path = "crates/node/consensus" }
 kora-executor = { path = "crates/node/executor" }
+kora-service = { path = "crates/node/service" }
 kora-handlers = { path = "crates/storage/handlers" }
 kora-qmdb = { path = "crates/storage/qmdb" }
 kora-traits = { path = "crates/storage/traits" }

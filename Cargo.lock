@@ -2628,6 +2628,7 @@ dependencies = [
  "eyre",
  "kora-cli",
  "kora-config",
+ "kora-service",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.22",
@@ -2754,6 +2755,15 @@ dependencies = [
  "rstest",
  "thiserror 2.0.18",
  "tokio",
+]
+
+[[package]]
+name = "kora-service"
+version = "0.1.0"
+dependencies = [
+ "eyre",
+ "kora-config",
+ "tracing",
 ]
 
 [[package]]

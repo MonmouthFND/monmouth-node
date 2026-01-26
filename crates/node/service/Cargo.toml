@@ -1,0 +1,21 @@
+[package]
+name = "kora-service"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Kora node service orchestration"
+
+[lints]
+workspace = true
+
+[dependencies]
+# Local crates
+kora-config = { path = "../config" }
+
+# Tracing
+tracing.workspace = true
+
+# Error handling
+eyre.workspace = true

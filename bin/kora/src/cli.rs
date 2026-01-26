@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use kora_config::NodeConfig;
+use kora_service::KoraNodeService;
 
 /// CLI arguments for the kora node.
 #[derive(Parser, Debug)]
@@ -50,15 +51,6 @@ impl Cli {
         tracing::info!(chain_id = config.chain_id, "Loaded configuration");
         tracing::debug!(?config, "Full configuration");
 
-        // TODO: Build and run the node with the loaded configuration.
-        // This will wire up:
-        // - Consensus engine (simplex)
-        // - Execution layer (revm)
-        // - Network layer (p2p, rpc)
-        // - Storage backend
-
-        tracing::info!("Node startup complete (stub)");
-
-        Ok(())
+        KoraNodeService::new(config).run().await
     }
 }
