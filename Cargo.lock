@@ -2710,6 +2710,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "kora-marshal"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "commonware-broadcast",
+ "commonware-codec",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-macros",
+ "commonware-p2p",
+ "commonware-parallel",
+ "commonware-resolver",
+ "commonware-runtime",
+ "commonware-storage",
+ "commonware-utils",
+ "futures",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "tracing",
+ "tracing-subscriber 0.3.22",
+]
+
+[[package]]
 name = "kora-qmdb"
 version = "0.1.0"
 dependencies = [

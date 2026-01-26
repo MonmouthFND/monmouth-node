@@ -1,5 +1,5 @@
 [workspace]
-members = ["bin/*", "crates/node/*", "crates/storage/*", "crates/utilities/*"]
+members = ["bin/*", "crates/network/*", "crates/node/*", "crates/storage/*", "crates/utilities/*"]
 default-members = ["bin/kora"]
 resolver = "2"
 
@@ -55,10 +55,14 @@ kora-qmdb = { path = "crates/storage/qmdb" }
 kora-traits = { path = "crates/storage/traits" }
 
 # Commonware
+commonware-broadcast = "0.0.65"
+commonware-codec = "0.0.65"
 commonware-consensus = "0.0.65"
 commonware-cryptography = "0.0.65"
+commonware-macros = "0.0.65"
 commonware-p2p = "0.0.65"
 commonware-parallel = "0.0.65"
+commonware-resolver = "0.0.65"
 commonware-runtime = "0.0.65"
 commonware-storage = "0.0.65"
 commonware-stream = "0.0.65"
@@ -94,6 +98,7 @@ eyre = "0.6"
 
 # Misc
 rand = "0.8"
+rand_core = "0.6"
 bytes = "1"
 hex = "0.4"
 
