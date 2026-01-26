@@ -1,8 +1,9 @@
 //! Storage store backed by commonware-storage.
 
+use std::collections::HashMap;
+
 use alloy_primitives::{B256, U256, keccak256};
 use kora_qmdb::{QmdbBatchable, QmdbGettable, StorageKey};
-use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::error::BackendError;
@@ -109,8 +110,9 @@ impl QmdbBatchable for StorageStore {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloy_primitives::Address;
+
+    use super::*;
 
     #[tokio::test]
     async fn storage_store_get_missing() {

@@ -54,15 +54,15 @@ kora-handlers = { path = "crates/storage/handlers" }
 kora-qmdb = { path = "crates/storage/qmdb" }
 kora-traits = { path = "crates/storage/traits" }
 
-# Commonware (published crates)
+# Commonware
+commonware-consensus = "0.0.65"
 commonware-cryptography = "0.0.65"
+commonware-p2p = "0.0.65"
+commonware-parallel = "0.0.65"
 commonware-runtime = "0.0.65"
 commonware-storage = "0.0.65"
-
-# Commonware (git refs for crates not yet on crates.io)
-commonware-p2p = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
-commonware-stream = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
-commonware-utils = { git = "https://github.com/commonwarexyz/monorepo.git", rev = "v0.0.27" }
+commonware-stream = "0.0.65"
+commonware-utils = "0.0.65"
 
 # Alloy
 alloy-primitives = "1.0"

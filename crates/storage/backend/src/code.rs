@@ -1,8 +1,9 @@
 //! Code store backed by commonware-storage.
 
+use std::collections::HashMap;
+
 use alloy_primitives::{B256, keccak256};
 use kora_qmdb::{QmdbBatchable, QmdbGettable};
-use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::error::BackendError;

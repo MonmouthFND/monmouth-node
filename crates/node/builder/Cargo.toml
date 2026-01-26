@@ -1,0 +1,18 @@
+[package]
+name = "kora-builder"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Block builder for Kora nodes"
+
+[lints]
+workspace = true
+
+[dependencies]
+# Commonware
+commonware-consensus.workspace = true
+commonware-cryptography.workspace = true
+commonware-p2p.workspace = true
+commonware-parallel.workspace = true

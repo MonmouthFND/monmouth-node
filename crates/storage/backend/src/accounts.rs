@@ -1,8 +1,9 @@
 //! Account store backed by commonware-storage.
 
+use std::collections::HashMap;
+
 use alloy_primitives::{Address, B256, keccak256};
 use kora_qmdb::{AccountEncoding, QmdbBatchable, QmdbGettable};
-use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 use crate::error::BackendError;
@@ -109,8 +110,9 @@ impl QmdbBatchable for AccountStore {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloy_primitives::U256;
+
+    use super::*;
 
     #[tokio::test]
     async fn account_store_get_missing() {

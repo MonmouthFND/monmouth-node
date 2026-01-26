@@ -113,8 +113,9 @@ impl RootProvider for CommonwareBackend {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::path::PathBuf;
+
+    use super::*;
 
     #[tokio::test]
     async fn backend_new() {
