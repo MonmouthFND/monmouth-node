@@ -51,6 +51,6 @@ impl Cli {
         tracing::info!(chain_id = config.chain_id, "Loaded configuration");
         tracing::debug!(?config, "Full configuration");
 
-        KoraNodeService::new(config).run().await
+        KoraNodeService::new(config).run()
     }
 }

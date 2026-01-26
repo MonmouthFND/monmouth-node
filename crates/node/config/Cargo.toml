@@ -19,6 +19,11 @@ toml.workspace = true
 # Error handling
 thiserror.workspace = true
 
+# Cryptography
+commonware-cryptography.workspace = true
+ed25519-consensus = "2"
+rand.workspace = true
+
 # Misc
 alloy-primitives.workspace = true
 

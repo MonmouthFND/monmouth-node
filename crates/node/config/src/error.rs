@@ -25,4 +25,26 @@ pub enum ConfigError {
     /// Failed to serialize configuration to TOML.
     #[error("failed to serialize config to TOML: {0}")]
     TomlSerialize(#[from] toml::ser::Error),
+
+    /// Invalid validator key format.
+    #[error("invalid validator key format: expected 32 bytes, got {0}")]
+    InvalidKeyLength(usize),
+
+    /// Failed to write file.
+    #[error("failed to write {path}: {source}")]
+    Write {
+        /// Path.
+        path: PathBuf,
+        /// IO error.
+        source: std::io::Error,
+    },
+
+    /// Failed to create directory.
+    #[error("failed to create directory {path}: {source}")]
+    CreateDir {
+        /// Path.
+        path: PathBuf,
+        /// IO error.
+        source: std::io::Error,
+    },
 }

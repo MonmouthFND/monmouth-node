@@ -1783,6 +1783,7 @@ dependencies = [
  "curve25519-dalek-ng",
  "hex",
  "rand_core 0.6.4",
+ "serde",
  "sha2 0.9.9",
  "thiserror 1.0.69",
  "zeroize",
@@ -2669,6 +2670,9 @@ name = "kora-config"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "commonware-cryptography",
+ "ed25519-consensus",
+ "rand 0.8.5",
  "rstest",
  "serde",
  "serde_json",
@@ -2761,7 +2765,13 @@ dependencies = [
 name = "kora-service"
 version = "0.1.0"
 dependencies = [
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-runtime",
+ "commonware-utils",
  "eyre",
+ "futures",
  "kora-config",
  "tracing",
 ]

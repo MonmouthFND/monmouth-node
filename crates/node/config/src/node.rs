@@ -104,6 +104,61 @@ impl NodeConfig {
     pub fn to_json(&self) -> Result<String, ConfigError> {
         Ok(serde_json::to_string_pretty(self)?)
     }
+
+    /// Get or create the validator private key from `{data_dir}/validator.key`.
+    pub fn validator_key(
+        &self,
+    ) -> Result<commonware_cryptography::ed25519::PrivateKey, ConfigError> {
+        let key_path = self
+            .consensus
+            .validator_key
+            .clone()
+            .unwrap_or_else(|| self.data_dir.join("validator.key"));
+
+        // Try to load existing key
+        match std::fs::read(&key_path) {
+            Ok(key_bytes) => {
+                if key_bytes.len() != 32 {
+                    return Err(ConfigError::InvalidKeyLength(key_bytes.len()));
+                }
+                let mut seed = [0u8; 32];
+                seed.copy_from_slice(&key_bytes);
+                Ok(commonware_cryptography::ed25519::PrivateKey::from(
+                    ed25519_consensus::SigningKey::from(seed),
+                ))
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Generate new key
+                let mut seed = [0u8; 32];
+                rand::RngCore::fill_bytes(&mut rand::rngs::OsRng, &mut seed);
+
+                // Ensure parent directory exists
+                if let Some(parent) = key_path.parent() {
+                    std::fs::create_dir_all(parent).map_err(|e| ConfigError::CreateDir {
+                        path: parent.to_path_buf(),
+                        source: e,
+                    })?;
+                }
+
+                // Write key to disk
+                std::fs::write(&key_path, seed)
+                    .map_err(|e| ConfigError::Write { path: key_path.clone(), source: e })?;
+
+                Ok(commonware_cryptography::ed25519::PrivateKey::from(
+                    ed25519_consensus::SigningKey::from(seed),
+                ))
+            }
+            Err(e) => Err(ConfigError::Read { path: key_path, source: e }),
+        }
+    }
+
+    /// Get the validator public key.
+    pub fn validator_public_key(
+        &self,
+    ) -> Result<commonware_cryptography::ed25519::PublicKey, ConfigError> {
+        use commonware_cryptography::Signer as _;
+        Ok(self.validator_key()?.public_key())
+    }
 }
 
 const fn default_chain_id() -> u64 {

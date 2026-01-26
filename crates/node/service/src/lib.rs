@@ -6,3 +6,6 @@
 
 mod service;
 pub use service::KoraNodeService;
+
+mod stubs;
+pub use stubs::{StubAutomaton, StubBlocker, StubDigest, StubPublicKey, StubRelay, StubReporter};
