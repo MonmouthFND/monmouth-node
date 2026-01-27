@@ -2670,6 +2670,7 @@ name = "kora-config"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "commonware-codec",
  "commonware-cryptography",
  "ed25519-consensus",
  "rand 0.8.5",
@@ -2773,6 +2774,7 @@ dependencies = [
  "eyre",
  "futures",
  "kora-config",
+ "kora-transport",
  "tracing",
 ]
 
@@ -2796,6 +2798,22 @@ dependencies = [
  "alloy-primitives",
  "kora-qmdb",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "kora-transport"
+version = "0.1.0"
+dependencies = [
+ "commonware-codec",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-runtime",
+ "commonware-utils",
+ "hex",
+ "kora-config",
+ "rand_core 0.6.4",
+ "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]

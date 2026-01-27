@@ -47,4 +47,12 @@ pub enum ConfigError {
         /// IO error.
         source: std::io::Error,
     },
+
+    /// Invalid participant public key length.
+    #[error("invalid participant public key: expected 32 bytes, got {0}")]
+    InvalidParticipantKeyLength(usize),
+
+    /// Failed to parse participant public key.
+    #[error("invalid participant public key bytes")]
+    InvalidParticipantKey,
 }

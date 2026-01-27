@@ -1,32 +1,32 @@
 [package]
-name = "kora-service"
+name = "kora-transport"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Kora node service orchestration"
+description = "P2P transport layer for Kora nodes"
 
 [lints]
 workspace = true
 
 [dependencies]
-# Local crates
-kora-config = { path = "../config" }
-kora-transport = { path = "../../network/transport" }
+# Kora
+kora-config.workspace = true
 
 # Commonware
-commonware-consensus.workspace = true
+commonware-codec.workspace = true
 commonware-cryptography.workspace = true
 commonware-p2p.workspace = true
 commonware-runtime.workspace = true
 commonware-utils.workspace = true
 
-# Async
-futures.workspace = true
+# Error handling
+thiserror.workspace = true
 
 # Tracing
 tracing.workspace = true
 
-# Error handling
-eyre.workspace = true
+# Misc
+hex.workspace = true
+rand_core.workspace = true

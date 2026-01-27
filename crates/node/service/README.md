@@ -11,15 +11,14 @@ Kora node service orchestration.
 
 ## Usage
 
-```rust
+```rust,ignore
 use kora_config::NodeConfig;
 use kora_service::KoraNodeService;
 
-#[tokio::main]
-async fn main() -> eyre::Result<()> {
+fn main() -> eyre::Result<()> {
     let config = NodeConfig::default();
     let service = KoraNodeService::new(config);
-    service.run().await
+    service.run()
 }
 ```
 

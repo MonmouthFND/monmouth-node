@@ -3,7 +3,11 @@
 use std::path::PathBuf;
 
 use alloy_primitives::hex;
+use commonware_codec::{FixedSize, ReadExt};
+use commonware_cryptography::ed25519;
 use serde::{Deserialize, Serialize};
+
+use crate::ConfigError;
 
 /// Default validator threshold.
 pub const DEFAULT_THRESHOLD: u32 = 2;
@@ -31,6 +35,25 @@ pub struct ConsensusConfig {
 impl Default for ConsensusConfig {
     fn default() -> Self {
         Self { validator_key: None, threshold: DEFAULT_THRESHOLD, participants: Vec::new() }
+    }
+}
+
+impl ConsensusConfig {
+    /// Build the validator set from configured participants.
+    ///
+    /// Parses the hex-encoded participant public keys into [`ed25519::PublicKey`] values.
+    /// Returns an empty set if no participants are configured.
+    pub fn build_validator_set(&self) -> Result<Vec<ed25519::PublicKey>, ConfigError> {
+        self.participants
+            .iter()
+            .map(|bytes| {
+                if bytes.len() != ed25519::PublicKey::SIZE {
+                    return Err(ConfigError::InvalidParticipantKeyLength(bytes.len()));
+                }
+                let mut buf = bytes.as_slice();
+                ed25519::PublicKey::read(&mut buf).map_err(|_| ConfigError::InvalidParticipantKey)
+            })
+            .collect()
     }
 }
 

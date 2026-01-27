@@ -1,6 +1,14 @@
 //! Kora node service implementation.
 
+use commonware_cryptography::Signer;
+use commonware_p2p::Manager;
+use commonware_runtime::{
+    Runner,
+    tokio::{self, Context},
+};
+use futures::future::try_join_all;
 use kora_config::NodeConfig;
+use kora_transport::NetworkConfigExt;
 
 /// The main kora node service.
 #[derive(Debug)]
@@ -21,92 +29,62 @@ impl KoraNodeService {
     }
 
     /// Runs the kora node service with context.
-    pub async fn run_with_context(self) -> eyre::Result<()> {
-        // Load or create validator key
-        let validator: PublicKey = self.config.validator_public_key()?;
+    pub async fn run_with_context(self, context: Context) -> eyre::Result<()> {
+        // Load validator identity
+        let validator_key = self.config.validator_key()?;
+        let validator = validator_key.public_key();
+        tracing::info!(?validator, "loaded validator key");
 
-        // TODO: construct the real production network here
+        // Build transport from network config
+        let mut transport = self
+            .config
+            .network
+            .build_local_transport(validator_key, context.clone())
+            .map_err(|e| eyre::eyre!("failed to build transport: {}", e))?;
+        tracing::info!("network transport started");
 
-        // TODO: construct the application
+        // Register validators with oracle
+        let validators = self.config.consensus.build_validator_set()?;
+        if !validators.is_empty() {
+            transport.oracle.update(0, validators.try_into().expect("valid set")).await;
+            tracing::info!("registered validators with oracle");
+        }
 
-        // TODO: Start simplex.
+        // TODO: Start simplex consensus engine
+        // Requires: scheme, automaton, relay, reporter
+        // let engine_handle = DefaultEngine::init(
+        //     context.clone(),
+        //     "consensus",
+        //     scheme,
+        //     &transport.oracle,
+        //     automaton,
+        //     relay,
+        //     reporter,
+        //     transport.simplex.votes,
+        //     transport.simplex.certs,
+        //     transport.simplex.resolver,
+        // );
 
+        // TODO: Start marshal block dissemination
+        // Requires: archives, broadcast engine, peer resolver
+        // let marshal_handle = ...
+
+        tracing::info!(chain_id = self.config.chain_id, "kora node initialized");
+
+        // Wait on all handles - service runs until any task fails or completes
+        // TODO: Add engine_handle and marshal_handle to the vec
+        if let Err(e) = try_join_all(vec![
+            transport.handle,
+            // engine_handle,
+            // marshal_handle,
+        ])
+        .await
+        {
+            tracing::error!(?e, "service task failed");
+            return Err(eyre::eyre!("service task failed: {:?}", e));
+        }
+
+        tracing::info!("kora node shutdown");
         Ok(())
     }
-
-    //     use std::num::NonZeroU32;
-    //
-    //     use commonware_p2p::simulated::{self, Network};
-    //     use commonware_runtime::{Metrics as _, Quota, Runner, tokio};
-    //
-    //     use crate::stubs::{StubAutomaton, StubRelay, StubReporter};
-    //
-    //     // Type aliases
-    //     type PublicKey = commonware_cryptography::ed25519::PublicKey;
-    //     type Scheme = commonware_consensus::simplex::scheme::bls12381_threshold::Scheme<
-    //         PublicKey,
-    //         commonware_cryptography::bls12381::primitives::variant::MinSig,
-    //     >;
-    //
-    //     // Use tokio runtime
-    //     let runner = tokio::Runner::default();
-    //     runner.start(|context| async move {
-    //         // Create simulated network for development
-    //         let (network, oracle) = Network::new(
-    //             context.with_label("network"),
-    //             simulated::Config {
-    //                 max_size: 1024 * 1024,
-    //                 disconnect_on_block: true,
-    //                 tracked_peer_sets: None,
-    //             },
-    //         );
-    //         network.start();
-    //
-    //
-    //
-    //         // Register network channels
-    //         let quota = Quota::per_second(NonZeroU32::MAX);
-    //         let control = oracle.control(validator.clone());
-    //
-    //         // Channel IDs for different message types
-    //         const VOTES_CHANNEL: u64 = 0;
-    //         const CERTS_CHANNEL: u64 = 1;
-    //         const RESOLVER_CHANNEL: u64 = 2;
-    //
-    //         let votes = control.register(VOTES_CHANNEL, quota).await.expect("register votes");
-    //         let certs = control.register(CERTS_CHANNEL, quota).await.expect("register certs");
-    //         let resolver =
-    //             control.register(RESOLVER_CHANNEL, quota).await.expect("register resolver");
-    //
-    //         tracing::info!(
-    //             validator = ?validator,
-    //             "Network channels registered"
-    //         );
-    //
-    //         // Create stub components
-    //         let automaton = StubAutomaton;
-    //         let relay = StubRelay;
-    //         let reporter: StubReporter<Scheme> = StubReporter::default();
-    //
-    //         tracing::info!("Simplex components created (stubs)");
-    //
-    //         // Note: Cannot start engine without a real scheme
-    //         // The scheme requires the mocks feature which is not available
-    //         // on the published crate. When using commonware from git or
-    //         // with mocks feature enabled, the engine can be started.
-    //         //
-    //         // For now, keep the components alive to show the wiring works.
-    //         let _ = (automaton, relay, reporter, votes, certs, resolver);
-    //
-    //         tracing::info!(
-    //             chain_id = self.config.chain_id,
-    //             "Kora node service initialized (network + stubs ready)"
-    //         );
-    //
-    //         // Wait indefinitely
-    //         futures::future::pending::<()>().await;
-    //     });
-    //
-    //     Ok(())
-    // }
 }
