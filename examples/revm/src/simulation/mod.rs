@@ -22,6 +22,7 @@ use crate::{
     application::{
         NodeEnvironment, ThresholdScheme, TransportControl, start_node, threshold_schemes,
     },
+    outcome::SimOutcome,
 };
 
 mod demo;
@@ -40,21 +41,6 @@ pub struct SimConfig {
     pub blocks: u64,
     /// Seed used for deterministic randomness.
     pub seed: u64,
-}
-
-#[derive(Clone, Copy, Debug)]
-/// Summary of a completed simulation run.
-pub struct SimOutcome {
-    /// Finalized head digest (the value ordered by threshold-simplex).
-    pub head: ConsensusDigest,
-    /// State commitment at the head digest.
-    pub state_root: crate::StateRoot,
-    /// Latest tracked threshold-simplex seed hash (used as `prevrandao`).
-    pub seed: B256,
-    /// Final balance of the sender account after the demo transfer.
-    pub from_balance: U256,
-    /// Final balance of the receiver account after the demo transfer.
-    pub to_balance: U256,
 }
 
 type NodeHandle = crate::application::NodeHandle;

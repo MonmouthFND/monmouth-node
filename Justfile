@@ -4,7 +4,7 @@ default:
 
 # Runs examples
 examples:
-    cargo run --example kora-revm-example
+    cargo run -p kora-revm-example
 
 # Run the full CI suite
 ci: fmt clippy test deny
