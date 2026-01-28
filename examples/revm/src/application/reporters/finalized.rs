@@ -5,10 +5,25 @@ use commonware_utils::acknowledgement::Acknowledgement as _;
 use kora_domain::Block;
 use tracing::{error, trace, warn};
 
-use super::super::{
-    execution::{evm_env, execute_txs},
-    ledger::LedgerService,
-};
+use alloy_consensus::Header;
+use alloy_primitives::{Address, B256, Bytes};
+use super::super::ledger::{LedgerService, OverlayState};
+use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
+
+use crate::tx::CHAIN_ID;
+const BLOCK_GAS_LIMIT: u64 = 30_000_000;
+
+fn block_context(height: u64, prevrandao: B256) -> BlockContext {
+    let header = Header {
+        number: height,
+        timestamp: height,
+        gas_limit: BLOCK_GAS_LIMIT,
+        beneficiary: Address::ZERO,
+        base_fee_per_gas: Some(0),
+        ..Default::default()
+    };
+    BlockContext::new(header, prevrandao)
+}
 
 /// Helper function for `FinalizedReporter::report` that owns all its inputs.
 async fn handle_finalized_update(
@@ -28,20 +43,23 @@ async fn handle_finalized_update(
                     ack.acknowledge();
                     return;
                 };
-                let env = evm_env(block.height, block.prevrandao);
-                let (db, outcome) = match execute_txs(parent_snapshot.db, env, &block.txs) {
-                    Ok((db, outcome)) => (db, outcome),
+                let executor = RevmExecutor::new(CHAIN_ID);
+                let context = block_context(block.height, block.prevrandao);
+                let txs_bytes: Vec<Bytes> =
+                    block.txs.iter().map(|tx| tx.bytes.clone()).collect();
+                let outcome = match executor.execute(&parent_snapshot.state, &context, &txs_bytes) {
+                    Ok(outcome) => outcome,
                     Err(err) => {
                         error!(?digest, error = ?err, "failed to execute finalized block");
                         ack.acknowledge();
                         return;
                     }
                 };
-                let state_root =
-                    match state.compute_root(parent_digest, outcome.qmdb_changes.clone()).await {
-                        Ok(root) => root,
-                        Err(err) => {
-                            error!(?digest, error = ?err, "failed to compute qmdb root");
+                let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
+                let state_root = match state.compute_root(parent_digest, outcome.changes.clone()).await {
+                    Ok(root) => root,
+                    Err(err) => {
+                        error!(?digest, error = ?err, "failed to compute qmdb root");
                             ack.acknowledge();
                             return;
                         }
@@ -56,8 +74,9 @@ async fn handle_finalized_update(
                     ack.acknowledge();
                     return;
                 }
+                let next_state = OverlayState::new(parent_snapshot.state.base(), merged_changes);
                 state
-                    .insert_snapshot(digest, parent_digest, db, state_root, outcome.qmdb_changes)
+                    .insert_snapshot(digest, parent_digest, next_state, state_root, outcome.changes)
                     .await;
             } else {
                 trace!(?digest, "using cached snapshot for finalized block");

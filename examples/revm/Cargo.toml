@@ -18,6 +18,7 @@ bench = false
 # Workspace
 kora-backend.workspace = true
 kora-domain.workspace = true
+kora-executor.workspace = true
 kora-handlers.workspace = true
 kora-qmdb.workspace = true
 kora-traits.workspace = true
@@ -37,7 +38,6 @@ commonware-cryptography.workspace = true
 rand.workspace = true
 libc.workspace = true
 clap.workspace = true
-bytes.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
 futures.workspace = true
@@ -48,4 +48,8 @@ tokio.workspace = true
 
 # Execution
 alloy-evm = { workspace = true, features = ["std"] }
-revm = { workspace = true, features = ["std", "asyncdb"] }
+alloy-consensus.workspace = true
+alloy-primitives.workspace = true
+alloy-rlp.workspace = true
+k256 = "0.13"
+sha3 = "0.10"

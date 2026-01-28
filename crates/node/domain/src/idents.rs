@@ -87,27 +87,21 @@ impl Read for StateRoot {
 
 #[cfg(test)]
 mod tests {
-    use alloy_evm::revm::primitives::{Address, B256, Bytes, U256, keccak256};
+    use alloy_evm::revm::primitives::{B256, Bytes, keccak256};
     use commonware_codec::{Decode as _, Encode as _};
 
     use super::*;
     use crate::{Block, BlockCfg, Tx, TxCfg};
 
     fn cfg() -> BlockCfg {
-        BlockCfg { max_txs: 64, tx: TxCfg { max_calldata_bytes: 1024 } }
+        BlockCfg { max_txs: 64, tx: TxCfg { max_tx_bytes: 1024 } }
     }
 
     #[test]
     fn test_tx_roundtrip_and_id_stable() {
-        let tx = Tx {
-            from: Address::from([0x11u8; 20]),
-            to: Address::from([0x22u8; 20]),
-            value: U256::from(1234u64),
-            gas_limit: 50_000,
-            data: Bytes::from(vec![1, 2, 3]),
-        };
+        let tx = Tx { bytes: Bytes::from(vec![1, 2, 3, 4, 5]) };
         let encoded = tx.encode();
-        let decoded = Tx::decode_cfg(encoded.clone(), &TxCfg { max_calldata_bytes: 1024 })
+        let decoded = Tx::decode_cfg(encoded.clone(), &TxCfg { max_tx_bytes: 1024 })
             .expect("decode tx");
         assert_eq!(tx, decoded);
         assert_eq!(tx.id(), decoded.id());
@@ -117,20 +111,8 @@ mod tests {
     #[test]
     fn test_block_roundtrip_and_id_stable() {
         let txs = vec![
-            Tx {
-                from: Address::from([0x11u8; 20]),
-                to: Address::from([0x22u8; 20]),
-                value: U256::from(1u64),
-                gas_limit: 21_000,
-                data: Bytes::new(),
-            },
-            Tx {
-                from: Address::from([0x33u8; 20]),
-                to: Address::from([0x44u8; 20]),
-                value: U256::from(2u64),
-                gas_limit: 50_000,
-                data: Bytes::from(vec![9, 9, 9]),
-            },
+            Tx { bytes: Bytes::new() },
+            Tx { bytes: Bytes::from(vec![9, 9, 9]) },
         ];
         let block = Block {
             parent: BlockId(B256::from([0xAAu8; 32])),

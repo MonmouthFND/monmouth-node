@@ -13,13 +13,7 @@ use crate::Tx;
 ///
 /// let from = Address::from([0x11u8; 20]);
 /// let to = Address::from([0x22u8; 20]);
-/// let tx = Tx {
-///     from,
-///     to,
-///     value: U256::from(100u64),
-///     gas_limit: 21_000,
-///     data: Bytes::new(),
-/// };
+/// let tx = Tx::new(Bytes::from(vec![0x02, 0x01, 0x02, 0x03]));
 /// let bootstrap = BootstrapConfig::new(vec![(from, U256::from(1_000_000u64))], vec![tx]);
 /// # let _ = bootstrap;
 /// ```

@@ -37,8 +37,8 @@ pub(crate) const CHANNEL_BLOCKS: u64 = 3;
 pub(crate) const CHANNEL_BACKFILL: u64 = 4;
 /// Maximum transactions per block encoded by the REVM codec.
 const BLOCK_CODEC_MAX_TXS: usize = 64;
-/// Maximum calldata bytes per transaction admitted by the block codec.
-const BLOCK_CODEC_MAX_CALLDATA: usize = 1024;
+/// Maximum encoded transaction bytes per transaction admitted by the block codec.
+const BLOCK_CODEC_MAX_TX_BYTES: usize = 1024;
 
 pub(crate) type Peer = PublicKey;
 pub(crate) type ChannelSender = simulated::Sender<Peer, TransportContext>;
@@ -64,7 +64,7 @@ pub(crate) fn default_buffer_pool() -> PoolRef {
 pub(crate) const fn block_codec_cfg() -> BlockCfg {
     BlockCfg {
         max_txs: BLOCK_CODEC_MAX_TXS,
-        tx: TxCfg { max_calldata_bytes: BLOCK_CODEC_MAX_CALLDATA },
+        tx: TxCfg { max_tx_bytes: BLOCK_CODEC_MAX_TX_BYTES },
     }
 }
 

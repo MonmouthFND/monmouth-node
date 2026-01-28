@@ -3054,6 +3054,7 @@ dependencies = [
  "once_cell",
  "serdect",
  "sha2 0.10.9",
+ "signature",
 ]
 
 [[package]]
@@ -3162,6 +3163,7 @@ name = "kora-domain"
 version = "0.1.0"
 dependencies = [
  "alloy-evm",
+ "alloy-primitives",
  "bytes",
  "commonware-codec",
  "commonware-consensus",
@@ -3237,9 +3239,11 @@ dependencies = [
 name = "kora-revm-example"
 version = "0.1.0"
 dependencies = [
+ "alloy-consensus",
  "alloy-evm",
+ "alloy-primitives",
+ "alloy-rlp",
  "anyhow",
- "bytes",
  "clap",
  "commonware-broadcast",
  "commonware-codec",
@@ -3252,15 +3256,17 @@ dependencies = [
  "commonware-utils",
  "futures",
  "governor",
+ "k256",
  "kora-backend",
  "kora-domain",
+ "kora-executor",
  "kora-handlers",
  "kora-qmdb",
  "kora-traits",
  "libc",
  "prometheus-client",
  "rand 0.8.5",
- "revm",
+ "sha3",
  "thiserror 2.0.18",
  "tokio",
  "tracing",

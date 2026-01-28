@@ -149,6 +149,7 @@ fn decode_tx_env(tx_bytes: &Bytes, _chain_id: u64) -> Result<revm::context::TxEn
                 .value(tx.value)
                 .data(tx.input.clone())
                 .nonce(tx.nonce)
+                .chain_id(tx.chain_id)
                 .kind(convert_tx_kind(tx.to));
         }
         TxEnvelope::Eip2930(signed) => {
@@ -164,6 +165,7 @@ fn decode_tx_env(tx_bytes: &Bytes, _chain_id: u64) -> Result<revm::context::TxEn
                 .value(tx.value)
                 .data(tx.input.clone())
                 .nonce(tx.nonce)
+                .chain_id(Some(tx.chain_id))
                 .kind(convert_tx_kind(tx.to))
                 .access_list(convert_access_list(&tx.access_list));
         }
@@ -181,6 +183,7 @@ fn decode_tx_env(tx_bytes: &Bytes, _chain_id: u64) -> Result<revm::context::TxEn
                 .value(tx.value)
                 .data(tx.input.clone())
                 .nonce(tx.nonce)
+                .chain_id(Some(tx.chain_id))
                 .kind(convert_tx_kind(tx.to))
                 .access_list(convert_access_list(&tx.access_list));
         }
@@ -198,6 +201,7 @@ fn decode_tx_env(tx_bytes: &Bytes, _chain_id: u64) -> Result<revm::context::TxEn
                 .value(tx.value)
                 .data(tx.input.clone())
                 .nonce(tx.nonce)
+                .chain_id(Some(tx.chain_id))
                 .kind(TxKind::Call(tx.to))
                 .access_list(convert_access_list(&tx.access_list))
                 .max_fee_per_blob_gas(tx.max_fee_per_blob_gas)
@@ -217,6 +221,7 @@ fn decode_tx_env(tx_bytes: &Bytes, _chain_id: u64) -> Result<revm::context::TxEn
                 .value(tx.value)
                 .data(tx.input.clone())
                 .nonce(tx.nonce)
+                .chain_id(Some(tx.chain_id))
                 .kind(TxKind::Call(tx.to))
                 .access_list(convert_access_list(&tx.access_list))
                 .authorization_list(convert_authorization_list(&tx.authorization_list));

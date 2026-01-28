@@ -11,15 +11,16 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use kora_domain::{ConsensusDigest, StateRoot};
 
-use crate::qmdb::{QmdbChangeSet, RevmDb};
+use super::OverlayState;
+use crate::qmdb::{QmdbChangeSet, QmdbState};
 
 #[derive(Clone)]
 /// Cached execution snapshot for a specific digest.
 pub(crate) struct LedgerSnapshot {
     /// Parent digest used to walk back through unpersisted ancestors.
     pub(crate) parent: Option<ConsensusDigest>,
-    /// REVM overlay database after executing the block.
-    pub(crate) db: RevmDb,
+    /// State view that includes merged changes up to this digest.
+    pub(crate) state: OverlayState<QmdbState>,
     /// State root computed for this snapshot.
     pub(crate) state_root: StateRoot,
     /// QMDB delta produced by executing the block.
@@ -46,10 +47,6 @@ impl SnapshotStore {
 
     pub(crate) fn get(&self, digest: &ConsensusDigest) -> Option<&LedgerSnapshot> {
         self.snapshots.get(digest)
-    }
-
-    pub(crate) fn get_mut(&mut self, digest: &ConsensusDigest) -> Option<&mut LedgerSnapshot> {
-        self.snapshots.get_mut(digest)
     }
 
     pub(crate) fn insert(&mut self, digest: ConsensusDigest, snapshot: LedgerSnapshot) {
@@ -119,30 +116,5 @@ impl SnapshotStore {
         Ok((chain, merged))
     }
 
-    /// Merge unpersisted ancestor deltas with new changes for a consistent root computation.
-    ///
-    /// The merge order is oldest ancestor first, then the provided `changes` last.
-    pub(crate) fn merged_changes_from(
-        &self,
-        mut parent: ConsensusDigest,
-        changes: QmdbChangeSet,
-    ) -> anyhow::Result<QmdbChangeSet> {
-        let mut chain = Vec::new();
-        while !self.persisted.contains(&parent) {
-            let snapshot =
-                self.snapshots.get(&parent).ok_or_else(|| anyhow::anyhow!("missing snapshot"))?;
-            let Some(next) = snapshot.parent else {
-                return Err(anyhow::anyhow!("missing parent snapshot"));
-            };
-            chain.push(snapshot.qmdb_changes.clone());
-            parent = next;
-        }
-
-        let mut merged = QmdbChangeSet::default();
-        for delta in chain.into_iter().rev() {
-            merged.merge(delta);
-        }
-        merged.merge(changes);
-        Ok(merged)
-    }
+    // Note: merged changes for execution are derived from the overlay state stored in snapshots.
 }

@@ -4,32 +4,33 @@
 //! disseminated/backfilled by `commonware_consensus::marshal`. This module holds the minimal
 //! shared state needed by the example:
 //! - a mempool of submitted transactions,
-//! - per-block execution snapshots (CacheDB overlay over QMDB) keyed by the consensus digest, and
+//! - per-block execution snapshots (QMDB base state + merged change set overlay) keyed by the
+//!   consensus digest, and
 //! - a per-digest seed hash used to populate the next block's `prevrandao`.
 //!
 //! The simulation harness queries this state through `crate::application::NodeHandle`.
 
 mod mempool;
+mod overlay;
 mod seed_cache;
 mod snapshot_store;
 
 use std::{collections::BTreeSet, sync::Arc};
 
-use alloy_evm::revm::{
-    Database as _,
-    primitives::{Address, B256, U256},
-};
+use alloy_evm::revm::primitives::{Address, B256, U256};
 use commonware_cryptography::Committable as _;
 use commonware_runtime::{Metrics, buffer::PoolRef, tokio};
 use futures::{channel::mpsc::UnboundedReceiver, lock::Mutex};
 use kora_domain::{
     Block, BlockId, ConsensusDigest, LedgerEvent, LedgerEvents, StateRoot, Tx, TxId,
 };
+use kora_traits::StateDbRead;
 use mempool::Mempool;
 use seed_cache::SeedCache;
 use snapshot_store::{LedgerSnapshot, SnapshotStore};
 
-use crate::qmdb::{QmdbChangeSet, QmdbConfig, QmdbLedger, RevmDb};
+use crate::qmdb::{QmdbChangeSet, QmdbConfig, QmdbLedger, QmdbState};
+pub(crate) use overlay::OverlayState;
 #[derive(Clone)]
 /// Ledger view that owns the mutexed execution state.
 pub(crate) struct LedgerView {
@@ -75,7 +76,7 @@ impl LedgerView {
             txs: Vec::new(),
         };
         let genesis_digest = genesis_block.commitment();
-        let db = RevmDb::new(qmdb.database()?);
+        let state = OverlayState::new(qmdb.state(), QmdbChangeSet::default());
 
         Ok(Self {
             inner: Arc::new(Mutex::new(LedgerState {
@@ -84,7 +85,7 @@ impl LedgerView {
                     genesis_digest,
                     LedgerSnapshot {
                         parent: None,
-                        db,
+                        state,
                         state_root: genesis_block.state_root,
                         qmdb_changes: QmdbChangeSet::default(),
                     },
@@ -110,8 +111,11 @@ impl LedgerView {
         digest: ConsensusDigest,
         address: Address,
     ) -> Option<U256> {
-        let mut inner = self.inner.lock().await;
-        inner.snapshots.get_mut(&digest)?.db.basic(address).ok().flatten().map(|info| info.balance)
+        let snapshot = {
+            let inner = self.inner.lock().await;
+            inner.snapshots.get(&digest).cloned()
+        }?;
+        snapshot.state.balance(&address).await.ok()
     }
 
     pub(crate) async fn query_state_root(&self, digest: ConsensusDigest) -> Option<StateRoot> {
@@ -143,14 +147,14 @@ impl LedgerView {
         &self,
         digest: ConsensusDigest,
         parent: ConsensusDigest,
-        db: RevmDb,
+        state: OverlayState<QmdbState>,
         root: StateRoot,
         qmdb_changes: QmdbChangeSet,
     ) {
         let mut inner = self.inner.lock().await;
         inner.snapshots.insert(
             digest,
-            LedgerSnapshot { parent: Some(parent), db, state_root: root, qmdb_changes },
+            LedgerSnapshot { parent: Some(parent), state, state_root: root, qmdb_changes },
         );
     }
 
@@ -165,7 +169,9 @@ impl LedgerView {
         // Get the handle and release the lock before awaiting
         let (changes, qmdb) = {
             let inner = self.inner.lock().await;
-            let changes = inner.merged_changes_from(parent, changes)?;
+            let snapshot =
+                inner.snapshots.get(&parent).ok_or_else(|| anyhow::anyhow!("missing snapshot"))?;
+            let changes = snapshot.state.merge_changes(changes);
             (changes, inner.qmdb.clone())
         };
         qmdb.compute_root(changes).await.map_err(Into::into)
@@ -209,16 +215,6 @@ impl LedgerView {
     pub(crate) async fn build_txs(&self, max_txs: usize, excluded: &BTreeSet<TxId>) -> Vec<Tx> {
         let inner = self.inner.lock().await;
         inner.mempool.build(max_txs, excluded)
-    }
-}
-
-impl LedgerState {
-    fn merged_changes_from(
-        &self,
-        parent: ConsensusDigest,
-        changes: QmdbChangeSet,
-    ) -> anyhow::Result<QmdbChangeSet> {
-        self.snapshots.merged_changes_from(parent, changes)
     }
 }
 
@@ -289,11 +285,11 @@ impl LedgerService {
         &self,
         digest: ConsensusDigest,
         parent: ConsensusDigest,
-        db: RevmDb,
+        state: OverlayState<QmdbState>,
         root: StateRoot,
         changes: QmdbChangeSet,
     ) {
-        self.view.insert_snapshot(digest, parent, db, root, changes).await;
+        self.view.insert_snapshot(digest, parent, state, root, changes).await;
     }
 
     pub(crate) async fn compute_root(
@@ -325,20 +321,21 @@ impl LedgerService {
 mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
-    use alloy_evm::revm::{
-        Database as _,
-        primitives::{Address, B256, Bytes, U256},
-    };
+    use alloy_consensus::Header;
+    use alloy_evm::revm::Database as _;
+    use alloy_primitives::{Address, B256, Bytes, U256};
+    use k256::ecdsa::SigningKey;
     use commonware_cryptography::Committable as _;
     use commonware_runtime::{Runner, buffer::PoolRef, tokio};
     use commonware_utils::{NZU16, NZUsize};
     use kora_domain::{Block, ConsensusDigest, Tx};
 
-    use super::{LedgerService, LedgerView, snapshot_store::LedgerSnapshot};
+    use super::{LedgerService, LedgerView, OverlayState, snapshot_store::LedgerSnapshot};
     use crate::{
-        application::execution::{evm_env, execute_txs},
         qmdb::RevmDb,
+        tx::{CHAIN_ID, address_from_key, sign_eip1559_transfer},
     };
+    use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
 
     static PARTITION_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -370,8 +367,10 @@ mod tests {
         digest: ConsensusDigest,
     }
 
-    fn address_from_byte(byte: u8) -> Address {
-        Address::from([byte; 20])
+    fn key_from_byte(byte: u8) -> SigningKey {
+        let mut bytes = [0u8; 32];
+        bytes[0] = byte.max(1);
+        SigningKey::from_bytes(&bytes.into()).expect("valid key")
     }
 
     fn next_partition(prefix: &str) -> String {
@@ -383,8 +382,20 @@ mod tests {
         PoolRef::new(NZU16!(BUFFER_BLOCK_BYTES), NZUsize!(BUFFER_BLOCK_COUNT))
     }
 
-    fn transfer_tx(from: Address, to: Address, value: u64) -> Tx {
-        Tx { from, to, value: U256::from(value), gas_limit: GAS_LIMIT_TRANSFER, data: Bytes::new() }
+    fn transfer_tx(from_key: &SigningKey, to: Address, value: u64, nonce: u64) -> Tx {
+        sign_eip1559_transfer(from_key, to, U256::from(value), nonce, GAS_LIMIT_TRANSFER)
+    }
+
+    fn block_context(height: u64, prevrandao: B256) -> BlockContext {
+        let header = Header {
+            number: height,
+            timestamp: height,
+            gas_limit: 30_000_000,
+            beneficiary: Address::ZERO,
+            base_fee_per_gas: Some(0),
+            ..Default::default()
+        };
+        BlockContext::new(header, prevrandao)
     }
 
     async fn setup_ledger(
@@ -413,17 +424,22 @@ mod tests {
         height: u64,
         txs: Vec<Tx>,
     ) -> BuiltBlock {
-        let (db, outcome) = execute_txs(parent_snapshot.db, evm_env(height, PREVRANDAO), &txs)
-            .expect("execute txs");
+        let executor = RevmExecutor::new(CHAIN_ID);
+        let context = block_context(height, PREVRANDAO);
+        let txs_bytes: Vec<Bytes> = txs.iter().map(|tx| tx.bytes.clone()).collect();
+        let outcome =
+            executor.execute(&parent_snapshot.state, &context, &txs_bytes).expect("execute txs");
+        let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
         let parent_digest = parent.commitment();
         let root = service
-            .compute_root(parent_digest, outcome.qmdb_changes.clone())
+            .compute_root(parent_digest, outcome.changes.clone())
             .await
             .expect("compute root");
         let block =
             Block { parent: parent.id(), height, prevrandao: PREVRANDAO, state_root: root, txs };
         let digest = block.commitment();
-        service.insert_snapshot(digest, parent_digest, db, root, outcome.qmdb_changes).await;
+        let next_state = OverlayState::new(parent_snapshot.state.base(), merged_changes);
+        service.insert_snapshot(digest, parent_digest, next_state, root, outcome.changes).await;
         BuiltBlock { block, digest }
     }
 
@@ -433,8 +449,10 @@ mod tests {
         let executor = tokio::Runner::default();
         executor.start(|context| async move {
             // Arrange
-            let from = address_from_byte(FROM_BYTE_A);
-            let to = address_from_byte(TO_BYTE_A);
+            let from_key = key_from_byte(FROM_BYTE_A);
+            let to_key = key_from_byte(TO_BYTE_A);
+            let from = address_from_key(&from_key);
+            let to = address_from_key(&to_key);
             let setup = setup_ledger(
                 context,
                 "revm-ledger-merge",
@@ -451,7 +469,7 @@ mod tests {
                 &setup.genesis,
                 parent_snapshot,
                 HEIGHT_ONE,
-                vec![transfer_tx(from, to, TRANSFER_ONE)],
+                vec![transfer_tx(&from_key, to, TRANSFER_ONE, 0)],
             )
             .await;
             let parent_snapshot =
@@ -461,7 +479,7 @@ mod tests {
                 &block1.block,
                 parent_snapshot,
                 HEIGHT_TWO,
-                vec![transfer_tx(from, to, TRANSFER_TWO)],
+                vec![transfer_tx(&from_key, to, TRANSFER_TWO, 1)],
             )
             .await;
 
@@ -498,8 +516,10 @@ mod tests {
         let executor = tokio::Runner::default();
         executor.start(|context| async move {
             // Arrange
-            let from = address_from_byte(FROM_BYTE_B);
-            let to = address_from_byte(TO_BYTE_B);
+            let from_key = key_from_byte(FROM_BYTE_B);
+            let to_key = key_from_byte(TO_BYTE_B);
+            let from = address_from_key(&from_key);
+            let to = address_from_key(&to_key);
             let setup = setup_ledger(
                 context,
                 "revm-ledger-dup",
@@ -516,7 +536,7 @@ mod tests {
                 &setup.genesis,
                 parent_snapshot,
                 HEIGHT_ONE,
-                vec![transfer_tx(from, to, TRANSFER_DUPLICATE)],
+                vec![transfer_tx(&from_key, to, TRANSFER_DUPLICATE, 0)],
             )
             .await;
 

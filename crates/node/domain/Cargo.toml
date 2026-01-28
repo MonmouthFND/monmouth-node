@@ -18,6 +18,7 @@ commonware-cryptography.workspace = true
 
 # Execution
 alloy-evm = { workspace = true, features = ["std"] }
+alloy-primitives.workspace = true
 
 # General
 bytes.workspace = true

@@ -1,7 +1,6 @@
 //! Chain application logic (block production and verification).
 
 mod app;
-pub(crate) mod execution;
 mod handle;
 mod ledger;
 mod node;

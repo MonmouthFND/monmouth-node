@@ -10,6 +10,7 @@ mod demo;
 mod outcome;
 mod qmdb;
 mod simulation;
+mod tx;
 
 fn main() {
     use clap::Parser;
