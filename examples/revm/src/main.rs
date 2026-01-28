@@ -1,16 +1,12 @@
-//! REVM-based example chain driven by threshold-simplex.
-//!
-//! This example uses `alloy-evm` as the integration layer above `revm` and keeps the execution
-//! backend generic over the database trait boundary (`Database` + `DatabaseCommit`).
+#![doc = include_str!("../README.md")]
+#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
+#![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-pub mod application;
-pub use application::execution::{
-    CHAIN_ID, ExecutionOutcome, SEED_PRECOMPILE_ADDRESS_BYTES, evm_env, execute_txs,
-    seed_precompile_address,
-};
-
+mod application;
 mod cli;
 mod config;
+mod demo;
 mod outcome;
 mod qmdb;
 mod simulation;

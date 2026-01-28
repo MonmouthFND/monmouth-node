@@ -24,8 +24,6 @@ use crate::{
     outcome::SimOutcome,
 };
 
-mod demo;
-
 /// Maximum size (bytes) of a single simulated network message.
 pub(super) const MAX_MSG_SIZE: usize = 1024 * 1024;
 /// Fixed latency (milliseconds) for simulated P2P links.
@@ -119,7 +117,7 @@ async fn run_sim(context: tokio::Context, cfg: SimConfig) -> anyhow::Result<SimO
     let mut transport = start_network(&context, participants_set).await;
     connect_all_peers(&mut transport, &participants_vec).await?;
 
-    let demo = demo::DemoTransfer::new();
+    let demo = crate::demo::DemoTransfer::new();
     let bootstrap = BootstrapConfig::new(demo.alloc.clone(), vec![demo.tx.clone()]);
 
     let (nodes, mut finalized_rx) =
@@ -259,7 +257,7 @@ async fn wait_for_finalized_head(
 async fn assert_all_nodes_converged(
     nodes: &[NodeHandle],
     head: ConsensusDigest,
-    demo: &demo::DemoTransfer,
+    demo: &crate::demo::DemoTransfer,
 ) -> anyhow::Result<(StateRoot, B256)> {
     let mut state_root = None;
     let mut seed = None;
