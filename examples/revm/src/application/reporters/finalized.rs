@@ -1,11 +1,12 @@
 use alloy_consensus::Header;
-use alloy_primitives::{Address, B256, Bytes};
+use alloy_primitives::{Address, B256};
 use commonware_consensus::{Block as _, Reporter, marshal::Update};
 use commonware_cryptography::Committable as _;
 use commonware_runtime::{Spawner as _, tokio};
 use commonware_utils::acknowledgement::Acknowledgement as _;
+use kora_consensus::execute_block;
 use kora_domain::Block;
-use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
+use kora_executor::{BlockContext, RevmExecutor};
 use kora_overlay::OverlayState;
 use tracing::{error, trace, warn};
 
@@ -45,30 +46,22 @@ async fn handle_finalized_update(
                 };
                 let executor = RevmExecutor::new(CHAIN_ID);
                 let context = block_context(block.height, block.prevrandao);
-                let txs_bytes: Vec<Bytes> = block.txs.iter().map(|tx| tx.bytes.clone()).collect();
-                let outcome = match executor.execute(&parent_snapshot.state, &context, &txs_bytes) {
-                    Ok(outcome) => outcome,
-                    Err(err) => {
-                        error!(?digest, error = ?err, "failed to execute finalized block");
-                        ack.acknowledge();
-                        return;
-                    }
-                };
-                let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
-                let state_root =
-                    match state.compute_root(parent_digest, outcome.changes.clone()).await {
-                        Ok(root) => root,
+                let execution =
+                    match execute_block(&parent_snapshot, &executor, &context, &block.txs).await {
+                        Ok(result) => result,
                         Err(err) => {
-                            error!(?digest, error = ?err, "failed to compute qmdb root");
+                            error!(?digest, error = ?err, "failed to execute finalized block");
                             ack.acknowledge();
                             return;
                         }
                     };
-                if state_root != block.state_root {
+                let merged_changes =
+                    parent_snapshot.state.merge_changes(execution.outcome.changes.clone());
+                if execution.state_root != block.state_root {
                     warn!(
                         ?digest,
                         expected = ?block.state_root,
-                        computed = ?state_root,
+                        computed = ?execution.state_root,
                         "state root mismatch for finalized block"
                     );
                     ack.acknowledge();
@@ -80,8 +73,8 @@ async fn handle_finalized_update(
                         digest,
                         parent_digest,
                         next_state,
-                        state_root,
-                        outcome.changes,
+                        execution.state_root,
+                        execution.outcome.changes,
                         &block.txs,
                     )
                     .await;

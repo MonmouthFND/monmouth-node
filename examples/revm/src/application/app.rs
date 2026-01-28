@@ -10,7 +10,7 @@
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use alloy_consensus::Header;
-use alloy_primitives::{Address, B256, Bytes};
+use alloy_primitives::{Address, B256};
 use commonware_consensus::{
     Application, VerifyingApplication,
     marshal::ingress::mailbox::AncestorStream,
@@ -19,8 +19,9 @@ use commonware_consensus::{
 use commonware_cryptography::{Committable as _, certificate::Scheme as CertScheme};
 use commonware_runtime::{Clock, Metrics, Spawner};
 use futures::StreamExt as _;
+use kora_consensus::execute_block;
 use kora_domain::{Block, ConsensusDigest, PublicKey, TxId};
-use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
+use kora_executor::{BlockContext, RevmExecutor};
 use kora_overlay::OverlayState;
 use rand::Rng;
 
@@ -74,13 +75,11 @@ where
 
     let executor = RevmExecutor::new(CHAIN_ID);
     let context = block_context(height, prevrandao);
-    let txs_bytes: Vec<Bytes> = txs.iter().map(|tx| tx.bytes.clone()).collect();
-    let outcome = executor.execute(&parent_snapshot.state, &context, &txs_bytes).ok()?;
-    let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
+    let execution = execute_block(&parent_snapshot, &executor, &context, &txs).await.ok()?;
+    let merged_changes = parent_snapshot.state.merge_changes(execution.outcome.changes.clone());
 
-    let mut child =
-        Block { parent: parent.id(), height, prevrandao, state_root: parent.state_root, txs };
-    child.state_root = state.compute_root(parent_digest, outcome.changes.clone()).await.ok()?;
+    let child =
+        Block { parent: parent.id(), height, prevrandao, state_root: execution.state_root, txs };
 
     let digest = child.commitment();
     let next_state = OverlayState::new(parent_snapshot.state.base(), merged_changes);
@@ -90,7 +89,7 @@ where
             parent_digest,
             next_state,
             child.state_root,
-            outcome.changes,
+            execution.outcome.changes,
             &child.txs,
         )
         .await;
@@ -118,24 +117,26 @@ where
 
     let executor = RevmExecutor::new(CHAIN_ID);
     let context = block_context(block.height, block.prevrandao);
-    let txs_bytes: Vec<Bytes> = block.txs.iter().map(|tx| tx.bytes.clone()).collect();
-    let outcome = match executor.execute(&parent_snapshot.state, &context, &txs_bytes) {
+    let execution = match execute_block(&parent_snapshot, &executor, &context, &block.txs).await {
         Ok(result) => result,
         Err(_) => return false,
     };
-    let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
-    let state_root = match state.compute_root(parent_digest, outcome.changes.clone()).await {
-        Ok(root) => root,
-        Err(_) => return false,
-    };
-    if state_root != block.state_root {
+    let merged_changes = parent_snapshot.state.merge_changes(execution.outcome.changes.clone());
+    if execution.state_root != block.state_root {
         return false;
     }
 
     let digest = block.commitment();
     let next_state = OverlayState::new(parent_snapshot.state.base(), merged_changes);
     state
-        .insert_snapshot(digest, parent_digest, next_state, state_root, outcome.changes, &block.txs)
+        .insert_snapshot(
+            digest,
+            parent_digest,
+            next_state,
+            execution.state_root,
+            execution.outcome.changes,
+            &block.txs,
+        )
         .await;
     true
 }

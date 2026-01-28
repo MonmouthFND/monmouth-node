@@ -164,6 +164,7 @@ impl LedgerView {
     /// Compute a preview root as if all unpersisted ancestors plus `changes` were applied.
     ///
     /// Note: QMDB roots include commit metadata, so persisted roots can differ from this preview.
+    #[cfg(test)]
     pub(crate) async fn compute_qmdb_root(
         &self,
         parent: ConsensusDigest,
@@ -297,6 +298,7 @@ impl LedgerService {
         self.view.insert_snapshot(digest, parent, state, root, changes, txs).await;
     }
 
+    #[cfg(test)]
     pub(crate) async fn compute_root(
         &self,
         parent: ConsensusDigest,

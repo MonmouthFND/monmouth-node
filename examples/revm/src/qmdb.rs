@@ -77,6 +77,7 @@ impl QmdbLedger {
     }
 
     /// Computes the root for a change set without committing.
+    #[cfg(test)]
     pub(crate) async fn compute_root(&self, changes: QmdbChangeSet) -> Result<StateRoot, Error> {
         let root = StateDbWrite::compute_root(&self.handle, &changes).await?;
         Ok(StateRoot(root))
