@@ -1,0 +1,25 @@
+[package]
+name = "kora-domain"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Domain types for kora"
+
+[lints]
+workspace = true
+
+[dependencies]
+# Commonware
+commonware-codec.workspace = true
+commonware-consensus.workspace = true
+commonware-cryptography.workspace = true
+
+# Execution
+alloy-evm = { workspace = true, features = ["std"] }
+
+# General
+bytes.workspace = true
+anyhow.workspace = true
+futures.workspace = true

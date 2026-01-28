@@ -23,6 +23,7 @@ use crate::{
         NodeEnvironment, ThresholdScheme, TransportControl, start_node, threshold_schemes,
     },
     outcome::SimOutcome,
+    config::SimConfig,
 };
 
 mod demo;
@@ -32,16 +33,7 @@ pub(super) const MAX_MSG_SIZE: usize = 1024 * 1024;
 /// Fixed latency (milliseconds) for simulated P2P links.
 pub(super) const P2P_LINK_LATENCY_MS: u64 = 5;
 
-#[derive(Clone, Copy, Debug)]
-/// Configuration for a simulation run.
-pub struct SimConfig {
-    /// Number of nodes participating in the simulation.
-    pub nodes: usize,
-    /// Number of blocks to finalize before stopping.
-    pub blocks: u64,
-    /// Seed used for deterministic randomness.
-    pub seed: u64,
-}
+
 
 type NodeHandle = crate::application::NodeHandle;
 type SimTransport = simulated::Oracle<ed25519::PublicKey, tokio::Context>;

@@ -3,10 +3,6 @@
 //! This example uses `alloy-evm` as the integration layer above `revm` and keeps the execution
 //! backend generic over the database trait boundary (`Database` + `DatabaseCommit`).
 
-use clap::Parser;
-
-mod cli;
-
 pub mod application;
 pub use application::execution::{
     CHAIN_ID, ExecutionOutcome, SEED_PRECOMPILE_ADDRESS_BYTES, evm_env, execute_txs,
@@ -25,16 +21,25 @@ pub use domain::{
     StateRoot, Tx, TxCfg, TxId, block_id,
 };
 
-pub mod qmdb;
-
-mod simulation;
-pub use simulation::{SimConfig, simulate};
-
+mod cli;
+mod qmdb;
+mod config;
 mod outcome;
+mod simulation;
 
-fn main() -> anyhow::Result<()> {
+fn main() {
+    use clap::Parser;
+
+    // Parse the cli.
     let cli = cli::Cli::parse();
-    let outcome = cli.run()?;
-    outcome.print();
-    Ok(())
+
+    // Run the simulation.
+    let outcome = cli.run();
+    if outcome.is_err() {
+        eprintln!("Simulation failed: {:?}", outcome);
+        std::process::exit(1);
+    };
+
+    // Print the output.
+    outcome.expect("success").print();
 }

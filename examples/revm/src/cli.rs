@@ -2,8 +2,9 @@
 
 use clap::Parser;
 
+use crate::config::SimConfig;
 use crate::outcome::SimOutcome;
-use crate::{SimConfig, simulate};
+use crate::simulation::simulate;
 
 /// CLI arguments for the kora-revm-example.
 #[derive(Parser, Debug)]

@@ -10,28 +10,35 @@ description = "REVM-based example chain running on threshold-simplex (simplex + 
 [lints]
 workspace = true
 
-[dependencies]
-# EVM execution
-alloy-evm = { version = "=0.25.1", default-features = false, features = ["std"] }
-anyhow = "1"
-bytes.workspace = true
-clap.workspace = true
-commonware-broadcast.workspace = true
-commonware-codec.workspace = true
-commonware-consensus.workspace = true
-commonware-cryptography.workspace = true
-commonware-p2p.workspace = true
-commonware-parallel.workspace = true
-commonware-runtime.workspace = true
-commonware-storage.workspace = true
-commonware-utils.workspace = true
-futures.workspace = true
-libc = "0.2"
-rand.workspace = true
-revm = { version = "33.1.0", default-features = false, features = ["std", "asyncdb"] }
-thiserror.workspace = true
-tracing.workspace = true
-
 [[bin]]
 name = "kora-revm-example"
 bench = false
+
+[dependencies]
+# Workspace
+kora-domain.workspace = true
+
+# Commonware
+commonware-p2p.workspace = true
+commonware-utils.workspace = true
+commonware-codec.workspace = true
+commonware-runtime.workspace = true
+commonware-storage.workspace = true
+commonware-parallel.workspace = true
+commonware-broadcast.workspace = true
+commonware-consensus.workspace = true
+commonware-cryptography.workspace = true
+
+# General
+rand.workspace = true
+libc.workspace = true
+clap.workspace = true
+bytes.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+futures.workspace = true
+thiserror.workspace = true
+
+# Execution
+alloy-evm = { workspace = true, features = ["std"] }
+revm = { workspace = true, features = ["std", "asyncdb"] }
