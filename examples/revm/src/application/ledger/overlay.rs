@@ -30,7 +30,10 @@ impl<S: Clone> OverlayState<S> {
 }
 
 impl<S: StateDbRead> StateDbRead for OverlayState<S> {
-    fn nonce(&self, address: &Address) -> impl std::future::Future<Output = Result<u64, StateDbError>> + Send {
+    fn nonce(
+        &self,
+        address: &Address,
+    ) -> impl std::future::Future<Output = Result<u64, StateDbError>> + Send {
         let address = *address;
         let base = self.base.clone();
         let changes = Arc::clone(&self.changes);

@@ -1,15 +1,14 @@
+use alloy_consensus::Header;
+use alloy_primitives::{Address, B256, Bytes};
 use commonware_consensus::{Block as _, Reporter, marshal::Update};
 use commonware_cryptography::Committable as _;
 use commonware_runtime::{Spawner as _, tokio};
 use commonware_utils::acknowledgement::Acknowledgement as _;
 use kora_domain::Block;
+use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
 use tracing::{error, trace, warn};
 
-use alloy_consensus::Header;
-use alloy_primitives::{Address, B256, Bytes};
 use super::super::ledger::{LedgerService, OverlayState};
-use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
-
 use crate::tx::CHAIN_ID;
 const BLOCK_GAS_LIMIT: u64 = 30_000_000;
 
@@ -45,8 +44,7 @@ async fn handle_finalized_update(
                 };
                 let executor = RevmExecutor::new(CHAIN_ID);
                 let context = block_context(block.height, block.prevrandao);
-                let txs_bytes: Vec<Bytes> =
-                    block.txs.iter().map(|tx| tx.bytes.clone()).collect();
+                let txs_bytes: Vec<Bytes> = block.txs.iter().map(|tx| tx.bytes.clone()).collect();
                 let outcome = match executor.execute(&parent_snapshot.state, &context, &txs_bytes) {
                     Ok(outcome) => outcome,
                     Err(err) => {
@@ -56,10 +54,11 @@ async fn handle_finalized_update(
                     }
                 };
                 let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
-                let state_root = match state.compute_root(parent_digest, outcome.changes.clone()).await {
-                    Ok(root) => root,
-                    Err(err) => {
-                        error!(?digest, error = ?err, "failed to compute qmdb root");
+                let state_root =
+                    match state.compute_root(parent_digest, outcome.changes.clone()).await {
+                        Ok(root) => root,
+                        Err(err) => {
+                            error!(?digest, error = ?err, "failed to compute qmdb root");
                             ack.acknowledge();
                             return;
                         }

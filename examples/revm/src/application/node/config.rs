@@ -62,10 +62,7 @@ pub(crate) fn default_buffer_pool() -> PoolRef {
 
 /// Default block codec configuration for REVM transactions.
 pub(crate) const fn block_codec_cfg() -> BlockCfg {
-    BlockCfg {
-        max_txs: BLOCK_CODEC_MAX_TXS,
-        tx: TxCfg { max_tx_bytes: BLOCK_CODEC_MAX_TX_BYTES },
-    }
+    BlockCfg { max_txs: BLOCK_CODEC_MAX_TXS, tx: TxCfg { max_tx_bytes: BLOCK_CODEC_MAX_TX_BYTES } }
 }
 
 /// Derive deterministic participants and threshold-simplex signing schemes.

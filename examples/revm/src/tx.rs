@@ -1,9 +1,8 @@
 use alloy_consensus::{SignableTransaction as _, TxEip1559, TxEnvelope};
 use alloy_primitives::{Address, Bytes, Signature, TxKind, U256, keccak256};
 use k256::ecdsa::SigningKey;
-use sha3::{Digest as _, Keccak256};
-
 use kora_domain::Tx;
+use sha3::{Digest as _, Keccak256};
 
 pub(crate) const CHAIN_ID: u64 = 1337;
 

@@ -26,11 +26,11 @@ use kora_domain::{
 };
 use kora_traits::StateDbRead;
 use mempool::Mempool;
+pub(crate) use overlay::OverlayState;
 use seed_cache::SeedCache;
 use snapshot_store::{LedgerSnapshot, SnapshotStore};
 
 use crate::qmdb::{QmdbChangeSet, QmdbConfig, QmdbLedger, QmdbState};
-pub(crate) use overlay::OverlayState;
 #[derive(Clone)]
 /// Ledger view that owns the mutexed execution state.
 pub(crate) struct LedgerView {
@@ -324,18 +324,18 @@ mod tests {
     use alloy_consensus::Header;
     use alloy_evm::revm::Database as _;
     use alloy_primitives::{Address, B256, Bytes, U256};
-    use k256::ecdsa::SigningKey;
     use commonware_cryptography::Committable as _;
     use commonware_runtime::{Runner, buffer::PoolRef, tokio};
     use commonware_utils::{NZU16, NZUsize};
+    use k256::ecdsa::SigningKey;
     use kora_domain::{Block, ConsensusDigest, Tx};
+    use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
 
     use super::{LedgerService, LedgerView, OverlayState, snapshot_store::LedgerSnapshot};
     use crate::{
         qmdb::RevmDb,
         tx::{CHAIN_ID, address_from_key, sign_eip1559_transfer},
     };
-    use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
 
     static PARTITION_COUNTER: AtomicUsize = AtomicUsize::new(0);
 

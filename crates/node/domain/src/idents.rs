@@ -101,8 +101,8 @@ mod tests {
     fn test_tx_roundtrip_and_id_stable() {
         let tx = Tx { bytes: Bytes::from(vec![1, 2, 3, 4, 5]) };
         let encoded = tx.encode();
-        let decoded = Tx::decode_cfg(encoded.clone(), &TxCfg { max_tx_bytes: 1024 })
-            .expect("decode tx");
+        let decoded =
+            Tx::decode_cfg(encoded.clone(), &TxCfg { max_tx_bytes: 1024 }).expect("decode tx");
         assert_eq!(tx, decoded);
         assert_eq!(tx.id(), decoded.id());
         assert_eq!(tx.id(), TxId(keccak256(encoded)));
@@ -110,10 +110,7 @@ mod tests {
 
     #[test]
     fn test_block_roundtrip_and_id_stable() {
-        let txs = vec![
-            Tx { bytes: Bytes::new() },
-            Tx { bytes: Bytes::from(vec![9, 9, 9]) },
-        ];
+        let txs = vec![Tx { bytes: Bytes::new() }, Tx { bytes: Bytes::from(vec![9, 9, 9]) }];
         let block = Block {
             parent: BlockId(B256::from([0xAAu8; 32])),
             height: 7,
