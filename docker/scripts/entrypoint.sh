@@ -17,14 +17,14 @@ error() { echo "[entrypoint] ERROR: $*" >&2; exit 1; }
 case "$MODE" in
     setup)
         log "Running setup mode..."
-        exec /usr/local/bin/keygen "$@"
+        exec /usr/local/bin/keygen setup "$@"
         ;;
         
     dkg)
         log "Running DKG ceremony mode..."
         
         [[ -f "${SHARED_DIR}/peers.json" ]] || error "peers.json not found"
-        [[ -f "${DATA_DIR}/identity.key" ]] || error "identity.key not found"
+        [[ -f "${DATA_DIR}/validator.key" ]] || error "validator.key not found"
         
         if [[ -f "${DATA_DIR}/share.key" && -f "${DATA_DIR}/output.json" ]]; then
             log "DKG already completed (share.key exists)"
@@ -56,7 +56,7 @@ case "$MODE" in
         log "Running validator mode..."
         
         [[ -f "${SHARED_DIR}/genesis.json" ]] || error "genesis.json not found"
-        [[ -f "${DATA_DIR}/identity.key" ]] || error "identity.key not found"
+        [[ -f "${DATA_DIR}/validator.key" ]] || error "validator.key not found"
         [[ -f "${DATA_DIR}/share.key" ]] || error "share.key not found (run DKG first)"
         [[ -f "${DATA_DIR}/output.json" ]] || error "output.json not found (run DKG first)"
         

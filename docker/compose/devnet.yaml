@@ -38,12 +38,24 @@ x-validator-common: &validator-common
 services:
   init-config:
     <<: *node-common
-    entrypoint: ["/scripts/entrypoint.sh", "setup"]
+    user: root
+    entrypoint: ["/bin/bash", "-c"]
     command:
-      - --validators=4
-      - --threshold=3
-      - --chain-id=${CHAIN_ID:-1337}
-      - --output-dir=/shared
+      - |
+        echo "[init] Running keygen setup..." && \
+        /usr/local/bin/keygen setup \
+          --validators=4 \
+          --threshold=3 \
+          --chain-id=${CHAIN_ID:-1337} \
+          --output-dir=/shared && \
+        echo "[init] Running trusted dealer DKG..." && \
+        /usr/local/bin/keygen dkg-deal \
+          --validators=4 \
+          --threshold=3 \
+          --output-dir=/shared && \
+        echo "[init] Setting permissions..." && \
+        chown -R 1000:1000 /shared/node0 /shared/node1 /shared/node2 /shared/node3 && \
+        echo "[init] Init complete"
     volumes:
       - shared_config:/shared
       - data_node0:/shared/node0
@@ -53,6 +65,7 @@ services:
 
   dkg-node0:
     <<: *node-common
+    profiles: ["distributed-dkg"]
     hostname: node0
     depends_on:
       init-config:
@@ -78,6 +91,7 @@ services:
 
   dkg-node1:
     <<: *node-common
+    profiles: ["distributed-dkg"]
     hostname: node1
     depends_on:
       init-config:
@@ -106,6 +120,7 @@ services:
 
   dkg-node2:
     <<: *node-common
+    profiles: ["distributed-dkg"]
     hostname: node2
     depends_on:
       init-config:
@@ -134,6 +149,7 @@ services:
 
   dkg-node3:
     <<: *node-common
+    profiles: ["distributed-dkg"]
     hostname: node3
     depends_on:
       init-config:
@@ -164,14 +180,8 @@ services:
     <<: *validator-common
     hostname: node0
     depends_on:
-      dkg-node0:
-        condition: service_healthy
-      dkg-node1:
-        condition: service_healthy
-      dkg-node2:
-        condition: service_healthy
-      dkg-node3:
-        condition: service_healthy
+      init-config:
+        condition: service_completed_successfully
     entrypoint: ["/scripts/entrypoint.sh", "validator"]
     volumes:
       - shared_config:/shared:ro
@@ -191,6 +201,8 @@ services:
     <<: *validator-common
     hostname: node1
     depends_on:
+      init-config:
+        condition: service_completed_successfully
       validator-node0:
         condition: service_healthy
     entrypoint: ["/scripts/entrypoint.sh", "validator"]
@@ -213,6 +225,8 @@ services:
     <<: *validator-common
     hostname: node2
     depends_on:
+      init-config:
+        condition: service_completed_successfully
       validator-node0:
         condition: service_healthy
     entrypoint: ["/scripts/entrypoint.sh", "validator"]
@@ -235,6 +249,8 @@ services:
     <<: *validator-common
     hostname: node3
     depends_on:
+      init-config:
+        condition: service_completed_successfully
       validator-node0:
         condition: service_healthy
     entrypoint: ["/scripts/entrypoint.sh", "validator"]

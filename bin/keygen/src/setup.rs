@@ -73,7 +73,7 @@ pub fn run(args: SetupArgs) -> Result<()> {
         fs::create_dir_all(&node_dir)
             .wrap_err_with(|| format!("Failed to create node{} dir", i))?;
 
-        let key_path = node_dir.join("identity.key");
+        let key_path = node_dir.join("validator.key");
         let key = if key_path.exists() {
             tracing::info!(node = i, "Loading existing identity key");
             let bytes = fs::read(&key_path)?;

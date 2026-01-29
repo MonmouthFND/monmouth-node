@@ -4,6 +4,7 @@ use clap::Parser;
 use eyre::Result;
 use tracing_subscriber::{EnvFilter, fmt};
 
+mod dkg_deal;
 mod setup;
 
 #[derive(Parser, Debug)]
@@ -16,7 +17,10 @@ struct Cli {
 
 #[derive(clap::Subcommand, Debug)]
 enum Commands {
+    /// Generate validator identity keys and network configuration
     Setup(setup::SetupArgs),
+    /// Generate BLS threshold shares using trusted dealer (devnet only)
+    DkgDeal(dkg_deal::DkgDealArgs),
 }
 
 fn main() -> Result<()> {
@@ -26,5 +30,6 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Setup(args) => setup::run(args),
+        Commands::DkgDeal(args) => dkg_deal::run(args),
     }
 }
