@@ -4,11 +4,7 @@
 //! - a marshal instance (block dissemination, backfill, and finalized block delivery), and
 //! - a threshold-simplex engine instance that orders opaque digests.
 
-mod config;
-mod env;
-mod marshal;
-mod start;
+pub(crate) mod config;
+pub(crate) mod marshal;
 
 pub(crate) use config::{ThresholdScheme, threshold_schemes};
-pub(crate) use env::{NodeEnvironment, TransportControl};
-pub(crate) use start::start_node;

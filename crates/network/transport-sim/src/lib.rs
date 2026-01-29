@@ -14,5 +14,6 @@ pub use error::SimTransportError;
 
 mod provider;
 pub use provider::{
-    SimChannels, SimControl, SimLinkConfig, create_sim_network, register_node_channels,
+    SimChannels, SimControl, SimLinkConfig, SimTransportProvider, create_sim_network,
+    register_node_channels,
 };

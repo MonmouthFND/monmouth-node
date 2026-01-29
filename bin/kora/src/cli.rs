@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use kora_config::NodeConfig;
-use kora_service::KoraNodeService;
+use kora_service::LegacyNodeService;
 
 /// CLI arguments for the kora node.
 #[derive(Parser, Debug)]
@@ -51,6 +51,6 @@ impl Cli {
         tracing::info!(chain_id = config.chain_id, "Loaded configuration");
         tracing::debug!(?config, "Full configuration");
 
-        KoraNodeService::new(config).run()
+        LegacyNodeService::new(config).run()
     }
 }

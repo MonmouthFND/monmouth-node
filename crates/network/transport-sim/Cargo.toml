@@ -11,6 +11,8 @@ description = "Simulated P2P transport for Kora node testing and development."
 workspace = true
 
 [dependencies]
+kora-config.workspace = true
+kora-service.workspace = true
 kora-transport.workspace = true
 
 commonware-p2p.workspace = true

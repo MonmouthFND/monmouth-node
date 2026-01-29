@@ -9,9 +9,7 @@ use kora_domain::{ConsensusDigest, StateRoot, Tx};
 use kora_ledger::LedgerService;
 
 #[derive(Clone)]
-/// Handle that exposes application queries and submissions to the simulation harness.
 pub(crate) struct NodeHandle {
-    /// Ledger service used by the simulation harness.
     state: LedgerService,
 }
 

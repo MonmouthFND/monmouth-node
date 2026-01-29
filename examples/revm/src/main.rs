@@ -3,13 +3,16 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-mod application;
+mod app;
 mod chain;
 mod cli;
 mod config;
 mod demo;
-mod environment;
+mod handle;
+mod node;
+mod observers;
 mod outcome;
+mod runner;
 mod simulation;
 
 fn main() {

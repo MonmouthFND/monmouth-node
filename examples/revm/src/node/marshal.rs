@@ -39,33 +39,21 @@ impl From<ThresholdScheme> for ConstantSchemeProvider {
     }
 }
 
-pub(super) struct MarshalStart<M, R> {
-    /// Node index used for naming partitions/metrics.
-    pub(super) index: usize,
-    /// Base prefix used for marshal partitions.
-    pub(super) partition_prefix: String,
-    /// Node identity key used for network links.
-    pub(super) public_key: Peer,
-    /// Control channel used to register and rate-limit transport channels.
-    pub(super) control: simulated::Control<Peer, SimContext>,
-    /// P2P manager holding the transport/peering state.
-    pub(super) manager: M,
-    /// Threshold signing scheme for this node.
-    pub(super) scheme: ThresholdScheme,
-    /// Buffer pool that backs all storage archives.
-    pub(super) buffer_pool: PoolRef,
-    /// Codec settings for block serialization.
-    pub(super) block_codec_config: BlockCfg,
-    /// Channels used for block broadcasts.
-    pub(super) blocks: (ChannelSender, ChannelReceiver),
-    /// Channels used for marshal backfill requests/responses.
-    pub(super) backfill: (ChannelSender, ChannelReceiver),
-    /// Application-level reporter that observes finalized blocks.
-    pub(super) application: R,
+pub(crate) struct MarshalStart<M, R> {
+    pub(crate) index: usize,
+    pub(crate) partition_prefix: String,
+    pub(crate) public_key: Peer,
+    pub(crate) control: simulated::Control<Peer, SimContext>,
+    pub(crate) manager: M,
+    pub(crate) scheme: ThresholdScheme,
+    pub(crate) buffer_pool: PoolRef,
+    pub(crate) block_codec_config: BlockCfg,
+    pub(crate) blocks: (ChannelSender, ChannelReceiver),
+    pub(crate) backfill: (ChannelSender, ChannelReceiver),
+    pub(crate) application: R,
 }
 
-/// Wire up the marshal actor for block dissemination/backfill and finalized reporting.
-pub(super) async fn start_marshal<M, R>(
+pub(crate) async fn start_marshal<M, R>(
     context: &tokio::Context,
     start: MarshalStart<M, R>,
 ) -> anyhow::Result<marshal::Mailbox<ThresholdScheme, Block>>

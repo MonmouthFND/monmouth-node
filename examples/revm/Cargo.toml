@@ -16,12 +16,14 @@ bench = false
 
 [dependencies]
 # Workspace
+kora-config.workspace = true
 kora-domain = { workspace = true, features = ["evm"] }
 kora-consensus.workspace = true
 kora-executor.workspace = true
 kora-ledger.workspace = true
 kora-overlay.workspace = true
 kora-reporters.workspace = true
+kora-service.workspace = true
 kora-simplex.workspace = true
 kora-sys.workspace = true
 kora-transport-sim.workspace = true

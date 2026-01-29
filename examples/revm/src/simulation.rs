@@ -4,6 +4,7 @@
 //! The harness waits for a fixed number of finalized blocks and asserts all nodes converge on the
 //! same head, state commitment, and balances.
 
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use alloy_evm::revm::primitives::B256;
@@ -13,25 +14,23 @@ use commonware_p2p::{Manager as _, simulated};
 use commonware_runtime::{Metrics as _, Runner as _, tokio};
 use commonware_utils::{TryCollect as _, ordered::Set};
 use futures::{StreamExt as _, channel::mpsc};
+use kora_config::NodeConfig;
 use kora_domain::{BootstrapConfig, ConsensusDigest, FinalizationEvent, StateRoot};
+use kora_service::KoraNodeService;
 use kora_sys::FileLimitHandler;
-
-use kora_transport_sim::SimContext;
+use kora_transport_sim::{SimContext, SimControl, SimTransportProvider};
 
 use crate::{
-    application::{ThresholdScheme, start_node, threshold_schemes},
     config::SimConfig,
-    environment::{SimEnvironment, SimTransport},
+    handle::NodeHandle,
+    node::{ThresholdScheme, threshold_schemes},
     outcome::SimOutcome,
+    runner::RevmNodeRunner,
 };
 
-/// Maximum size (bytes) of a single simulated network message.
-pub(super) const MAX_MSG_SIZE: usize = 1024 * 1024;
-/// Fixed latency (milliseconds) for simulated P2P links.
-pub(super) const P2P_LINK_LATENCY_MS: u64 = 5;
+const MAX_MSG_SIZE: usize = 1024 * 1024;
+const P2P_LINK_LATENCY_MS: u64 = 5;
 
-type NodeHandle = crate::application::NodeHandle;
-/// Run the multi-node simulation and return the final outcome.
 pub(crate) fn simulate(cfg: SimConfig) -> anyhow::Result<SimOutcome> {
     FileLimitHandler::new().raise();
     // Tokio runtime required for WrapDatabaseAsync in the QMDB adapter.
@@ -43,14 +42,22 @@ async fn run_sim(context: tokio::Context, cfg: SimConfig) -> anyhow::Result<SimO
     let (participants_vec, schemes) = threshold_schemes(cfg.seed, cfg.nodes)?;
     let participants_set = participants_set(&participants_vec)?;
 
-    let mut transport = start_network(&context, participants_set).await;
-    connect_all_peers(&mut transport, &participants_vec).await?;
+    let sim_control = start_network(&context, participants_set).await;
+    let sim_control = Arc::new(Mutex::new(sim_control));
+
+    connect_all_peers(&sim_control, &participants_vec).await?;
 
     let demo = crate::demo::DemoTransfer::new();
     let bootstrap = BootstrapConfig::new(demo.alloc.clone(), vec![demo.tx.clone()]);
 
-    let (nodes, mut finalized_rx) =
-        start_all_nodes(&context, &mut transport, &participants_vec, &schemes, &bootstrap).await?;
+    let (nodes, mut finalized_rx) = start_all_nodes(
+        &context,
+        &sim_control,
+        &participants_vec,
+        &schemes,
+        &bootstrap,
+    )
+    .await?;
 
     let head = wait_for_finalized_head(&mut finalized_rx, cfg.nodes, cfg.blocks).await?;
     let (state_root, seed) = assert_all_nodes_converged(&nodes, head, &demo).await?;
@@ -64,29 +71,47 @@ async fn run_sim(context: tokio::Context, cfg: SimConfig) -> anyhow::Result<SimO
     })
 }
 
-/// Spawn all nodes (application + consensus) for a simulation run.
 async fn start_all_nodes(
     context: &tokio::Context,
-    transport: &mut SimTransport,
+    sim_control: &Arc<Mutex<SimControl<ed25519::PublicKey>>>,
     participants: &[ed25519::PublicKey],
     schemes: &[ThresholdScheme],
     bootstrap: &BootstrapConfig,
 ) -> anyhow::Result<(Vec<NodeHandle>, mpsc::UnboundedReceiver<FinalizationEvent>)> {
     let (finalized_tx, finalized_rx) = mpsc::unbounded::<FinalizationEvent>();
     let mut nodes = Vec::with_capacity(participants.len());
-    let mut env = SimEnvironment::new(context.clone(), transport);
+
+    let manager = {
+        let control = sim_control.lock().map_err(|_| anyhow::anyhow!("lock poisoned"))?;
+        control.manager()
+    };
 
     for (i, pk) in participants.iter().cloned().enumerate() {
-        let handle =
-            start_node(&mut env, i, pk, schemes[i].clone(), finalized_tx.clone(), bootstrap)
-                .await?;
+        let runner = RevmNodeRunner {
+            index: i,
+            public_key: pk.clone(),
+            scheme: schemes[i].clone(),
+            bootstrap: bootstrap.clone(),
+            finalized_tx: finalized_tx.clone(),
+            manager: manager.clone(),
+        };
+
+        let transport_provider =
+            SimTransportProvider::new(Arc::clone(sim_control), pk.clone());
+
+        let node_config = NodeConfig::default();
+
+        let service = KoraNodeService::new(runner, transport_provider, node_config);
+        let handle = service
+            .run_with_context(context.clone())
+            .await
+            .map_err(|e| anyhow::anyhow!("{}", e))?;
         nodes.push(handle);
     }
 
     Ok((nodes, finalized_rx))
 }
 
-/// Ensure the provided round-robin identity list is unique for the simulation.
 fn participants_set(
     participants: &[ed25519::PublicKey],
 ) -> anyhow::Result<Set<ed25519::PublicKey>> {
@@ -97,12 +122,11 @@ fn participants_set(
         .map_err(|_| anyhow::anyhow!("participant public keys are not unique"))
 }
 
-/// Boot the simulated p2p network and register the participant set.
 async fn start_network(
     context: &tokio::Context,
     participants: Set<ed25519::PublicKey>,
-) -> SimTransport {
-    let (network, transport) = simulated::Network::new(
+) -> SimControl<ed25519::PublicKey> {
+    let (network, oracle) = simulated::Network::new(
         SimContext::new(context.with_label("network")),
         simulated::Config {
             max_size: MAX_MSG_SIZE as u32,
@@ -112,21 +136,22 @@ async fn start_network(
     );
     network.start();
 
-    transport.manager().update(0, participants).await;
-    transport
+    let control = SimControl::new(oracle);
+    control.manager().update(0, participants).await;
+    control
 }
 
-/// Connect all peers in a full mesh with fixed links.
 async fn connect_all_peers(
-    transport: &mut SimTransport,
+    sim_control: &Arc<Mutex<SimControl<ed25519::PublicKey>>>,
     peers: &[ed25519::PublicKey],
 ) -> anyhow::Result<()> {
+    let mut control = sim_control.lock().map_err(|_| anyhow::anyhow!("lock poisoned"))?;
     for a in peers.iter() {
         for b in peers.iter() {
             if a == b {
                 continue;
             }
-            transport
+            control
                 .add_link(
                     a.clone(),
                     b.clone(),
@@ -143,7 +168,6 @@ async fn connect_all_peers(
     Ok(())
 }
 
-/// Wait until each node has observed `blocks` finalizations and return the common head digest.
 async fn wait_for_finalized_head(
     finalized_rx: &mut mpsc::UnboundedReceiver<FinalizationEvent>,
     nodes: usize,
@@ -182,7 +206,6 @@ async fn wait_for_finalized_head(
     Ok(head)
 }
 
-/// Query each node's application store at `head` and assert they all agree on the outcome.
 async fn assert_all_nodes_converged(
     nodes: &[NodeHandle],
     head: ConsensusDigest,

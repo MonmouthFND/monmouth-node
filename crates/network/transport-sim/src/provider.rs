@@ -1,15 +1,19 @@
 //! Simulated transport provider implementation.
 
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use commonware_cryptography::PublicKey;
 use commonware_p2p::{Manager as _, simulated};
-use commonware_runtime::Quota;
+use commonware_runtime::{Quota, tokio};
+use kora_config::NodeConfig;
+use kora_service::TransportProvider;
+use kora_transport::{
+    CHANNEL_BACKFILL, CHANNEL_BLOCKS, CHANNEL_CERTS, CHANNEL_RESOLVER, CHANNEL_VOTES,
+};
 
-use kora_transport::{CHANNEL_BACKFILL, CHANNEL_BLOCKS, CHANNEL_CERTS, CHANNEL_RESOLVER, CHANNEL_VOTES};
-
-use crate::{SimContext, SimTransportError};
 use crate::channels::{SimMarshalChannels, SimSimplexChannels};
+use crate::{SimContext, SimTransportError};
 
 /// Configuration for simulated network links.
 #[derive(Debug, Clone)]
@@ -124,11 +128,43 @@ pub fn create_sim_network<P: PublicKey>(
     max_size: u32,
     disconnect_on_block: bool,
 ) -> SimControl<P> {
-    let config =
-        simulated::Config { max_size, disconnect_on_block, tracked_peer_sets: None };
+    let config = simulated::Config { max_size, disconnect_on_block, tracked_peer_sets: None };
 
     let (network, oracle) = simulated::Network::new(context, config);
     network.start();
 
     SimControl::new(oracle)
+}
+
+/// Transport provider for simulated networks.
+///
+/// Wraps a shared `SimControl` and provides per-node transport handles.
+/// Multiple nodes can share the same oracle for in-process simulation.
+#[allow(missing_debug_implementations)]
+pub struct SimTransportProvider<P: PublicKey> {
+    oracle: Arc<Mutex<SimControl<P>>>,
+    peer_id: P,
+}
+
+impl<P: PublicKey> SimTransportProvider<P> {
+    /// Create a new provider for a specific peer.
+    pub fn new(oracle: Arc<Mutex<SimControl<P>>>, peer_id: P) -> Self {
+        Self { oracle, peer_id }
+    }
+}
+
+impl<P: PublicKey> TransportProvider for SimTransportProvider<P> {
+    type Transport = simulated::Control<P, SimContext>;
+    type Error = SimTransportError;
+
+    async fn build_transport(
+        &mut self,
+        _context: &tokio::Context,
+        _config: &NodeConfig,
+    ) -> Result<Self::Transport, Self::Error> {
+        let oracle = self.oracle.lock().map_err(|_| {
+            SimTransportError::ChannelRegistration("oracle lock poisoned".to_string())
+        })?;
+        Ok(oracle.peer_control(self.peer_id.clone()))
+    }
 }
