@@ -44,3 +44,27 @@ deny:
 # Clean build artifacts
 clean:
     cargo clean
+
+# Start the devnet with interactive DKG
+devnet:
+    cd docker && just devnet
+
+# Stop the devnet
+devnet-down:
+    cd docker && just down
+
+# Reset devnet (clears all state, requires fresh DKG)
+devnet-reset:
+    cd docker && just reset
+
+# View devnet logs
+devnet-logs:
+    cd docker && just logs
+
+# View devnet status
+devnet-status:
+    cd docker && just status
+
+# Build docker images
+docker-build:
+    cd docker && just build
