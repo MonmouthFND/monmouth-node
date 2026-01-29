@@ -31,6 +31,25 @@ format_uptime() {
     else printf "%ds" $s; fi
 }
 
+# Fetch all node statuses in parallel
+fetch_all_statuses() {
+    local tmpdir=$(mktemp -d)
+    
+    # Launch parallel fetches
+    for i in 0 1 2 3; do
+        (curl -s --max-time 0.2 "http://localhost:${RPC_PORTS[$i]}/status" 2>/dev/null > "$tmpdir/$i" || echo "{}" > "$tmpdir/$i") &
+    done
+    wait
+    
+    # Read results
+    for i in 0 1 2 3; do
+        cat "$tmpdir/$i"
+        echo  # newline separator
+    done
+    
+    rm -rf "$tmpdir"
+}
+
 render() {
     tput cup 0 0
     local now=$(date "+%H:%M:%S")
@@ -51,39 +70,45 @@ render() {
     local total_finalized=0
     local max_view=0
     
-    for i in 0 1 2 3; do
-        local port=${RPC_PORTS[$i]}
-        local status=$(curl -s --max-time 0.3 "http://localhost:$port/status" 2>/dev/null)
-        
+    # Fetch all statuses in parallel
+    local all_status
+    all_status=$(fetch_all_statuses)
+    
+    local i=0
+    while IFS= read -r status; do
         if [[ -n "$status" && "$status" != "{}" ]]; then
-            local uptime=$(echo "$status" | grep -o '"uptime_secs":[0-9]*' | cut -d: -f2)
-            local view=$(echo "$status" | grep -o '"current_view":[0-9]*' | cut -d: -f2)
-            local finalized=$(echo "$status" | grep -o '"finalized_count":[0-9]*' | cut -d: -f2)
-            local nullified=$(echo "$status" | grep -o '"nullified_count":[0-9]*' | cut -d: -f2)
-            local proposed=$(echo "$status" | grep -o '"proposed_count":[0-9]*' | cut -d: -f2)
-            local leader=$(echo "$status" | grep -o '"is_leader":[a-z]*' | cut -d: -f2)
+            # Parse with single jq call
+            local parsed
+            parsed=$(echo "$status" | jq -r '[.uptime_secs // 0, .current_view // 0, .finalized_count // 0, .nullified_count // 0, .proposed_count // 0, .is_leader // false] | @tsv' 2>/dev/null)
             
-            uptime="${uptime:-0}"
-            view="${view:-0}"
-            finalized="${finalized:-0}"
-            nullified="${nullified:-0}"
-            proposed="${proposed:-0}"
-            
-            [[ $uptime -gt $max_uptime ]] && max_uptime=$uptime
-            [[ $view -gt $max_view ]] && max_view=$view
-            total_finalized=$finalized
-            ((healthy_count++))
-            
-            local uptime_str=$(format_uptime "$uptime")
-            local leader_str="-"
-            [[ "$leader" == "true" ]] && leader_str="${MAGENTA}★${NC}"
-            
-            printf "│ ${CYAN}%-5s${NC} │ ${GREEN}online${NC}   │ %-10s │ %-8s │ %-10s │ %-10s │ %-10s │   %b    │\n" \
-                "$i" "$uptime_str" "$view" "$finalized" "$nullified" "$proposed" "$leader_str"
+            if [[ -n "$parsed" ]]; then
+                read -r uptime view finalized nullified proposed leader <<< "$parsed"
+                
+                uptime="${uptime:-0}"
+                view="${view:-0}"
+                finalized="${finalized:-0}"
+                nullified="${nullified:-0}"
+                proposed="${proposed:-0}"
+                
+                [[ $uptime -gt $max_uptime ]] && max_uptime=$uptime
+                [[ $view -gt $max_view ]] && max_view=$view
+                total_finalized=$finalized
+                ((healthy_count++))
+                
+                local uptime_str=$(format_uptime "$uptime")
+                local leader_str="-"
+                [[ "$leader" == "true" ]] && leader_str="${MAGENTA}★${NC}"
+                
+                printf "│ ${CYAN}%-5s${NC} │ ${GREEN}online${NC}   │ %-10s │ %-8s │ %-10s │ %-10s │ %-10s │   %b    │\n" \
+                    "$i" "$uptime_str" "$view" "$finalized" "$nullified" "$proposed" "$leader_str"
+            else
+                printf "│ ${CYAN}%-5s${NC} │ ${RED}offline${NC}  │ -          │ -        │ -          │ -          │ -          │   -    │\n" "$i"
+            fi
         else
             printf "│ ${CYAN}%-5s${NC} │ ${RED}offline${NC}  │ -          │ -        │ -          │ -          │ -          │   -    │\n" "$i"
         fi
-    done
+        ((i++))
+    done <<< "$all_status"
     
     echo -e "└───────┴──────────┴────────────┴──────────┴────────────┴────────────┴────────────┴────────┘"
     
@@ -119,7 +144,7 @@ clear
 tput civis
 
 echo -e "${DIM}Connecting to RPC endpoints...${NC}"
-sleep 0.3
+sleep 0.2
 
 render
 

@@ -264,8 +264,25 @@ where
         mut ancestry: AncestorStream<Self::SigningScheme, Self::Block>,
     ) -> impl std::future::Future<Output = Option<Self::Block>> + Send {
         async move {
+            let start = Instant::now();
             let parent = ancestry.next().await?;
-            self.build_block(&parent).await
+            let ancestry_elapsed = start.elapsed();
+            
+            let build_start = Instant::now();
+            let block = self.build_block(&parent).await;
+            let build_elapsed = build_start.elapsed();
+            
+            if let Some(ref b) = block {
+                info!(
+                    height = b.height,
+                    ancestry_ms = ancestry_elapsed.as_millis(),
+                    build_ms = build_elapsed.as_millis(),
+                    total_ms = start.elapsed().as_millis(),
+                    "propose complete"
+                );
+            }
+            
+            block
         }
     }
 }
@@ -282,25 +299,49 @@ where
         mut ancestry: AncestorStream<Self::SigningScheme, Self::Block>,
     ) -> impl std::future::Future<Output = bool> + Send {
         async move {
-            // Collect all available ancestry blocks from the stream.
-            // The stream yields tip-first (newest → oldest), so we reverse
-            // to verify in parent-first order, ensuring each block's parent
-            // snapshot exists before we attempt to verify it.
-            let mut blocks = Vec::new();
+            let start = Instant::now();
+
+            // The ancestry stream yields tip-first (newest → oldest).
+            // We only need to verify blocks that we haven't seen yet.
+            // Collect blocks until we hit one we've already verified.
+            let mut blocks_to_verify = Vec::new();
             while let Some(block) = ancestry.next().await {
-                blocks.push(block);
+                let digest = block.commitment();
+                // Stop if we've already verified this block
+                if self.ledger.query_state_root(digest).await.is_some() {
+                    break;
+                }
+                blocks_to_verify.push(block);
+            }
+            let ancestry_elapsed = start.elapsed();
+
+            if blocks_to_verify.is_empty() {
+                // All blocks already verified
+                trace!(ancestry_ms = ancestry_elapsed.as_millis(), "all blocks already verified");
+                return true;
             }
 
-            if blocks.is_empty() {
-                return false;
-            }
+            let block_count = blocks_to_verify.len();
+            let tip_height = blocks_to_verify.first().map(|b| b.height).unwrap_or(0);
 
             // Verify from oldest (parent) to newest (tip)
-            for block in blocks.into_iter().rev() {
+            let verify_start = Instant::now();
+            for block in blocks_to_verify.into_iter().rev() {
                 if !self.verify_block(&block).await {
                     return false;
                 }
             }
+            let verify_elapsed = verify_start.elapsed();
+            let total_elapsed = start.elapsed();
+
+            info!(
+                tip_height,
+                block_count,
+                ancestry_ms = ancestry_elapsed.as_millis(),
+                verify_ms = verify_elapsed.as_millis(),
+                total_ms = total_elapsed.as_millis(),
+                "verify complete"
+            );
 
             true
         }
