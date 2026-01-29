@@ -19,7 +19,8 @@ use kora_ledger::LedgerService;
 use kora_overlay::OverlayState;
 use kora_qmdb_ledger::QmdbState;
 use rand::Rng;
-use tracing::{debug, trace, warn};
+use std::time::Instant;
+use tracing::{debug, info, trace, warn};
 
 #[derive(Clone)]
 pub struct RevmApplication<S, E> {
@@ -72,8 +73,11 @@ where
     async fn build_block(&self, parent: &Block) -> Option<Block> {
         use kora_consensus::Mempool as _;
         
+        let start = Instant::now();
         let parent_digest = parent.commitment();
         let parent_snapshot = self.ledger.parent_snapshot(parent_digest).await?;
+        let snapshot_elapsed = start.elapsed();
+
         let (_, mempool, snapshots) = self.ledger.proposal_components().await;
         let excluded = self.collect_pending_tx_ids(&snapshots, parent_digest);
         let txs = mempool.build(self.max_txs, &excluded);
@@ -83,16 +87,20 @@ where
         let context = self.block_context(height, prevrandao);
         let txs_bytes: Vec<Bytes> = txs.iter().map(|tx| tx.bytes.clone()).collect();
 
+        let exec_start = Instant::now();
         let outcome = self
             .executor
             .execute(&parent_snapshot.state, &context, &txs_bytes)
             .ok()?;
+        let exec_elapsed = exec_start.elapsed();
 
+        let root_start = Instant::now();
         let state_root = self
             .ledger
             .compute_root_from_store(parent_digest, outcome.changes.clone())
             .await
             .ok()?;
+        let root_elapsed = root_start.elapsed();
 
         let block = Block {
             parent: parent.id(),
@@ -117,11 +125,22 @@ where
             )
             .await;
 
-        trace!(?block_digest, height, "built block");
+        let total_elapsed = start.elapsed();
+        info!(
+            ?block_digest,
+            height,
+            txs = block.txs.len(),
+            snapshot_ms = snapshot_elapsed.as_millis(),
+            exec_ms = exec_elapsed.as_millis(),
+            root_ms = root_elapsed.as_millis(),
+            total_ms = total_elapsed.as_millis(),
+            "built block"
+        );
         Some(block)
     }
 
     async fn verify_block(&self, block: &Block) -> bool {
+        let start = Instant::now();
         let digest = block.commitment();
         let parent_digest = block.parent();
 
@@ -131,11 +150,13 @@ where
         }
 
         let Some(parent_snapshot) = self.ledger.parent_snapshot(parent_digest).await else {
-            warn!(?digest, ?parent_digest, "missing parent snapshot");
+            warn!(?digest, ?parent_digest, height = block.height, "missing parent snapshot");
             return false;
         };
+        let snapshot_elapsed = start.elapsed();
 
         let context = self.block_context(block.height, block.prevrandao);
+        let exec_start = Instant::now();
         let execution =
             match BlockExecution::execute(&parent_snapshot, &self.executor, &context, &block.txs)
                 .await
@@ -146,7 +167,9 @@ where
                     return false;
                 }
             };
+        let exec_elapsed = exec_start.elapsed();
 
+        let root_start = Instant::now();
         let state_root = match self
             .ledger
             .compute_root_from_store(parent_digest, execution.outcome.changes.clone())
@@ -158,6 +181,7 @@ where
                 return false;
             }
         };
+        let root_elapsed = root_start.elapsed();
 
         if state_root != block.state_root {
             warn!(
@@ -183,7 +207,17 @@ where
             )
             .await;
 
-        debug!(?digest, "block verified");
+        let total_elapsed = start.elapsed();
+        info!(
+            ?digest,
+            height = block.height,
+            txs = block.txs.len(),
+            snapshot_ms = snapshot_elapsed.as_millis(),
+            exec_ms = exec_elapsed.as_millis(),
+            root_ms = root_elapsed.as_millis(),
+            total_ms = total_elapsed.as_millis(),
+            "verified block"
+        );
         true
     }
 

@@ -19,7 +19,7 @@ use kora_domain::{Block, BlockCfg, BootstrapConfig, ConsensusDigest, LedgerEvent
 use kora_executor::{BlockContext, RevmExecutor};
 use kora_ledger::{LedgerService, LedgerView};
 use kora_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
-use kora_reporters::{BlockContextProvider, FinalizedReporter, SeedReporter};
+use kora_reporters::{BlockContextProvider, FinalizedReporter, NodeStateReporter, SeedReporter};
 use kora_service::{NodeRunContext, NodeRunner};
 use kora_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool};
 use kora_transport::NetworkTransport;
@@ -34,6 +34,8 @@ const PARTITION_PREFIX: &str = "kora";
 
 type Peer = ed25519::PublicKey;
 type CertArchive = Finalization<ThresholdScheme, ConsensusDigest>;
+type MarshalMailbox = commonware_consensus::marshal::Mailbox<ThresholdScheme, Block>;
+type NodeStateRptr = NodeStateReporter<ThresholdScheme>;
 
 fn default_buffer_pool() -> PoolRef {
     DefaultPool::init()
@@ -110,6 +112,7 @@ pub struct ProductionRunner {
     pub gas_limit: u64,
     pub bootstrap: BootstrapConfig,
     pub partition_prefix: String,
+    pub rpc_config: Option<(kora_rpc::NodeState, std::net::SocketAddr)>,
 }
 
 impl ProductionRunner {
@@ -125,7 +128,13 @@ impl ProductionRunner {
             gas_limit,
             bootstrap,
             partition_prefix: PARTITION_PREFIX.to_string(),
+            rpc_config: None,
         }
+    }
+
+    pub fn with_rpc(mut self, state: kora_rpc::NodeState, addr: std::net::SocketAddr) -> Self {
+        self.rpc_config = Some((state, addr));
+        self
     }
 }
 
@@ -134,8 +143,16 @@ impl ProductionRunner {
         use commonware_runtime::Runner;
         use kora_transport::NetworkConfigExt;
 
+        let rpc_config = self.rpc_config.clone();
+
         let executor = tokio::Runner::default();
         executor.start(|context| async move {
+            // Start RPC server if configured
+            if let Some((state, addr)) = rpc_config {
+                let rpc = kora_rpc::RpcServer::new(state, addr);
+                let _ = rpc.start();
+            }
+
             let validator_key = config
                 .validator_key()
                 .map_err(|e| anyhow::anyhow!("failed to load validator key: {}", e))?;
@@ -259,7 +276,13 @@ impl NodeRunner for ProductionRunner {
         );
 
         let seed_reporter = SeedReporter::<MinSig>::new(ledger.clone());
-        let reporter = Reporters::from((seed_reporter, marshal_mailbox.clone()));
+        let node_state_reporter = self
+            .rpc_config
+            .as_ref()
+            .map(|(state, _)| NodeStateReporter::<ThresholdScheme>::new(state.clone()));
+        let inner_reporters: Reporters<_, MarshalMailbox, Option<NodeStateRptr>> =
+            Reporters::from((marshal_mailbox.clone(), node_state_reporter));
+        let reporter = Reporters::from((seed_reporter, inner_reporters));
 
         for tx in &self.bootstrap.bootstrap_txs {
             let _ = ledger.submit_tx(tx.clone()).await;
@@ -280,10 +303,10 @@ impl NodeRunner for ProductionRunner {
                 epoch: Epoch::zero(),
                 replay_buffer: NZUsize!(1024 * 1024),
                 write_buffer: NZUsize!(1024 * 1024),
-                leader_timeout: Duration::from_secs(1),
-                notarization_timeout: Duration::from_secs(2),
+                leader_timeout: Duration::from_secs(3),
+                notarization_timeout: Duration::from_secs(6),
                 nullify_retry: Duration::from_secs(5),
-                fetch_timeout: Duration::from_secs(1),
+                fetch_timeout: Duration::from_secs(3),
                 activity_timeout: ViewDelta::new(20),
                 skip_timeout: ViewDelta::new(10),
                 fetch_concurrent: 8,

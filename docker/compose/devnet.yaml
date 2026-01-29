@@ -194,7 +194,7 @@ services:
       - HEALTHCHECK_MODE=ready
     ports:
       - "30400:30303"
-      - "8540:8545"
+      - "8545:8545"
       - "9000:9002"
 
   validator-node1:
@@ -218,7 +218,7 @@ services:
       - HEALTHCHECK_MODE=ready
     ports:
       - "30401:30303"
-      - "8541:8545"
+      - "8546:8546"
       - "9001:9002"
 
   validator-node2:
@@ -242,7 +242,7 @@ services:
       - HEALTHCHECK_MODE=ready
     ports:
       - "30402:30303"
-      - "8542:8545"
+      - "8547:8547"
       - "9002:9002"
 
   validator-node3:
@@ -266,7 +266,7 @@ services:
       - HEALTHCHECK_MODE=ready
     ports:
       - "30403:30303"
-      - "8543:8545"
+      - "8548:8548"
       - "9003:9002"
 
   prometheus:

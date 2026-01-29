@@ -3111,6 +3111,7 @@ dependencies = [
  "kora-config",
  "kora-dkg",
  "kora-domain",
+ "kora-rpc",
  "kora-runner",
  "kora-service",
  "serde_json",
@@ -3368,6 +3369,7 @@ dependencies = [
  "kora-ledger",
  "kora-overlay",
  "kora-qmdb-ledger",
+ "kora-rpc",
  "tracing",
 ]
 
@@ -3406,6 +3408,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "kora-rpc"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "parking_lot",
+ "serde",
+ "tokio",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
 name = "kora-runner"
 version = "0.1.0"
 dependencies = [
@@ -3432,6 +3446,7 @@ dependencies = [
  "kora-qmdb",
  "kora-qmdb-ledger",
  "kora-reporters",
+ "kora-rpc",
  "kora-service",
  "kora-simplex",
  "kora-transport",

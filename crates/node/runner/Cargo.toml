@@ -19,6 +19,7 @@ kora-overlay.workspace = true
 kora-qmdb.workspace = true
 kora-qmdb-ledger.workspace = true
 kora-reporters.workspace = true
+kora-rpc.workspace = true
 kora-service.workspace = true
 kora-simplex.workspace = true
 kora-transport.workspace = true

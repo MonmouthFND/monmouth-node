@@ -59,66 +59,6 @@ run_with_spinner() {
     return 0
 }
 
-# Run a command with spinner and streaming log tail
-run_with_logs() {
-    local msg=$1
-    shift
-    local logfile=$(mktemp)
-    local lastline_file=$(mktemp)
-    
-    # Start command in background
-    "$@" > "$logfile" 2>&1 &
-    local pid=$!
-    
-    # Track what we've shown
-    local shown_lines=0
-    
-    echo -e "  ${DIM}┌─────────────────────────────────────────────────────────────┐${NC}"
-    
-    # Stream logs as they come
-    while kill -0 "$pid" 2>/dev/null; do
-        # Get new lines since last check
-        local total_lines=$(wc -l < "$logfile" 2>/dev/null | tr -d ' ')
-        total_lines=${total_lines:-0}
-        
-        if [[ $total_lines -gt $shown_lines ]]; then
-            # Print new lines
-            tail -n $((total_lines - shown_lines)) "$logfile" 2>/dev/null | while IFS= read -r line; do
-                # Strip ANSI codes and truncate
-                line=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g' | cut -c1-57)
-                printf "  ${DIM}│${NC} %-57s ${DIM}│${NC}\n" "$line"
-            done
-            shown_lines=$total_lines
-        fi
-        
-        sleep 0.1
-    done
-    
-    # Get any remaining lines
-    local total_lines=$(wc -l < "$logfile" 2>/dev/null | tr -d ' ')
-    total_lines=${total_lines:-0}
-    if [[ $total_lines -gt $shown_lines ]]; then
-        tail -n $((total_lines - shown_lines)) "$logfile" 2>/dev/null | while IFS= read -r line; do
-            line=$(echo "$line" | sed 's/\x1b\[[0-9;]*m//g' | cut -c1-57)
-            printf "  ${DIM}│${NC} %-57s ${DIM}│${NC}\n" "$line"
-        done
-    fi
-    
-    echo -e "  ${DIM}└─────────────────────────────────────────────────────────────┘${NC}"
-    
-    # Get exit code
-    wait "$pid"
-    local exit_code=$?
-    
-    rm -f "$logfile" "$lastline_file"
-    
-    if [[ $exit_code -ne 0 ]]; then
-        return $exit_code
-    fi
-    
-    return 0
-}
-
 print_header() {
     echo ""
     echo -e "${BOLD}${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -164,7 +104,7 @@ print_header
 
 # Phase 0: Build
 print_phase "0/3" "Building Docker image"
-if run_with_logs "Building kora:local image..." docker buildx bake --allow=fs.read=.. -f docker-bake.hcl kora-local; then
+if run_with_spinner "Building kora:local image..." docker buildx bake --allow=fs.read=.. -f docker-bake.hcl kora-local; then
     print_success "Image built successfully"
 else
     print_error "Build failed"

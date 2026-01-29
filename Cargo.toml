@@ -68,6 +68,7 @@ kora-qmdb-ledger = { path = "crates/storage/qmdb-ledger" }
 kora-traits = { path = "crates/storage/traits" }
 kora-dkg = { path = "crates/node/dkg" }
 kora-runner = { path = "crates/node/runner" }
+kora-rpc = { path = "crates/node/rpc" }
 
 commonware-p2p = "0.0.65"
 commonware-utils = "0.0.65"
