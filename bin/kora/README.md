@@ -7,47 +7,35 @@ The main Kora node binary. Implements BLS12-381 threshold consensus via [commonw
 
 [commonware]: https://github.com/commonwarexyz/monorepo
 [revm]: https://github.com/bluealloy/revm
-[QMDB]: https://github.com/LayerZero-Labs/qmdb
+[QMDB]: https://github.com/commonwarexyz/monorepo/tree/main/storage
 
 ## Usage
 
-### Running the Devnet
+Start the devnet with interactive DKG (Distributed Key Generation):
 
 ```bash
 just devnet
 ```
 
-### CLI Options
+Run with a custom configuration file:
 
 ```bash
-# Run with default configuration (legacy mode)
-kora
-
-# Run with a custom configuration file
 kora --config /path/to/config.toml
+```
 
-# Run with CLI overrides
-kora --chain-id 1 --data-dir /path/to/data
+Run the DKG ceremony:
 
-# Run DKG ceremony
+```bash
 kora dkg --peers peers.json
+```
 
-# Run as validator (requires completed DKG)
+Run as a validator (requires completed DKG):
+
+```bash
 kora validator --peers peers.json
 ```
 
-| Flag | Description |
-|------|-------------|
-| `-c, --config <FILE>` | Path to TOML configuration file |
-| `--chain-id <ID>` | Override the chain ID |
-| `--data-dir <PATH>` | Override the data directory |
-| `-v, --verbose` | Enable verbose logging |
-
-### Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `RUST_LOG` | Controls log level (e.g., `info`, `debug`, `kora=trace`) |
+The `--chain-id` and `--data-dir` flags can override configuration values. Set `RUST_LOG` to control log level (e.g., `info`, `debug`, `kora=trace`).
 
 ## Configuration
 
@@ -62,11 +50,6 @@ listen_addr = "0.0.0.0:9000"
 bootstrap_peers = []
 ```
 
-## Related Crates
-
-- [`kora-service`](../../crates/node/service) - Node service orchestration
-- [`kora-config`](../../crates/node/config) - Configuration types and loading
-
 ## License
 
-[MIT License](https://opensource.org/licenses/MIT)
+This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.

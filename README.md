@@ -26,7 +26,7 @@
 > Kora is pre-alpha software. Do not expect this to run. Do not run this in production.
 
 > [!IMPORTANT]
-> Kora uses BLS12-381 threshold consensus via [commonware](https://github.com/commonwarexyz/monorepo), [REVM](https://github.com/bluealloy/revm) for EVM execution, and [QMDB](https://github.com/kora-labs/qmdb) for state storage.
+> Kora uses BLS12-381 threshold consensus via [commonware](https://github.com/commonwarexyz/monorepo), [REVM](https://github.com/bluealloy/revm) for EVM execution, and [QMDB](https://github.com/commonwarexyz/monorepo/tree/main/storage) for state storage.
 
 ## What's Kora?
 
