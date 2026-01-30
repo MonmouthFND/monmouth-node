@@ -3528,40 +3528,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kora-revm-example"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-evm",
- "alloy-primitives",
- "anyhow",
- "clap",
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-parallel",
- "commonware-runtime",
- "commonware-utils",
- "futures",
- "k256",
- "kora-config",
- "kora-consensus",
- "kora-crypto",
- "kora-domain",
- "kora-executor",
- "kora-ledger",
- "kora-marshal",
- "kora-overlay",
- "kora-reporters",
- "kora-service",
- "kora-simplex",
- "kora-sys",
- "kora-transport-sim",
- "rand 0.8.5",
- "tracing",
-]
-
-[[package]]
 name = "kora-rpc"
 version = "0.1.0"
 dependencies = [

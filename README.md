@@ -1,6 +1,8 @@
-<h1 align="center">
-    <img src="./assets/banner.svg" alt="Kora" width="100%" align="center">
-</h1>
+<p align="center">
+    <img src="./assets/logo.png" alt="Kora" width="500">
+</p>
+
+<h1 align="center">Kora</h1>
 
 <h4 align="center">
     A minimal commonware + revm execution client. Built in Rust.

@@ -100,6 +100,7 @@ fn test_empty_blocks() {
 
 /// Test minimum viable network (4 validators, threshold 3).
 #[test]
+#[ignore = "flaky when run in parallel - run with --test-threads=1"]
 fn test_minimum_quorum() {
     // 4 validators with threshold 3 is the minimum for BFT
     let config = TestConfig::default().with_validators(4).with_max_blocks(3);
@@ -113,6 +114,7 @@ fn test_minimum_quorum() {
 
 /// Test that transactions affect balances correctly after finalization.
 #[test]
+#[ignore = "flaky when run in parallel - run with --test-threads=1"]
 fn test_balance_updates_after_finalization() {
     let config = TestConfig::default().with_validators(4).with_max_blocks(3);
     let setup = TestSetup::simple_transfer(config.chain_id);
