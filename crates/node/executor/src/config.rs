@@ -16,11 +16,7 @@ pub struct GasLimitBounds {
 
 impl GasLimitBounds {
     /// Default gas limit bounds.
-    pub const DEFAULT: Self = Self {
-        min: 5000,
-        max: u64::MAX,
-        max_delta_divisor: 1024,
-    };
+    pub const DEFAULT: Self = Self { min: 5000, max: u64::MAX, max_delta_divisor: 1024 };
 }
 
 impl Default for GasLimitBounds {
@@ -40,10 +36,7 @@ pub struct BaseFeeParams {
 
 impl BaseFeeParams {
     /// Default base fee parameters.
-    pub const DEFAULT: Self = Self {
-        elasticity_multiplier: 2,
-        max_change_denominator: 8,
-    };
+    pub const DEFAULT: Self = Self { elasticity_multiplier: 2, max_change_denominator: 8 };
 }
 
 impl Default for BaseFeeParams {
@@ -114,13 +107,9 @@ mod tests {
 
     #[test]
     fn config_builder() {
-        let config = ExecutionConfig::new(42)
-            .with_spec_id(SpecId::PRAGUE)
-            .with_gas_limit_bounds(GasLimitBounds {
-                min: 10000,
-                max: 30_000_000,
-                max_delta_divisor: 512,
-            });
+        let config = ExecutionConfig::new(42).with_spec_id(SpecId::PRAGUE).with_gas_limit_bounds(
+            GasLimitBounds { min: 10000, max: 30_000_000, max_delta_divisor: 512 },
+        );
 
         assert_eq!(config.chain_id, 42);
         assert_eq!(config.spec_id, SpecId::PRAGUE);

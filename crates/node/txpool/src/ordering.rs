@@ -37,9 +37,8 @@ impl OrderedTransaction {
 
     /// Calculates the effective tip given a base fee.
     pub fn effective_tip(&self, base_fee: Option<u128>) -> u128 {
-        base_fee.map_or(self.effective_gas_price, |base| {
-            self.effective_gas_price.saturating_sub(base)
-        })
+        base_fee
+            .map_or(self.effective_gas_price, |base| self.effective_gas_price.saturating_sub(base))
     }
 }
 

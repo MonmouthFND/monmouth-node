@@ -87,11 +87,7 @@ impl Default for CorsConfig {
     fn default() -> Self {
         Self {
             allowed_origins: vec!["http://localhost:3000".to_string()],
-            allowed_methods: vec![
-                "GET".to_string(),
-                "POST".to_string(),
-                "OPTIONS".to_string(),
-            ],
+            allowed_methods: vec!["GET".to_string(), "POST".to_string(), "OPTIONS".to_string()],
             allowed_headers: vec!["Content-Type".to_string()],
             max_age: 3600,
         }
@@ -139,19 +135,13 @@ pub struct RateLimitConfig {
 
 impl Default for RateLimitConfig {
     fn default() -> Self {
-        Self {
-            requests_per_second: 100,
-            burst_size: 200,
-        }
+        Self { requests_per_second: 100, burst_size: 200 }
     }
 }
 
 impl RateLimitConfig {
     /// Disable rate limiting.
     pub fn disabled() -> Self {
-        Self {
-            requests_per_second: u64::MAX,
-            burst_size: u64::MAX,
-        }
+        Self { requests_per_second: u64::MAX, burst_size: u64::MAX }
     }
 }

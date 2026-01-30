@@ -1,11 +1,13 @@
 //! Transaction pool implementation.
 
-use std::collections::{BTreeSet, HashMap};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    collections::{BTreeSet, HashMap},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use alloy_consensus::{Transaction, TxEnvelope};
 use alloy_eips::eip2718::Decodable2718;
-use alloy_primitives::{Address, Bytes, B256};
+use alloy_primitives::{Address, B256, Bytes};
 use kora_domain::{Tx, TxId};
 use parking_lot::RwLock;
 use tracing::{debug, trace, warn};

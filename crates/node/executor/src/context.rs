@@ -85,8 +85,7 @@ mod tests {
     #[test]
     fn block_context_with_blob_base_fee() {
         let header = Header::default();
-        let context = BlockContext::new(header, B256::ZERO, B256::ZERO)
-            .with_blob_base_fee(1000);
+        let context = BlockContext::new(header, B256::ZERO, B256::ZERO).with_blob_base_fee(1000);
         assert_eq!(context.blob_base_fee, Some(1000));
     }
 

@@ -31,12 +31,12 @@ mod config;
 pub use config::{CorsConfig, RateLimitConfig, RpcServerConfig};
 
 mod error;
-pub use error::{codes as error_codes, RpcError};
+pub use error::{RpcError, codes as error_codes};
 
 mod eth;
 pub use eth::{
-    EthApiImpl, EthApiServer, FeeHistory, NetApiImpl, NetApiServer, TxSubmitCallback,
-    Web3ApiImpl, Web3ApiServer,
+    EthApiImpl, EthApiServer, FeeHistory, NetApiImpl, NetApiServer, TxSubmitCallback, Web3ApiImpl,
+    Web3ApiServer,
 };
 
 mod kora;
@@ -56,6 +56,6 @@ pub use indexed_provider::IndexedStateProvider;
 
 mod types;
 pub use types::{
-    BlockNumberOrTag, BlockTag, BlockTransactions, CallRequest, RpcBlock, RpcLog,
-    RpcTransaction, RpcTransactionReceipt, SyncInfo, SyncStatus,
+    BlockNumberOrTag, BlockTag, BlockTransactions, CallRequest, RpcBlock, RpcLog, RpcTransaction,
+    RpcTransactionReceipt, SyncInfo, SyncStatus,
 };

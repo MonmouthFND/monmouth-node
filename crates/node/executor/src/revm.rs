@@ -100,7 +100,11 @@ impl RevmExecutor {
         Ok(())
     }
 
-    fn validate_gas_limit(&self, gas_limit: u64, parent_gas_limit: u64) -> Result<(), ExecutionError> {
+    fn validate_gas_limit(
+        &self,
+        gas_limit: u64,
+        parent_gas_limit: u64,
+    ) -> Result<(), ExecutionError> {
         let bounds = &self.config.gas_limit_bounds;
 
         if gas_limit < bounds.min {
@@ -184,16 +188,14 @@ pub fn calculate_base_fee(
 
     if parent_gas_used > parent_gas_target {
         let gas_used_delta = parent_gas_used - parent_gas_target;
-        let base_fee_delta = (parent_base_fee as u128)
-            .saturating_mul(gas_used_delta as u128)
+        let base_fee_delta = (parent_base_fee as u128).saturating_mul(gas_used_delta as u128)
             / (parent_gas_target as u128)
             / (params.max_change_denominator as u128);
         let base_fee_delta = base_fee_delta.max(1) as u64;
         parent_base_fee.saturating_add(base_fee_delta)
     } else {
         let gas_used_delta = parent_gas_target - parent_gas_used;
-        let base_fee_delta = (parent_base_fee as u128)
-            .saturating_mul(gas_used_delta as u128)
+        let base_fee_delta = (parent_base_fee as u128).saturating_mul(gas_used_delta as u128)
             / (parent_gas_target as u128)
             / (params.max_change_denominator as u128);
         parent_base_fee.saturating_sub(base_fee_delta as u64)
@@ -576,23 +578,28 @@ mod tests {
 
     #[test]
     fn validate_header_gas_limit_bounds() {
-        let executor = RevmExecutor::with_config(
-            ExecutionConfig::new(1).with_gas_limit_bounds(GasLimitBounds {
-                min: 5000,
-                max: 30_000_000,
-                max_delta_divisor: 1024,
-            }),
-        );
+        let executor = RevmExecutor::with_config(ExecutionConfig::new(1).with_gas_limit_bounds(
+            GasLimitBounds { min: 5000, max: 30_000_000, max_delta_divisor: 1024 },
+        ));
 
         let mut header = Header::default();
         header.gas_limit = 1000;
-        assert!(<RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header).is_err());
+        assert!(
+            <RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header)
+                .is_err()
+        );
 
         header.gas_limit = 100_000_000;
-        assert!(<RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header).is_err());
+        assert!(
+            <RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header)
+                .is_err()
+        );
 
         header.gas_limit = 15_000_000;
-        assert!(<RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header).is_ok());
+        assert!(
+            <RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header)
+                .is_ok()
+        );
     }
 
     #[test]

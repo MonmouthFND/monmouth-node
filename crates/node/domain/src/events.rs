@@ -2,10 +2,9 @@
 
 use std::sync::Arc;
 
-use parking_lot::Mutex;
-
 use alloy_evm::revm::primitives::B256;
 use futures::channel::mpsc::{UnboundedReceiver, UnboundedSender, unbounded};
+use parking_lot::Mutex;
 
 use super::TxId;
 use crate::ConsensusDigest;

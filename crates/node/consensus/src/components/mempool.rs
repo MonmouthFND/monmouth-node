@@ -2,9 +2,8 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use parking_lot::RwLock;
-
 use kora_domain::Tx;
+use parking_lot::RwLock;
 
 use crate::traits::{Mempool, TxId};
 

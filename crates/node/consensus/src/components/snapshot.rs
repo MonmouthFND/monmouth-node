@@ -5,10 +5,9 @@ use std::{
     sync::Arc,
 };
 
-use parking_lot::RwLock;
-
 use kora_qmdb::ChangeSet;
 use kora_traits::StateDb;
+use parking_lot::RwLock;
 
 use crate::{
     ConsensusError,

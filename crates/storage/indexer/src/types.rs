@@ -1,6 +1,6 @@
 //! Indexed types for blocks, transactions, receipts, and logs.
 
-use alloy_primitives::{Address, Bytes, B256, U256};
+use alloy_primitives::{Address, B256, Bytes, U256};
 
 /// An indexed block containing header information and transaction hashes.
 #[derive(Debug, Clone)]

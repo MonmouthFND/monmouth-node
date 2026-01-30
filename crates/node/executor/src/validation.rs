@@ -67,105 +67,112 @@ impl<'a> TxValidator<'a> {
         envelope: &TxEnvelope,
         state: &S,
     ) -> Result<ValidatedTx, ExecutionError> {
-        let (sender, chain_id, nonce, gas_limit, max_fee, max_priority_fee, value, input, is_create, access_list) =
-            match envelope {
-                TxEnvelope::Legacy(signed) => {
-                    let tx = signed.tx();
-                    let sender = signed.recover_signer().map_err(|e| {
-                        ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
-                    })?;
-                    (
-                        sender,
-                        tx.chain_id,
-                        tx.nonce,
-                        tx.gas_limit,
-                        tx.gas_price,
-                        0,
-                        tx.value,
-                        &tx.input,
-                        matches!(tx.to, TxKind::Create),
-                        None,
-                    )
-                }
-                TxEnvelope::Eip2930(signed) => {
-                    let tx = signed.tx();
-                    let sender = signed.recover_signer().map_err(|e| {
-                        ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
-                    })?;
-                    (
-                        sender,
-                        Some(tx.chain_id),
-                        tx.nonce,
-                        tx.gas_limit,
-                        tx.gas_price,
-                        0,
-                        tx.value,
-                        &tx.input,
-                        matches!(tx.to, TxKind::Create),
-                        Some(&tx.access_list),
-                    )
-                }
-                TxEnvelope::Eip1559(signed) => {
-                    let tx = signed.tx();
-                    let sender = signed.recover_signer().map_err(|e| {
-                        ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
-                    })?;
-                    (
-                        sender,
-                        Some(tx.chain_id),
-                        tx.nonce,
-                        tx.gas_limit,
-                        tx.max_fee_per_gas,
-                        tx.max_priority_fee_per_gas,
-                        tx.value,
-                        &tx.input,
-                        matches!(tx.to, TxKind::Create),
-                        Some(&tx.access_list),
-                    )
-                }
-                TxEnvelope::Eip4844(signed) => {
-                    let tx = signed.tx().tx();
-                    let sender = signed.recover_signer().map_err(|e| {
-                        ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
-                    })?;
+        let (
+            sender,
+            chain_id,
+            nonce,
+            gas_limit,
+            max_fee,
+            max_priority_fee,
+            value,
+            input,
+            is_create,
+            access_list,
+        ) = match envelope {
+            TxEnvelope::Legacy(signed) => {
+                let tx = signed.tx();
+                let sender = signed.recover_signer().map_err(|e| {
+                    ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
+                })?;
+                (
+                    sender,
+                    tx.chain_id,
+                    tx.nonce,
+                    tx.gas_limit,
+                    tx.gas_price,
+                    0,
+                    tx.value,
+                    &tx.input,
+                    matches!(tx.to, TxKind::Create),
+                    None,
+                )
+            }
+            TxEnvelope::Eip2930(signed) => {
+                let tx = signed.tx();
+                let sender = signed.recover_signer().map_err(|e| {
+                    ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
+                })?;
+                (
+                    sender,
+                    Some(tx.chain_id),
+                    tx.nonce,
+                    tx.gas_limit,
+                    tx.gas_price,
+                    0,
+                    tx.value,
+                    &tx.input,
+                    matches!(tx.to, TxKind::Create),
+                    Some(&tx.access_list),
+                )
+            }
+            TxEnvelope::Eip1559(signed) => {
+                let tx = signed.tx();
+                let sender = signed.recover_signer().map_err(|e| {
+                    ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
+                })?;
+                (
+                    sender,
+                    Some(tx.chain_id),
+                    tx.nonce,
+                    tx.gas_limit,
+                    tx.max_fee_per_gas,
+                    tx.max_priority_fee_per_gas,
+                    tx.value,
+                    &tx.input,
+                    matches!(tx.to, TxKind::Create),
+                    Some(&tx.access_list),
+                )
+            }
+            TxEnvelope::Eip4844(signed) => {
+                let tx = signed.tx().tx();
+                let sender = signed.recover_signer().map_err(|e| {
+                    ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
+                })?;
 
-                    self.validate_blob_tx_fields(
-                        &tx.blob_versioned_hashes,
-                        tx.max_fee_per_blob_gas,
-                    )?;
+                self.validate_blob_tx_fields(&tx.blob_versioned_hashes, tx.max_fee_per_blob_gas)?;
 
-                    (
-                        sender,
-                        Some(tx.chain_id),
-                        tx.nonce,
-                        tx.gas_limit,
-                        tx.max_fee_per_gas,
-                        tx.max_priority_fee_per_gas,
-                        tx.value,
-                        &tx.input,
-                        false,
-                        Some(&tx.access_list),
-                    )
-                }
-                TxEnvelope::Eip7702(signed) => {
-                    let tx = signed.tx();
-                    let sender = signed.recover_signer().map_err(|e| {
-                        ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
-                    })?;
-                    (
-                        sender,
-                        Some(tx.chain_id),
-                        tx.nonce,
-                        tx.gas_limit,
-                        tx.max_fee_per_gas,
-                        tx.max_priority_fee_per_gas,
-                        tx.value,
-                        &tx.input,
-                        false,
-                        Some(&tx.access_list),
-                    )
-                }
-            };
+                (
+                    sender,
+                    Some(tx.chain_id),
+                    tx.nonce,
+                    tx.gas_limit,
+                    tx.max_fee_per_gas,
+                    tx.max_priority_fee_per_gas,
+                    tx.value,
+                    &tx.input,
+                    false,
+                    Some(&tx.access_list),
+                )
+            }
+            TxEnvelope::Eip7702(signed) => {
+                let tx = signed.tx();
+                let sender = signed.recover_signer().map_err(|e| {
+                    ExecutionError::InvalidTx(format!("failed to recover signer: {}", e))
+                })?;
+                (
+                    sender,
+                    Some(tx.chain_id),
+                    tx.nonce,
+                    tx.gas_limit,
+                    tx.max_fee_per_gas,
+                    tx.max_priority_fee_per_gas,
+                    tx.value,
+                    &tx.input,
+                    false,
+                    Some(&tx.access_list),
+                )
+            }
+        };
 
         if let Some(tx_chain_id) = chain_id {
             if tx_chain_id != self.config.chain_id {
@@ -210,21 +217,14 @@ impl<'a> TxValidator<'a> {
         }
 
         if max_priority_fee > max_fee {
-            return Err(ExecutionError::InvalidTx(
-                "max priority fee exceeds max fee".to_string(),
-            ));
+            return Err(ExecutionError::InvalidTx("max priority fee exceeds max fee".to_string()));
         }
 
         if let Some(access_list) = access_list {
             self.validate_access_list(access_list)?;
         }
 
-        Ok(ValidatedTx {
-            sender,
-            nonce,
-            gas_limit,
-            intrinsic_gas,
-        })
+        Ok(ValidatedTx { sender, nonce, gas_limit, intrinsic_gas })
     }
 
     /// Calculate intrinsic gas for a transaction.
@@ -252,8 +252,7 @@ impl<'a> TxValidator<'a> {
             for item in access_list.iter() {
                 gas = gas.saturating_add(ACCESS_LIST_ADDRESS_GAS);
                 gas = gas.saturating_add(
-                    ACCESS_LIST_STORAGE_KEY_GAS
-                        .saturating_mul(item.storage_keys.len() as u64),
+                    ACCESS_LIST_STORAGE_KEY_GAS.saturating_mul(item.storage_keys.len() as u64),
                 );
             }
         }
@@ -337,9 +336,7 @@ mod tests {
         let config = ExecutionConfig::default();
         let validator = TxValidator::new(&config, 1000);
 
-        let gas = validator
-            .calculate_intrinsic_gas(&Bytes::new(), false, None)
-            .unwrap();
+        let gas = validator.calculate_intrinsic_gas(&Bytes::new(), false, None).unwrap();
         assert_eq!(gas, TX_BASE_GAS);
     }
 
@@ -349,13 +346,9 @@ mod tests {
         let validator = TxValidator::new(&config, 1000);
 
         let data = Bytes::from(vec![0, 1, 2, 0, 0, 3]);
-        let gas = validator
-            .calculate_intrinsic_gas(&data, false, None)
-            .unwrap();
+        let gas = validator.calculate_intrinsic_gas(&data, false, None).unwrap();
 
-        let expected = TX_BASE_GAS
-            + (3 * TX_DATA_ZERO_GAS)
-            + (3 * TX_DATA_NON_ZERO_GAS);
+        let expected = TX_BASE_GAS + (3 * TX_DATA_ZERO_GAS) + (3 * TX_DATA_NON_ZERO_GAS);
         assert_eq!(gas, expected);
     }
 
@@ -364,9 +357,7 @@ mod tests {
         let config = ExecutionConfig::default();
         let validator = TxValidator::new(&config, 1000);
 
-        let gas = validator
-            .calculate_intrinsic_gas(&Bytes::new(), true, None)
-            .unwrap();
+        let gas = validator.calculate_intrinsic_gas(&Bytes::new(), true, None).unwrap();
         assert_eq!(gas, TX_BASE_GAS + TX_CREATE_GAS);
     }
 
@@ -383,9 +374,8 @@ mod tests {
             storage_keys: vec![Default::default(), Default::default()],
         }]);
 
-        let gas = validator
-            .calculate_intrinsic_gas(&Bytes::new(), false, Some(&access_list))
-            .unwrap();
+        let gas =
+            validator.calculate_intrinsic_gas(&Bytes::new(), false, Some(&access_list)).unwrap();
 
         let expected = TX_BASE_GAS + ACCESS_LIST_ADDRESS_GAS + (2 * ACCESS_LIST_STORAGE_KEY_GAS);
         assert_eq!(gas, expected);

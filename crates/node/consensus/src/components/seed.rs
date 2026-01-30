@@ -2,9 +2,8 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use parking_lot::RwLock;
-
 use alloy_primitives::B256;
+use parking_lot::RwLock;
 
 use crate::traits::{Digest, SeedTracker};
 

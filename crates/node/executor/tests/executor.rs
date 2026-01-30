@@ -235,7 +235,10 @@ fn test_validate_header_fails_with_gas_limit_below_minimum() {
 #[case(1, 30_000_000)]
 #[case(1_000_000, 30_000_000)]
 #[case(u64::MAX, 30_000_000)]
-fn test_validate_header_succeeds_with_various_block_numbers(#[case] number: u64, #[case] gas_limit: u64) {
+fn test_validate_header_succeeds_with_various_block_numbers(
+    #[case] number: u64,
+    #[case] gas_limit: u64,
+) {
     let executor = RevmExecutor::new(1);
     let header = Header { number, gas_limit, ..Default::default() };
 

@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use alloy_primitives::{Address, Bytes, B256, U256, U64};
+use alloy_primitives::{Address, B256, Bytes, U64, U256};
 use async_trait::async_trait;
 use kora_indexer::{BlockIndex, IndexedBlock, IndexedReceipt, IndexedTransaction};
 use kora_traits::{StateDbError, StateDbRead};
@@ -220,8 +220,9 @@ fn indexed_receipt_to_rpc(receipt: IndexedReceipt) -> RpcTransactionReceipt {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use kora_indexer::IndexedLog;
+
+    use super::*;
 
     #[derive(Clone)]
     struct MockState;
@@ -278,11 +279,7 @@ mod tests {
         }
     }
 
-    fn create_test_receipt(
-        tx_hash: B256,
-        block_hash: B256,
-        block_number: u64,
-    ) -> IndexedReceipt {
+    fn create_test_receipt(tx_hash: B256, block_hash: B256, block_number: u64) -> IndexedReceipt {
         IndexedReceipt {
             transaction_hash: tx_hash,
             block_hash,
@@ -329,10 +326,7 @@ mod tests {
 
         let provider = IndexedStateProvider::new(index, MockState);
 
-        let block = provider
-            .block_by_number(BlockNumberOrTag::Number(U64::from(1)))
-            .await
-            .unwrap();
+        let block = provider.block_by_number(BlockNumberOrTag::Number(U64::from(1))).await.unwrap();
         assert!(block.is_some());
         assert_eq!(block.unwrap().hash, block_hash);
     }
@@ -406,17 +400,13 @@ mod tests {
 
         let provider = IndexedStateProvider::new(index, MockState);
 
-        let block = provider
-            .block_by_number(BlockNumberOrTag::Tag(BlockTag::Latest))
-            .await
-            .unwrap();
+        let block =
+            provider.block_by_number(BlockNumberOrTag::Tag(BlockTag::Latest)).await.unwrap();
         assert!(block.is_some());
         assert_eq!(block.unwrap().number, U64::from(10));
 
-        let block = provider
-            .block_by_number(BlockNumberOrTag::Tag(BlockTag::Earliest))
-            .await
-            .unwrap();
+        let block =
+            provider.block_by_number(BlockNumberOrTag::Tag(BlockTag::Earliest)).await.unwrap();
         assert!(block.is_none());
     }
 }

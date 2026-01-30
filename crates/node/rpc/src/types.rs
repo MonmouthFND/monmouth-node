@@ -1,6 +1,6 @@
 //! RPC types for Ethereum JSON-RPC API responses.
 
-use alloy_primitives::{Address, Bytes, B256, B64, U256, U64};
+use alloy_primitives::{Address, B64, B256, Bytes, U64, U256};
 use serde::{Deserialize, Serialize};
 
 /// Block number or tag for RPC queries.

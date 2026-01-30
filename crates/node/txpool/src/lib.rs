@@ -19,4 +19,4 @@ mod pool;
 pub use pool::TransactionPool;
 
 mod validator;
-pub use validator::{recover_sender_from_envelope, TransactionValidator, ValidatedTransaction};
+pub use validator::{TransactionValidator, ValidatedTransaction, recover_sender_from_envelope};

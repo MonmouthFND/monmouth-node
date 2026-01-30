@@ -47,7 +47,14 @@ where
 {
     /// Create a new REVM application.
     pub const fn new(ledger: LedgerService, executor: E, max_txs: usize, gas_limit: u64) -> Self {
-        Self { ledger, executor, max_txs, gas_limit, node_state: None, _scheme: std::marker::PhantomData }
+        Self {
+            ledger,
+            executor,
+            max_txs,
+            gas_limit,
+            node_state: None,
+            _scheme: std::marker::PhantomData,
+        }
     }
 
     /// Set the node state for tracking proposal metrics.

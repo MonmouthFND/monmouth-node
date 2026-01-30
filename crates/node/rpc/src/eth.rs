@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use alloy_primitives::{Address, Bytes, B256, U256, U64};
+use alloy_primitives::{Address, B256, Bytes, U64, U256};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use tokio::sync::RwLock;
 
@@ -27,7 +27,11 @@ pub trait EthApi {
 
     /// Returns the balance of an account.
     #[method(name = "getBalance")]
-    async fn get_balance(&self, address: Address, block: Option<BlockNumberOrTag>) -> RpcResult<U256>;
+    async fn get_balance(
+        &self,
+        address: Address,
+        block: Option<BlockNumberOrTag>,
+    ) -> RpcResult<U256>;
 
     /// Returns the nonce (transaction count) of an account.
     #[method(name = "getTransactionCount")]
@@ -39,7 +43,8 @@ pub trait EthApi {
 
     /// Returns the code at an address.
     #[method(name = "getCode")]
-    async fn get_code(&self, address: Address, block: Option<BlockNumberOrTag>) -> RpcResult<Bytes>;
+    async fn get_code(&self, address: Address, block: Option<BlockNumberOrTag>)
+    -> RpcResult<Bytes>;
 
     /// Returns the value of a storage slot.
     #[method(name = "getStorageAt")]
@@ -56,7 +61,8 @@ pub trait EthApi {
 
     /// Executes a call without creating a transaction.
     #[method(name = "call")]
-    async fn call(&self, request: CallRequest, block: Option<BlockNumberOrTag>) -> RpcResult<Bytes>;
+    async fn call(&self, request: CallRequest, block: Option<BlockNumberOrTag>)
+    -> RpcResult<Bytes>;
 
     /// Estimates gas for a transaction.
     #[method(name = "estimateGas")]
@@ -88,7 +94,8 @@ pub trait EthApi {
 
     /// Returns a transaction receipt by hash.
     #[method(name = "getTransactionReceipt")]
-    async fn get_transaction_receipt(&self, hash: B256) -> RpcResult<Option<RpcTransactionReceipt>>;
+    async fn get_transaction_receipt(&self, hash: B256)
+    -> RpcResult<Option<RpcTransactionReceipt>>;
 
     /// Returns the current gas price.
     #[method(name = "gasPrice")]
@@ -236,7 +243,11 @@ impl<S: StateProvider + 'static> EthApiServer for EthApiImpl<S> {
         }
     }
 
-    async fn get_balance(&self, address: Address, block: Option<BlockNumberOrTag>) -> RpcResult<U256> {
+    async fn get_balance(
+        &self,
+        address: Address,
+        block: Option<BlockNumberOrTag>,
+    ) -> RpcResult<U256> {
         let provider = self.state_provider.read().await;
         provider.balance(address, block).await.map_err(Into::into)
     }
@@ -251,7 +262,11 @@ impl<S: StateProvider + 'static> EthApiServer for EthApiImpl<S> {
         Ok(U64::from(nonce))
     }
 
-    async fn get_code(&self, address: Address, block: Option<BlockNumberOrTag>) -> RpcResult<Bytes> {
+    async fn get_code(
+        &self,
+        address: Address,
+        block: Option<BlockNumberOrTag>,
+    ) -> RpcResult<Bytes> {
         let provider = self.state_provider.read().await;
         provider.code(address, block).await.map_err(Into::into)
     }
@@ -278,7 +293,11 @@ impl<S: StateProvider + 'static> EthApiServer for EthApiImpl<S> {
         Ok(tx_hash)
     }
 
-    async fn call(&self, request: CallRequest, block: Option<BlockNumberOrTag>) -> RpcResult<Bytes> {
+    async fn call(
+        &self,
+        request: CallRequest,
+        block: Option<BlockNumberOrTag>,
+    ) -> RpcResult<Bytes> {
         let provider = self.state_provider.read().await;
         provider.call(request, block).await.map_err(Into::into)
     }
@@ -316,7 +335,10 @@ impl<S: StateProvider + 'static> EthApiServer for EthApiImpl<S> {
         provider.transaction_by_hash(hash).await.map_err(Into::into)
     }
 
-    async fn get_transaction_receipt(&self, hash: B256) -> RpcResult<Option<RpcTransactionReceipt>> {
+    async fn get_transaction_receipt(
+        &self,
+        hash: B256,
+    ) -> RpcResult<Option<RpcTransactionReceipt>> {
         let provider = self.state_provider.read().await;
         provider.receipt_by_hash(hash).await.map_err(Into::into)
     }
@@ -342,8 +364,9 @@ impl<S: StateProvider + 'static> EthApiServer for EthApiImpl<S> {
             base_fee_per_gas: vec![base_fee; count + 1],
             gas_used_ratio: vec![0.5; count],
             oldest_block: U64::ZERO,
-            reward: reward_percentiles
-                .map(|percentiles| vec![vec![U256::from(1_000_000_000u64); percentiles.len()]; count]),
+            reward: reward_percentiles.map(|percentiles| {
+                vec![vec![U256::from(1_000_000_000u64); percentiles.len()]; count]
+            }),
         })
     }
 

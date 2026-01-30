@@ -10,7 +10,10 @@ use tracing::{error, info};
 
 use crate::{
     config::{CorsConfig, RpcServerConfig},
-    eth::{EthApiImpl, EthApiServer, NetApiImpl, NetApiServer, TxSubmitCallback, Web3ApiImpl, Web3ApiServer},
+    eth::{
+        EthApiImpl, EthApiServer, NetApiImpl, NetApiServer, TxSubmitCallback, Web3ApiImpl,
+        Web3ApiServer,
+    },
     kora::{KoraApiImpl, KoraApiServer},
     state::NodeState,
     state_provider::{NoopStateProvider, StateProvider},
@@ -41,33 +44,24 @@ fn build_cors_layer(config: &CorsConfig) -> CorsLayer {
     if config.allowed_origins.len() == 1 && config.allowed_origins[0] == "*" {
         layer = layer.allow_origin(Any);
     } else {
-        let origins: Vec<_> = config
-            .allowed_origins
-            .iter()
-            .filter_map(|o| o.parse().ok())
-            .collect();
+        let origins: Vec<_> =
+            config.allowed_origins.iter().filter_map(|o| o.parse().ok()).collect();
         layer = layer.allow_origin(AllowOrigin::list(origins));
     }
 
     if config.allowed_methods.iter().any(|m| m == "*") {
         layer = layer.allow_methods(Any);
     } else {
-        let methods: Vec<_> = config
-            .allowed_methods
-            .iter()
-            .filter_map(|m| m.parse().ok())
-            .collect();
+        let methods: Vec<_> =
+            config.allowed_methods.iter().filter_map(|m| m.parse().ok()).collect();
         layer = layer.allow_methods(methods);
     }
 
     if config.allowed_headers.iter().any(|h| h == "*") {
         layer = layer.allow_headers(Any);
     } else {
-        let headers: Vec<_> = config
-            .allowed_headers
-            .iter()
-            .filter_map(|h| h.parse().ok())
-            .collect();
+        let headers: Vec<_> =
+            config.allowed_headers.iter().filter_map(|h| h.parse().ok()).collect();
         layer = layer.allow_headers(headers);
     }
 
@@ -330,13 +324,7 @@ impl JsonRpcServer<NoopStateProvider> {
 impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
     /// Create a new JSON-RPC server with a custom state provider.
     pub fn with_state_provider(addr: SocketAddr, chain_id: u64, state_provider: S) -> Self {
-        Self {
-            addr,
-            chain_id,
-            tx_submit: None,
-            state_provider,
-            max_connections: 100,
-        }
+        Self { addr, chain_id, tx_submit: None, state_provider, max_connections: 100 }
     }
 
     /// Set the transaction submission callback.

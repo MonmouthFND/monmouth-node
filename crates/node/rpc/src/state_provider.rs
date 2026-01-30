@@ -1,6 +1,6 @@
 //! State provider trait for abstracting state access in RPC methods.
 
-use alloy_primitives::{Address, Bytes, B256, U256};
+use alloy_primitives::{Address, B256, Bytes, U256};
 use async_trait::async_trait;
 
 use crate::{
@@ -15,16 +15,25 @@ use crate::{
 #[async_trait]
 pub trait StateProvider: Send + Sync {
     /// Get the balance of an account at a given block.
-    async fn balance(&self, address: Address, block: Option<BlockNumberOrTag>)
-        -> Result<U256, RpcError>;
+    async fn balance(
+        &self,
+        address: Address,
+        block: Option<BlockNumberOrTag>,
+    ) -> Result<U256, RpcError>;
 
     /// Get the nonce (transaction count) of an account at a given block.
-    async fn nonce(&self, address: Address, block: Option<BlockNumberOrTag>)
-        -> Result<u64, RpcError>;
+    async fn nonce(
+        &self,
+        address: Address,
+        block: Option<BlockNumberOrTag>,
+    ) -> Result<u64, RpcError>;
 
     /// Get the code of an account at a given block.
-    async fn code(&self, address: Address, block: Option<BlockNumberOrTag>)
-        -> Result<Bytes, RpcError>;
+    async fn code(
+        &self,
+        address: Address,
+        block: Option<BlockNumberOrTag>,
+    ) -> Result<Bytes, RpcError>;
 
     /// Get a storage slot value at a given block.
     async fn storage(
@@ -109,7 +118,10 @@ impl StateProvider for NoopStateProvider {
         Ok(U256::ZERO)
     }
 
-    async fn block_by_number(&self, _block: BlockNumberOrTag) -> Result<Option<RpcBlock>, RpcError> {
+    async fn block_by_number(
+        &self,
+        _block: BlockNumberOrTag,
+    ) -> Result<Option<RpcBlock>, RpcError> {
         Ok(None)
     }
 
@@ -121,7 +133,10 @@ impl StateProvider for NoopStateProvider {
         Ok(None)
     }
 
-    async fn receipt_by_hash(&self, _hash: B256) -> Result<Option<RpcTransactionReceipt>, RpcError> {
+    async fn receipt_by_hash(
+        &self,
+        _hash: B256,
+    ) -> Result<Option<RpcTransactionReceipt>, RpcError> {
         Ok(None)
     }
 
