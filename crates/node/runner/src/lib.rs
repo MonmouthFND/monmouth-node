@@ -1,14 +1,17 @@
-//! Production node runner for Kora validators.
+#![doc = include_str!("../README.md")]
+#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 // Trait signatures require impl Future return type
 #![allow(clippy::manual_async_fn)]
 
 mod app;
-mod error;
-mod runner;
-mod scheme;
-
 pub use app::RevmApplication;
+
+mod error;
 pub use error::RunnerError;
+
+mod runner;
 pub use runner::ProductionRunner;
+
+mod scheme;
 pub use scheme::{ThresholdScheme, load_threshold_scheme};

@@ -1,4 +1,7 @@
-# kora-indexer
+# `kora-indexer`
+
+<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
 Block and transaction indexer for Kora RPC queries.
 
@@ -8,6 +11,12 @@ This crate provides in-memory indexing for blocks, transactions, receipts, and l
 - `eth_getTransactionByHash`
 - `eth_getTransactionReceipt`
 - `eth_getLogs`
+
+## Key Types
+
+- `BlockIndex` - In-memory index for blocks, transactions, and receipts
+- `IndexedBlock` - Block data with associated transactions and receipts
+- `LogFilter` - Filter for querying logs by block range, address, and topics
 
 ## Usage
 
@@ -32,3 +41,7 @@ let filter = LogFilter::new()
     .address(vec![contract_address]);
 let logs = index.get_logs(&filter);
 ```
+
+## License
+
+[MIT License](https://github.com/refcell/kora/blob/main/LICENSE)

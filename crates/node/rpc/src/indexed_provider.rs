@@ -32,7 +32,7 @@ pub struct IndexedStateProvider<S> {
 
 impl<S> IndexedStateProvider<S> {
     /// Creates a new indexed state provider.
-    pub fn new(index: Arc<BlockIndex>, state: S) -> Self {
+    pub const fn new(index: Arc<BlockIndex>, state: S) -> Self {
         Self { index, state }
     }
 }
@@ -186,8 +186,7 @@ fn indexed_receipt_to_rpc(receipt: IndexedReceipt) -> RpcTransactionReceipt {
     let logs = receipt
         .logs
         .into_iter()
-        .enumerate()
-        .map(|(_i, log)| RpcLog {
+        .map(|log| RpcLog {
             address: log.address,
             topics: log.topics,
             data: log.data,

@@ -1,4 +1,7 @@
-# kora-qmdb-ledger
+# `kora-qmdb-ledger`
+
+<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
 QMDB-backed ledger adapter for Kora.
 
@@ -9,9 +12,9 @@ and commit changes.
 ## Key Types
 
 - `QmdbLedger` - QMDB-backed ledger service
-- `QmdbConfig` - configuration for the QMDB backend
-- `QmdbState` - state handle used by executors
-- `QmdbChangeSet` - change set type for QMDB writes
+- `QmdbConfig` - Configuration for the QMDB backend
+- `QmdbState` - State handle used by executors
+- `QmdbChangeSet` - Change set type for QMDB writes
 
 ## Usage
 
@@ -21,3 +24,7 @@ use kora_qmdb_ledger::{QmdbConfig, QmdbLedger};
 let ledger = QmdbLedger::init(context, QmdbConfig::new(prefix, pool), allocations).await?;
 let state = ledger.state();
 ```
+
+## License
+
+[MIT License](https://github.com/refcell/kora/blob/main/LICENSE)

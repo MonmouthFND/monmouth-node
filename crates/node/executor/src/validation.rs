@@ -174,13 +174,13 @@ impl<'a> TxValidator<'a> {
             }
         };
 
-        if let Some(tx_chain_id) = chain_id {
-            if tx_chain_id != self.config.chain_id {
-                return Err(ExecutionError::InvalidTx(format!(
-                    "chain ID mismatch: expected {}, got {}",
-                    self.config.chain_id, tx_chain_id
-                )));
-            }
+        if let Some(tx_chain_id) = chain_id
+            && tx_chain_id != self.config.chain_id
+        {
+            return Err(ExecutionError::InvalidTx(format!(
+                "chain ID mismatch: expected {}, got {}",
+                self.config.chain_id, tx_chain_id
+            )));
         }
 
         let intrinsic_gas = self.calculate_intrinsic_gas(input, is_create, access_list)?;
@@ -289,13 +289,13 @@ impl<'a> TxValidator<'a> {
             }
         }
 
-        if let Some(blob_base_fee) = self.blob_base_fee {
-            if max_fee_per_blob_gas < blob_base_fee {
-                return Err(ExecutionError::InvalidTx(format!(
-                    "max fee per blob gas {} below blob base fee {}",
-                    max_fee_per_blob_gas, blob_base_fee
-                )));
-            }
+        if let Some(blob_base_fee) = self.blob_base_fee
+            && max_fee_per_blob_gas < blob_base_fee
+        {
+            return Err(ExecutionError::InvalidTx(format!(
+                "max fee per blob gas {} below blob base fee {}",
+                max_fee_per_blob_gas, blob_base_fee
+            )));
         }
 
         Ok(())

@@ -1,16 +1,21 @@
-//! Distributed Key Generation for Kora threshold cryptography.
+#![doc = include_str!("../README.md")]
+#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 // DKG implementation is work-in-progress
 #![allow(dead_code, missing_docs, missing_debug_implementations, unreachable_pub)]
 
 mod ceremony;
-mod config;
-mod error;
-mod message;
-mod output;
-mod state;
-
 pub use ceremony::DkgCeremony;
+
+mod config;
 pub use config::DkgConfig;
+
+mod error;
 pub use error::DkgError;
+
+mod message;
+
+mod output;
 pub use output::DkgOutput;
+
+mod state;

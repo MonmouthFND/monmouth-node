@@ -76,13 +76,13 @@ impl ExecutionConfig {
     }
 
     /// Set the gas limit bounds.
-    pub fn with_gas_limit_bounds(mut self, bounds: GasLimitBounds) -> Self {
+    pub const fn with_gas_limit_bounds(mut self, bounds: GasLimitBounds) -> Self {
         self.gas_limit_bounds = bounds;
         self
     }
 
     /// Set the base fee parameters.
-    pub fn with_base_fee_params(mut self, params: BaseFeeParams) -> Self {
+    pub const fn with_base_fee_params(mut self, params: BaseFeeParams) -> Self {
         self.base_fee_params = params;
         self
     }

@@ -150,7 +150,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
     }
 
     /// Set maximum concurrent connections.
-    pub fn with_max_connections(mut self, max_connections: u32) -> Self {
+    pub const fn with_max_connections(mut self, max_connections: u32) -> Self {
         self.max_connections = max_connections;
         self
     }
@@ -334,7 +334,7 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
     }
 
     /// Set maximum concurrent connections.
-    pub fn with_max_connections(mut self, max_connections: u32) -> Self {
+    pub const fn with_max_connections(mut self, max_connections: u32) -> Self {
         self.max_connections = max_connections;
         self
     }

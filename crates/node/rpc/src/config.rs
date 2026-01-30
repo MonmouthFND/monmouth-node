@@ -44,13 +44,13 @@ impl RpcServerConfig {
     }
 
     /// Set rate limit.
-    pub fn with_rate_limit(mut self, requests_per_second: u64) -> Self {
+    pub const fn with_rate_limit(mut self, requests_per_second: u64) -> Self {
         self.rate_limit.requests_per_second = requests_per_second;
         self
     }
 
     /// Set maximum connections.
-    pub fn with_max_connections(mut self, max_connections: u32) -> Self {
+    pub const fn with_max_connections(mut self, max_connections: u32) -> Self {
         self.max_connections = max_connections;
         self
     }
@@ -96,7 +96,7 @@ impl Default for CorsConfig {
 
 impl CorsConfig {
     /// Create a restrictive CORS config that allows no origins.
-    pub fn none() -> Self {
+    pub const fn none() -> Self {
         Self {
             allowed_origins: Vec::new(),
             allowed_methods: Vec::new(),
@@ -141,7 +141,7 @@ impl Default for RateLimitConfig {
 
 impl RateLimitConfig {
     /// Disable rate limiting.
-    pub fn disabled() -> Self {
+    pub const fn disabled() -> Self {
         Self { requests_per_second: u64::MAX, burst_size: u64::MAX }
     }
 }

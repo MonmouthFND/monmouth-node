@@ -122,11 +122,7 @@ impl RevmExecutor {
         }
 
         let max_delta = parent_gas_limit / bounds.max_delta_divisor;
-        let diff = if gas_limit > parent_gas_limit {
-            gas_limit - parent_gas_limit
-        } else {
-            parent_gas_limit - gas_limit
-        };
+        let diff = gas_limit.abs_diff(parent_gas_limit);
 
         if diff >= max_delta {
             return Err(ExecutionError::BlockValidation(format!(

@@ -55,7 +55,7 @@ pub struct ParentBlock {
 
 impl ParentBlock {
     /// Create parent block info from a header.
-    pub fn from_header(header: &Header, hash: B256) -> Self {
+    pub const fn from_header(header: &Header, hash: B256) -> Self {
         Self {
             hash,
             number: header.number,

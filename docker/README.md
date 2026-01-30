@@ -1,6 +1,6 @@
 # Kora Docker Devnet
 
-This directory contains Docker configurations for running a local Kora devnet with interactive DKG (Distributed Key Generation).
+This directory contains Docker configurations for running a local Kora devnet with trusted dealer DKG (Distributed Key Generation).
 
 ## Quick Start
 
@@ -12,20 +12,47 @@ just devnet
 
 This will:
 1. Build the Docker image
-2. Generate validator identity keys (Phase 0)
-3. Run interactive DKG ceremony to establish threshold cryptography (Phase 1)
-4. Start 4 validator nodes with threshold BLS consensus (Phase 2)
-5. Start Prometheus and Grafana for observability
+2. Generate validator identity keys and run trusted dealer DKG (init-config)
+3. Start 4 validator nodes with threshold BLS consensus
+4. Start Prometheus and Grafana for observability (optional)
 
 ## Commands
+
+Run from repository root (`just <cmd>`) or from `docker/` directory (`just <cmd>`):
+
+### From Repository Root
 
 | Command | Description |
 |---------|-------------|
 | `just devnet` | Start the full devnet with observability |
 | `just devnet-down` | Stop all containers (preserves state) |
 | `just devnet-reset` | Stop and delete all state (fresh DKG on next start) |
-| `just devnet-status` | Show container status and endpoints |
 | `just devnet-logs` | Stream validator logs |
+| `just devnet-status` | Show container status and endpoints |
+| `just devnet-stats` | Live devnet monitoring dashboard |
+| `just docker-build` | Build docker images |
+
+### From docker/ Directory
+
+| Command | Description |
+|---------|-------------|
+| `just build` | Build the Docker image |
+| `just build-fresh` | Build the Docker image without cache |
+| `just devnet` | Start the full devnet with observability |
+| `just devnet-minimal` | Start devnet without observability stack |
+| `just down` | Stop all containers (preserves state) |
+| `just reset` | Stop and delete all state (fresh DKG on next start) |
+| `just restart` | Stop and restart the devnet |
+| `just restart-validators` | Restart only validator nodes |
+| `just status` | Show container status and endpoints |
+| `just stats` | Live devnet monitoring dashboard |
+| `just logs` | Stream validator logs |
+| `just logs-dkg` | Stream DKG node logs |
+| `just logs-node <node>` | Stream logs for a specific node |
+| `just exec <node>` | Open a shell in a running container |
+| `just redo-dkg` | Re-run DKG ceremony (keeps other state) |
+| `just validate` | Validate the compose file |
+| `just lint` | Lint the Dockerfile with hadolint |
 
 ## Architecture
 
@@ -33,25 +60,24 @@ This will:
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Kora Devnet                              │
 ├─────────────────────────────────────────────────────────────────┤
-│  Phase 0: init-config                                           │
+│  init-config (runs once)                                        │
 │    - Generates ed25519 identity keys                            │
+│    - Runs trusted dealer DKG                                    │
 │    - Creates peers.json and genesis.json                        │
+│    - Outputs: output.json + share.key per node                  │
 ├─────────────────────────────────────────────────────────────────┤
-│  Phase 1: DKG Ceremony (dkg-node0..3)                          │
-│    - Interactive threshold key generation                       │
-│    - Uses Ed25519 simplex consensus                             │
-│    - Outputs: output.json + share.key per node                 │
-├─────────────────────────────────────────────────────────────────┤
-│  Phase 2: Validators (validator-node0..3)                       │
+│  Validators (validator-node0..3)                                │
 │    - BLS12-381 threshold consensus                              │
 │    - REVM execution                                             │
 │    - QMDB state storage                                         │
 ├─────────────────────────────────────────────────────────────────┤
-│  Observability: prometheus + grafana                            │
+│  Observability (optional): prometheus + grafana                 │
 │    - Prometheus: http://localhost:9090                          │
-│    - Grafana: http://localhost:3000 (admin/admin)              │
+│    - Grafana: http://localhost:3000 (admin/admin)               │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Note:** Distributed DKG nodes (dkg-node0..3) are available under the `distributed-dkg` profile but are not used by default. The default setup uses trusted dealer DKG via `init-config`.
 
 ## Endpoints
 
@@ -61,8 +87,15 @@ This will:
 | validator-node1 P2P | 30401 | P2P networking |
 | validator-node2 P2P | 30402 | P2P networking |
 | validator-node3 P2P | 30403 | P2P networking |
-| RPC (all nodes) | 8540-8543 | Reserved (Phase 3) |
-| Prometheus | 9090 | Metrics |
+| validator-node0 RPC | 8545 | JSON-RPC endpoint |
+| validator-node1 RPC | 8546 | JSON-RPC endpoint |
+| validator-node2 RPC | 8547 | JSON-RPC endpoint |
+| validator-node3 RPC | 8548 | JSON-RPC endpoint |
+| validator-node0 Metrics | 9000 | Prometheus metrics |
+| validator-node1 Metrics | 9001 | Prometheus metrics |
+| validator-node2 Metrics | 9002 | Prometheus metrics |
+| validator-node3 Metrics | 9003 | Prometheus metrics |
+| Prometheus | 9090 | Metrics aggregation |
 | Grafana | 3000 | Dashboards |
 
 ## Configuration
@@ -72,8 +105,21 @@ Environment variables (set in `.env` or export):
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CHAIN_ID` | 1337 | Chain identifier |
-| `RUST_LOG` | info | Log level |
-| `COMPOSE_PROFILES` | observability | Enable observability stack |
+| `RUST_LOG` | info | Log level (trace, debug, info, warn, error) |
+| `COMPOSE_PROFILES` | observability | Comma-separated profiles (observability, distributed-dkg) |
+| `VALIDATOR_INDEX` | - | Node index (0-3), set per container |
+| `IS_BOOTSTRAP` | - | Whether node is bootstrap node |
+| `BOOTSTRAP_PEERS` | - | Bootstrap peer addresses |
+| `HEALTHCHECK_MODE` | - | Health check mode (dkg, ready) |
+
+### Grafana Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GF_SECURITY_ADMIN_USER` | admin | Grafana admin username |
+| `GF_SECURITY_ADMIN_PASSWORD` | admin | Grafana admin password |
+| `GF_AUTH_ANONYMOUS_ENABLED` | true | Allow anonymous access |
+| `GF_AUTH_ANONYMOUS_ORG_ROLE` | Viewer | Anonymous user role |
 
 ## Directory Structure
 
@@ -82,11 +128,15 @@ docker/
 ├── Dockerfile              # Multi-stage build with cargo-chef
 ├── docker-bake.hcl         # Buildx configuration
 ├── Justfile                # Command runner
+├── README.md               # This file
+├── .dockerignore           # Docker build exclusions
 ├── compose/
 │   └── devnet.yaml         # Docker Compose configuration
 ├── config/
 │   └── prometheus.yml      # Prometheus scrape config
 ├── scripts/
+│   ├── devnet-run.sh       # Devnet startup script
+│   ├── devnet-stats.sh     # Live monitoring dashboard
 │   ├── entrypoint.sh       # Container entrypoint
 │   └── healthcheck.sh      # Health check script
 └── grafana/
@@ -103,16 +153,40 @@ cd docker
 just build
 ```
 
+Build without cache:
+
+```bash
+just build-fresh
+```
+
 Validate compose file:
 
 ```bash
 just validate
 ```
 
+Lint Dockerfile:
+
+```bash
+just lint
+```
+
 Re-run DKG (keeps other state):
 
 ```bash
 just redo-dkg
+```
+
+Access a running container:
+
+```bash
+just exec validator-node0
+```
+
+View logs for a specific node:
+
+```bash
+just logs-node validator-node0
 ```
 
 ## Troubleshooting
@@ -125,9 +199,28 @@ just redo-dkg
 **Validators crash on startup:**
 - Verify DKG completed: check for `share.key` in data volumes
 - Check logs: `just logs`
+- Check specific node: `just logs-node validator-node0`
+
+**Port conflicts:**
+- Check if ports 30400-30403, 8545-8548, 9000-9003, 9090, or 3000 are in use
+- Stop conflicting services or modify port mappings in `compose/devnet.yaml`
+
+**Container won't start:**
+- Check Docker daemon is running
+- Ensure sufficient disk space and memory
+- Try a fresh build: `just build-fresh`
+
+**Metrics not appearing in Grafana:**
+- Verify Prometheus is scraping: http://localhost:9090/targets
+- Check validator metrics endpoints are accessible
 
 **Full reset:**
 ```bash
 just reset
 just devnet
+```
+
+**Restart only validators (preserves DKG state):**
+```bash
+just restart-validators
 ```

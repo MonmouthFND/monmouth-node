@@ -162,10 +162,10 @@ impl BlockIndex {
     }
 
     fn matches_filter(log: &IndexedLog, filter: &LogFilter) -> bool {
-        if let Some(addresses) = &filter.address {
-            if !addresses.contains(&log.address) {
-                return false;
-            }
+        if let Some(addresses) = &filter.address
+            && !addresses.contains(&log.address)
+        {
+            return false;
         }
 
         for (i, topic_filter) in filter.topics.iter().enumerate() {

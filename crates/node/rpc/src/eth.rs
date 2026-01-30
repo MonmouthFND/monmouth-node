@@ -234,13 +234,13 @@ impl<S: StateProvider + 'static> EthApiServer for EthApiImpl<S> {
 
     async fn block_number(&self) -> RpcResult<U64> {
         let provider = self.state_provider.read().await;
-        match provider.block_number().await {
-            Ok(height) => Ok(U64::from(height)),
-            Err(_) => {
+        provider.block_number().await.map_or_else(
+            |_| {
                 let height = self.block_height.load(std::sync::atomic::Ordering::Relaxed);
                 Ok(U64::from(height))
-            }
-        }
+            },
+            |height| Ok(U64::from(height)),
+        )
     }
 
     async fn get_balance(

@@ -24,7 +24,7 @@ pub struct KoraApiImpl {
 
 impl KoraApiImpl {
     /// Create a new Kora API implementation.
-    pub fn new(state: Arc<NodeState>) -> Self {
+    pub const fn new(state: Arc<NodeState>) -> Self {
         Self { state }
     }
 }

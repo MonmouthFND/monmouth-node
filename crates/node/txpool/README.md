@@ -1,4 +1,7 @@
-# kora-txpool
+# `kora-txpool`
+
+<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
 Production-ready transaction pool for kora-node with validation, nonce ordering, and fee prioritization.
 
@@ -30,3 +33,7 @@ pool.add(ordered)?;
 // Get pending transactions for block building
 let pending = pool.pending(100);
 ```
+
+## License
+
+This project is licensed under the [MIT License](../../LICENSE).

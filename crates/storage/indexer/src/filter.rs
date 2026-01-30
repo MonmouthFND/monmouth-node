@@ -22,13 +22,13 @@ impl LogFilter {
     }
 
     /// Sets the start block.
-    pub fn from_block(mut self, block: u64) -> Self {
+    pub const fn from_block(mut self, block: u64) -> Self {
         self.from_block = Some(block);
         self
     }
 
     /// Sets the end block.
-    pub fn to_block(mut self, block: u64) -> Self {
+    pub const fn to_block(mut self, block: u64) -> Self {
         self.to_block = Some(block);
         self
     }
