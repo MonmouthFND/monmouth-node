@@ -47,6 +47,10 @@ just devnet
 > [!TIP]
 > See the [Justfile](./Justfile) for other useful commands.
 
+## Demo
+
+https://github.com/user-attachments/assets/8ea05477-039d-4dd2-a7f3-660f179299f7
+
 ## Architecture
 
 The devnet runs in three phases. Phase 0 generates ed25519 identity keys for each validator node. Phase 1 is the DKG ceremony, an interactive threshold key generation process using Ed25519 simplex consensus where validators collaborate to generate a shared BLS12-381 threshold key. Phase 2 launches full validator nodes running BLS12-381 threshold consensus, the REVM execution engine, and QMDB state storage.
