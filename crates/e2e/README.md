@@ -1,6 +1,6 @@
 # `monmouth-e2e`
 
-[![CI](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg)](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml)
+[![CI](https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml/badge.svg)](https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 End-to-end testing framework for Monmouth consensus network.

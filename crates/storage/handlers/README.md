@@ -1,7 +1,7 @@
 # `monmouth-handlers`
 
-<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml"><img src="https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/MonmouthFND/monmouth-node/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
 Thread-safe database handles for Monmouth.
 
@@ -40,4 +40,4 @@ This crate implements Layer 2 of a 2-layer architecture:
 
 ## License
 
-[MIT License](https://github.com/monmouth-ai/monmouth/blob/main/LICENSE)
+[MIT License](https://github.com/MonmouthFND/monmouth-node/blob/main/LICENSE)

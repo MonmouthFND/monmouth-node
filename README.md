@@ -10,8 +10,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/crates/msrv/monmouth?style=flat&labelColor=1C2C2E&color=fbbf24&logo=rust&logoColor=white" alt="MSRV">
-  <a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/monmouth-ai/monmouth/ci.yml?style=flat&labelColor=1C2C2E&label=ci&logo=GitHub%20Actions&logoColor=white" alt="CI"></a>
-  <a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg?style=flat&labelColor=1C2C2E&color=a78bfa&logo=googledocs&logoColor=white" alt="License"></a>
+  <a href="https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/MonmouthFND/monmouth-node/ci.yml?style=flat&labelColor=1C2C2E&label=ci&logo=GitHub%20Actions&logoColor=white" alt="CI"></a>
+  <a href="https://github.com/MonmouthFND/monmouth-node/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg?style=flat&labelColor=1C2C2E&color=a78bfa&logo=googledocs&logoColor=white" alt="License"></a>
 </p>
 
 <p align="center">

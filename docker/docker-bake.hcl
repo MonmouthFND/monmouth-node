@@ -3,7 +3,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 
 variable "REGISTRY" {
-  default = "ghcr.io/monmouth-ai/monmouth"
+  default = "ghcr.io/MonmouthFND/monmouth-node"
 }
 
 variable "PLATFORMS" {

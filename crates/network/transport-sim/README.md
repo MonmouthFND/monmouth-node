@@ -1,6 +1,6 @@
 # `monmouth-transport-sim`
 
-[![CI](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg)](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml)
+[![CI](https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml/badge.svg)](https://github.com/MonmouthFND/monmouth-node/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Simulated P2P transport for Monmouth node testing and development.
