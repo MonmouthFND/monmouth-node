@@ -4,8 +4,8 @@ use alloy_consensus::{Transaction, TxEnvelope};
 use alloy_eips::eip2718::Decodable2718;
 use alloy_primitives::{Address, B256, U256, keccak256};
 use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
-use kora_domain::Tx;
-use kora_traits::StateDbRead;
+use monmouth_domain::Tx;
+use monmouth_traits::StateDbRead;
 use sha3::{Digest, Keccak256};
 
 use crate::{config::PoolConfig, error::TxPoolError, ordering::OrderedTransaction};
@@ -259,24 +259,24 @@ mod tests {
         }
     }
 
-    impl kora_traits::StateDbRead for MockState {
-        async fn nonce(&self, address: &Address) -> Result<u64, kora_traits::StateDbError> {
+    impl monmouth_traits::StateDbRead for MockState {
+        async fn nonce(&self, address: &Address) -> Result<u64, monmouth_traits::StateDbError> {
             Ok(*self.nonces.read().get(address).unwrap_or(&0))
         }
 
-        async fn balance(&self, address: &Address) -> Result<U256, kora_traits::StateDbError> {
+        async fn balance(&self, address: &Address) -> Result<U256, monmouth_traits::StateDbError> {
             Ok(*self.balances.read().get(address).unwrap_or(&U256::ZERO))
         }
 
-        async fn code_hash(&self, _: &Address) -> Result<B256, kora_traits::StateDbError> {
+        async fn code_hash(&self, _: &Address) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
 
-        async fn code(&self, _: &B256) -> Result<Bytes, kora_traits::StateDbError> {
+        async fn code(&self, _: &B256) -> Result<Bytes, monmouth_traits::StateDbError> {
             Ok(Bytes::new())
         }
 
-        async fn storage(&self, _: &Address, _: &U256) -> Result<U256, kora_traits::StateDbError> {
+        async fn storage(&self, _: &Address, _: &U256) -> Result<U256, monmouth_traits::StateDbError> {
             Ok(U256::ZERO)
         }
     }

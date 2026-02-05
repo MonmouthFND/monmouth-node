@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use alloy_primitives::{Address, B256, Bytes, U256};
-use kora_qmdb::ChangeSet;
-use kora_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
+use monmouth_qmdb::ChangeSet;
+use monmouth_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
 
 /// State overlay that layers pending changes on top of a base state database.
 #[derive(Clone, Debug)]
@@ -168,7 +168,7 @@ impl<S: StateDb> StateDb for OverlayState<S> {
 mod tests {
     use std::collections::BTreeMap;
 
-    use kora_qmdb::AccountUpdate;
+    use monmouth_qmdb::AccountUpdate;
 
     use super::*;
 

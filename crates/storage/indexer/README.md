@@ -1,9 +1,9 @@
-# `kora-indexer`
+# `monmouth-indexer`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Block and transaction indexer for Kora RPC queries.
+Block and transaction indexer for Monmouth RPC queries.
 
 This crate provides in-memory indexing for blocks, transactions, receipts, and logs to support Ethereum JSON-RPC queries such as:
 
@@ -21,7 +21,7 @@ This crate provides in-memory indexing for blocks, transactions, receipts, and l
 ## Usage
 
 ```rust,ignore
-use kora_indexer::{BlockIndex, IndexedBlock, LogFilter};
+use monmouth_indexer::{BlockIndex, IndexedBlock, LogFilter};
 
 // Create an index
 let index = BlockIndex::new();
@@ -44,4 +44,4 @@ let logs = index.get_logs(&filter);
 
 ## License
 
-[MIT License](https://github.com/refcell/kora/blob/main/LICENSE)
+[MIT License](https://github.com/monmouth-ai/monmouth/blob/main/LICENSE)

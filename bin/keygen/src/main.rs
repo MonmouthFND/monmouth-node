@@ -1,4 +1,4 @@
-#![doc = "Key generation and setup tool for Kora devnet."]
+#![doc = "Key generation and setup tool for Monmouth devnet."]
 
 use clap::Parser;
 use eyre::Result;
@@ -9,7 +9,7 @@ mod setup;
 
 #[derive(Parser, Debug)]
 #[command(name = "keygen")]
-#[command(about = "Key generation and setup tool for Kora devnet")]
+#[command(about = "Key generation and setup tool for Monmouth devnet")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

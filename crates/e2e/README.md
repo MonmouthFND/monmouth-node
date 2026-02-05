@@ -1,9 +1,9 @@
-# `kora-e2e`
+# `monmouth-e2e`
 
-[![CI](https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg)](https://github.com/refcell/kora/actions/workflows/ci.yml)
+[![CI](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg)](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-End-to-end testing framework for Kora consensus network.
+End-to-end testing framework for Monmouth consensus network.
 
 This crate provides a simulation-based testing infrastructure for running
 multi-validator consensus tests without real networking. It enables testing
@@ -28,7 +28,7 @@ Tests in this crate use file-based storage and are resource-intensive.
 For reliable results, run with a single test thread:
 
 ```bash
-cargo test -p kora-e2e -- --test-threads=1
+cargo test -p monmouth-e2e -- --test-threads=1
 ```
 
 ## License

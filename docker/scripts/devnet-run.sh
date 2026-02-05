@@ -122,7 +122,7 @@ print_header
 
 # Phase 0: Build
 print_phase "0/3" "Building Docker image"
-if run_with_spinner "Building kora:local image..." docker buildx bake --allow=fs.read=.. -f docker-bake.hcl kora-local; then
+if run_with_spinner "Building monmouth:local image..." docker buildx bake --allow=fs.read=.. -f docker-bake.hcl monmouth-local; then
     print_success "Image built successfully"
 else
     print_error "Build failed"
@@ -133,12 +133,12 @@ fi
 CONFIG_EXISTS=false
 SHARES_EXIST=false
 
-docker volume inspect kora-devnet_shared_config >/dev/null 2>&1 && \
-    docker run --rm -v kora-devnet_shared_config:/shared alpine test -f /shared/peers.json 2>/dev/null && \
+docker volume inspect monmouth-devnet_shared_config >/dev/null 2>&1 && \
+    docker run --rm -v monmouth-devnet_shared_config:/shared alpine test -f /shared/peers.json 2>/dev/null && \
     CONFIG_EXISTS=true
 
-docker volume inspect kora-devnet_data_node0 >/dev/null 2>&1 && \
-    docker run --rm -v kora-devnet_data_node0:/data alpine test -f /data/share.key 2>/dev/null && \
+docker volume inspect monmouth-devnet_data_node0 >/dev/null 2>&1 && \
+    docker run --rm -v monmouth-devnet_data_node0:/data alpine test -f /data/share.key 2>/dev/null && \
     SHARES_EXIST=true
 
 echo ""

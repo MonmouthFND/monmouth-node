@@ -1,9 +1,9 @@
-# `kora-sys`
+# `monmouth-sys`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-System utilities for Kora.
+System utilities for Monmouth.
 
 ## Key Types
 
@@ -12,7 +12,7 @@ System utilities for Kora.
 ## Usage
 
 ```rust,ignore
-use kora_sys::FileLimitHandler;
+use monmouth_sys::FileLimitHandler;
 
 // Attempt to raise file descriptor limits
 FileLimitHandler::raise_limits();
@@ -20,4 +20,4 @@ FileLimitHandler::raise_limits();
 
 ## License
 
-[MIT License](https://github.com/refcell/kora/blob/main/LICENSE)
+[MIT License](https://github.com/monmouth-ai/monmouth/blob/main/LICENSE)

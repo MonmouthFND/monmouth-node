@@ -1,7 +1,7 @@
-//! P2P transport layer for Kora nodes.
+//! P2P transport layer for Monmouth nodes.
 
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/monmouth-ai/monmouth/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 

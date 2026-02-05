@@ -1,23 +1,23 @@
-# `kora-service`
+# `monmouth-service`
 
-[![CI](https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg)](https://github.com/refcell/kora/actions/workflows/ci.yml)
+[![CI](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg)](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Kora node service orchestration.
+Monmouth node service orchestration.
 
 ## Key Types
 
-- `KoraNodeService` - Main service type that orchestrates node components
+- `MonmouthNodeService` - Main service type that orchestrates node components
 
 ## Usage
 
 ```rust,ignore
-use kora_config::NodeConfig;
-use kora_service::KoraNodeService;
+use monmouth_config::NodeConfig;
+use monmouth_service::MonmouthNodeService;
 
 fn main() -> eyre::Result<()> {
     let config = NodeConfig::default();
-    let service = KoraNodeService::new(config);
+    let service = MonmouthNodeService::new(config);
     service.run()
 }
 ```

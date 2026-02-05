@@ -1,13 +1,13 @@
-# `kora-simplex`
+# `monmouth-simplex`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Commonware simplex consensus engine integration for Kora.
+Commonware simplex consensus engine integration for Monmouth.
 
 This crate provides default configurations and wrappers for the
 [commonware-simplex](https://github.com/commonwarexyz/monorepo) consensus engine,
-which drives BLS12-381 threshold signature-based consensus in Kora nodes.
+which drives BLS12-381 threshold signature-based consensus in Monmouth nodes.
 
 ## Key Types
 
@@ -30,7 +30,7 @@ which drives BLS12-381 threshold signature-based consensus in Kora nodes.
 ## Usage
 
 ```rust,ignore
-use kora_simplex::{DefaultEngine, DefaultConfig, DefaultPool};
+use monmouth_simplex::{DefaultEngine, DefaultConfig, DefaultPool};
 
 // Create consensus engine with default configuration
 let config = DefaultConfig::default();

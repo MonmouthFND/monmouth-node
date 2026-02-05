@@ -5,8 +5,8 @@ use std::{
     sync::Arc,
 };
 
-use kora_qmdb::ChangeSet;
-use kora_traits::StateDb;
+use monmouth_qmdb::ChangeSet;
+use monmouth_traits::StateDb;
 use parking_lot::RwLock;
 
 use crate::{
@@ -170,7 +170,7 @@ mod tests {
     use std::collections::BTreeSet;
 
     use alloy_primitives::B256;
-    use kora_domain::StateRoot;
+    use monmouth_domain::StateRoot;
 
     use super::*;
 
@@ -178,32 +178,32 @@ mod tests {
     #[derive(Clone, Debug)]
     struct MockStateDb;
 
-    impl kora_traits::StateDbRead for MockStateDb {
+    impl monmouth_traits::StateDbRead for MockStateDb {
         async fn nonce(
             &self,
             _address: &alloy_primitives::Address,
-        ) -> Result<u64, kora_traits::StateDbError> {
+        ) -> Result<u64, monmouth_traits::StateDbError> {
             Ok(0)
         }
 
         async fn balance(
             &self,
             _address: &alloy_primitives::Address,
-        ) -> Result<alloy_primitives::U256, kora_traits::StateDbError> {
+        ) -> Result<alloy_primitives::U256, monmouth_traits::StateDbError> {
             Ok(alloy_primitives::U256::ZERO)
         }
 
         async fn code_hash(
             &self,
             _address: &alloy_primitives::Address,
-        ) -> Result<B256, kora_traits::StateDbError> {
+        ) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
 
         async fn code(
             &self,
             _code_hash: &B256,
-        ) -> Result<alloy_primitives::Bytes, kora_traits::StateDbError> {
+        ) -> Result<alloy_primitives::Bytes, monmouth_traits::StateDbError> {
             Ok(alloy_primitives::Bytes::new())
         }
 
@@ -211,20 +211,20 @@ mod tests {
             &self,
             _address: &alloy_primitives::Address,
             _slot: &alloy_primitives::U256,
-        ) -> Result<alloy_primitives::U256, kora_traits::StateDbError> {
+        ) -> Result<alloy_primitives::U256, monmouth_traits::StateDbError> {
             Ok(alloy_primitives::U256::ZERO)
         }
     }
 
-    impl kora_traits::StateDbWrite for MockStateDb {
-        async fn commit(&self, _changes: ChangeSet) -> Result<B256, kora_traits::StateDbError> {
+    impl monmouth_traits::StateDbWrite for MockStateDb {
+        async fn commit(&self, _changes: ChangeSet) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
 
         async fn compute_root(
             &self,
             _changes: &ChangeSet,
-        ) -> Result<B256, kora_traits::StateDbError> {
+        ) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
 
@@ -234,8 +234,8 @@ mod tests {
         }
     }
 
-    impl kora_traits::StateDb for MockStateDb {
-        async fn state_root(&self) -> Result<B256, kora_traits::StateDbError> {
+    impl monmouth_traits::StateDb for MockStateDb {
+        async fn state_root(&self) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
     }

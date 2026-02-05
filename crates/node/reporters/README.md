@@ -1,12 +1,12 @@
-# `kora-reporters`
+# `monmouth-reporters`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Consensus reporters for Kora nodes.
+Consensus reporters for Monmouth nodes.
 
 This crate provides reusable `commonware_consensus::Reporter` implementations used by
-Kora node applications.
+Monmouth node applications.
 
 ## Key Types
 
@@ -15,13 +15,13 @@ Kora node applications.
 - `NodeStateReporter` - updates RPC-visible node state (view, finalized count, nullified count) from consensus activity
 - `BlockContextProvider` - trait for providing block execution context
 
-These reporters are designed to work with `kora-ledger` and can be used in both the
+These reporters are designed to work with `monmouth-ledger` and can be used in both the
 example REVM chain and production nodes.
 
 ## Usage
 
 ```rust,ignore
-use kora_reporters::{SeedReporter, FinalizedReporter, NodeStateReporter};
+use monmouth_reporters::{SeedReporter, FinalizedReporter, NodeStateReporter};
 
 // Create reporters for consensus integration
 let seed_reporter = SeedReporter::new(ledger_service.clone());

@@ -1,7 +1,7 @@
-//! Interactive Distributed Key Generation (DKG) for Kora threshold cryptography.
+//! Interactive Distributed Key Generation (DKG) for Monmouth threshold cryptography.
 
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/monmouth-ai/monmouth/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 

@@ -5,7 +5,7 @@
 
 use std::time::Duration;
 
-use kora_transport_sim::SimLinkConfig;
+use monmouth_transport_sim::SimLinkConfig;
 
 use crate::{TestConfig, TestHarness, TestSetup};
 

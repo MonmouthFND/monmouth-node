@@ -66,36 +66,36 @@ mod tests {
     #[test]
     fn test_read_error_display() {
         let err = ConfigError::Read {
-            path: PathBuf::from("/etc/kora/config.toml"),
+            path: PathBuf::from("/etc/monmouth/config.toml"),
             source: IoError::new(ErrorKind::NotFound, "file not found"),
         };
         let display = err.to_string();
         assert!(display.contains("failed to read config file"));
-        assert!(display.contains("/etc/kora/config.toml"));
+        assert!(display.contains("/etc/monmouth/config.toml"));
         assert!(display.contains("file not found"));
     }
 
     #[test]
     fn test_write_error_display() {
         let err = ConfigError::Write {
-            path: PathBuf::from("/var/lib/kora/state.db"),
+            path: PathBuf::from("/var/lib/monmouth/state.db"),
             source: IoError::new(ErrorKind::PermissionDenied, "permission denied"),
         };
         let display = err.to_string();
         assert!(display.contains("failed to write"));
-        assert!(display.contains("/var/lib/kora/state.db"));
+        assert!(display.contains("/var/lib/monmouth/state.db"));
         assert!(display.contains("permission denied"));
     }
 
     #[test]
     fn test_create_dir_error_display() {
         let err = ConfigError::CreateDir {
-            path: PathBuf::from("/var/lib/kora"),
+            path: PathBuf::from("/var/lib/monmouth"),
             source: IoError::new(ErrorKind::AlreadyExists, "directory exists"),
         };
         let display = err.to_string();
         assert!(display.contains("failed to create directory"));
-        assert!(display.contains("/var/lib/kora"));
+        assert!(display.contains("/var/lib/monmouth"));
         assert!(display.contains("directory exists"));
     }
 

@@ -1,18 +1,18 @@
 [package]
-name = "kora-backend"
+name = "monmouth-backend"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Commonware-storage based backend for Kora QMDB"
+description = "Commonware-storage based backend for Monmouth QMDB"
 
 [lints]
 workspace = true
 
 [dependencies]
-kora-qmdb = { path = "../qmdb" }
-kora-handlers = { path = "../handlers" }
+monmouth-qmdb = { path = "../qmdb" }
+monmouth-handlers = { path = "../handlers" }
 
 alloy-primitives.workspace = true
 async-trait = "0.1"

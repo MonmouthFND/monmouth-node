@@ -1,9 +1,9 @@
-# `kora-executor`
+# `monmouth-executor`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Block execution abstractions and REVM-based implementation for Kora.
+Block execution abstractions and REVM-based implementation for Monmouth.
 
 This crate provides:
 - `BlockExecutor` trait for executing transactions against state
@@ -24,7 +24,7 @@ This crate provides:
 ## Usage
 
 ```rust,ignore
-use kora_executor::{RevmExecutor, BlockContext, ExecutionConfig};
+use monmouth_executor::{RevmExecutor, BlockContext, ExecutionConfig};
 
 // Create an executor with configuration
 let config = ExecutionConfig::default();

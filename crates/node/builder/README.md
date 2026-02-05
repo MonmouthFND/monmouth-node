@@ -1,11 +1,11 @@
-# `kora-builder`
+# `monmouth-builder`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Node builder for constructing Kora nodes with consensus components.
+Node builder for constructing Monmouth nodes with consensus components.
 
-This crate provides a builder pattern for assembling Kora nodes with configurable
+This crate provides a builder pattern for assembling Monmouth nodes with configurable
 consensus providers and node components.
 
 ## Key Types
@@ -18,7 +18,7 @@ consensus providers and node components.
 ## Usage
 
 ```rust,ignore
-use kora_builder::{NodeBuilder, ConsensusProvider, NodeComponents};
+use monmouth_builder::{NodeBuilder, ConsensusProvider, NodeComponents};
 
 // Build a node with custom components
 let node = NodeBuilder::new()

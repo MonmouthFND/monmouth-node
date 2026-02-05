@@ -1,19 +1,19 @@
 [package]
-name = "kora-service"
+name = "monmouth-service"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Kora node service orchestration"
+description = "Monmouth node service orchestration"
 
 [lints]
 workspace = true
 
 [dependencies]
 # Local crates
-kora-config = { path = "../config" }
-kora-transport = { path = "../../network/transport" }
+monmouth-config = { path = "../config" }
+monmouth-transport = { path = "../../network/transport" }
 
 # Commonware
 commonware-consensus.workspace = true

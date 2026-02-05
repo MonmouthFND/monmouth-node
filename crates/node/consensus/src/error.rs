@@ -1,6 +1,6 @@
 //! Error types for consensus operations.
 
-use kora_domain::{ConsensusDigest, StateRoot};
+use monmouth_domain::{ConsensusDigest, StateRoot};
 use thiserror::Error;
 
 /// Error type for consensus operations.
@@ -20,7 +20,7 @@ pub enum ConsensusError {
 
     /// State database error.
     #[error("state db error: {0}")]
-    StateDb(#[from] kora_traits::StateDbError),
+    StateDb(#[from] monmouth_traits::StateDbError),
 
     /// Block validation failed.
     #[error("validation failed: {0}")]
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_state_db_error_from() {
-        let state_err = kora_traits::StateDbError::LockPoisoned;
+        let state_err = monmouth_traits::StateDbError::LockPoisoned;
         let err: ConsensusError = state_err.into();
         assert!(err.to_string().contains("state db error"));
     }

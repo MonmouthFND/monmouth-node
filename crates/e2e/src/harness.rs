@@ -20,16 +20,16 @@ use commonware_parallel::Sequential;
 use commonware_runtime::{Clock, Metrics, Runner as _, Spawner, buffer::PoolRef, tokio};
 use commonware_utils::{NZU64, NZUsize, TryCollect as _, ordered::Set};
 use futures::{StreamExt as _, channel::mpsc};
-use kora_crypto::{ThresholdScheme, threshold_schemes};
-use kora_domain::{
+use monmouth_crypto::{ThresholdScheme, threshold_schemes};
+use monmouth_domain::{
     Block, BlockCfg, ConsensusDigest, FinalizationEvent, LedgerEvent, PublicKey, StateRoot, TxCfg,
 };
-use kora_executor::{BlockContext, RevmExecutor};
-use kora_ledger::{LedgerService, LedgerView};
-use kora_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
-use kora_reporters::{BlockContextProvider, FinalizedReporter, SeedReporter};
-use kora_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool, DefaultQuota};
-use kora_transport_sim::{SimContext, SimControl, SimLinkConfig, register_node_channels};
+use monmouth_executor::{BlockContext, RevmExecutor};
+use monmouth_ledger::{LedgerService, LedgerView};
+use monmouth_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
+use monmouth_reporters::{BlockContextProvider, FinalizedReporter, SeedReporter};
+use monmouth_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool, DefaultQuota};
+use monmouth_transport_sim::{SimContext, SimControl, SimLinkConfig, register_node_channels};
 use thiserror::Error;
 use tracing::{debug, info, trace};
 
@@ -247,7 +247,7 @@ async fn start_all_nodes(
     sim_control: &Arc<Mutex<SimControl<ed25519::PublicKey>>>,
     participants: &[ed25519::PublicKey],
     schemes: &[ThresholdScheme],
-    bootstrap: &kora_domain::BootstrapConfig,
+    bootstrap: &monmouth_domain::BootstrapConfig,
     chain_id: u64,
     gas_limit: u64,
     partition_prefix: &str,
@@ -289,7 +289,7 @@ async fn start_single_node(
     index: usize,
     public_key: Peer,
     scheme: ThresholdScheme,
-    bootstrap: kora_domain::BootstrapConfig,
+    bootstrap: monmouth_domain::BootstrapConfig,
     finalized_tx: mpsc::UnboundedSender<FinalizationEvent>,
     chain_id: u64,
     gas_limit: u64,
@@ -502,7 +502,7 @@ where
     .context("init blocks archive")?;
 
     let (actor, mailbox, _last_processed_height) =
-        kora_marshal::ActorInitializer::init_with_partition::<_, Block, _, _, _, Exact>(
+        monmouth_marshal::ActorInitializer::init_with_partition::<_, Block, _, _, _, Exact>(
             ctx.clone(),
             finalizations_by_height,
             finalized_blocks,
@@ -651,12 +651,12 @@ use commonware_consensus::{
     simplex::types::Context,
 };
 use commonware_cryptography::{Committable as _, certificate::Scheme as CertScheme};
-use kora_consensus::{
+use monmouth_consensus::{
     BlockExecution, Mempool as _, SnapshotStore, components::InMemorySnapshotStore,
 };
-use kora_executor::BlockExecutor;
-use kora_overlay::OverlayState;
-use kora_qmdb_ledger::QmdbState;
+use monmouth_executor::BlockExecutor;
+use monmouth_overlay::OverlayState;
+use monmouth_qmdb_ledger::QmdbState;
 use rand::Rng;
 
 #[derive(Clone)]
@@ -797,7 +797,7 @@ impl<S> TestApplication<S> {
         &self,
         snapshots: &InMemorySnapshotStore<OverlayState<QmdbState>>,
         from: ConsensusDigest,
-    ) -> BTreeSet<kora_consensus::TxId> {
+    ) -> BTreeSet<monmouth_consensus::TxId> {
         let mut excluded = BTreeSet::new();
         let mut current = Some(from);
 

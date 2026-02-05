@@ -6,14 +6,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ConfigError, ConsensusConfig, ExecutionConfig, NetworkConfig, RpcConfig};
 
-/// Default chain ID for local development.
-pub const DEFAULT_CHAIN_ID: u64 = 1;
+/// Default chain ID for Monmouth network.
+pub const DEFAULT_CHAIN_ID: u64 = 7750;
 
 /// Default data directory.
-pub const DEFAULT_DATA_DIR: &str = "/var/lib/kora";
+pub const DEFAULT_DATA_DIR: &str = "/var/lib/monmouth";
 
 /// Complete node configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct NodeConfig {
     /// Chain ID for the network.
     #[serde(default = "default_chain_id")]

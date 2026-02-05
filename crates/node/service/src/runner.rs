@@ -1,14 +1,14 @@
 //! Node runner trait for delegating node wiring.
 //!
 //! The [`NodeRunner`] trait defines how a node is wired and started.
-//! [`KoraNodeService`] delegates the actual node wiring to implementations
+//! [`MonmouthNodeService`] delegates the actual node wiring to implementations
 //! of this trait, allowing different execution environments (REVM, etc.)
 //! to provide their own wiring logic.
 
 use std::sync::Arc;
 
 use commonware_runtime::tokio;
-use kora_config::NodeConfig;
+use monmouth_config::NodeConfig;
 
 /// Context provided to a node runner.
 ///

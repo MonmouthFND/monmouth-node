@@ -1,24 +1,24 @@
 [package]
-name = "kora-reporters"
+name = "monmouth-reporters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Consensus reporters for Kora nodes"
+description = "Consensus reporters for Monmouth nodes"
 
 [lints]
 workspace = true
 
 [dependencies]
 # Local crates
-kora-consensus = { path = "../consensus" }
-kora-domain = { path = "../domain" }
-kora-executor = { path = "../executor" }
-kora-ledger = { path = "../ledger" }
-kora-overlay = { path = "../../storage/overlay" }
-kora-qmdb-ledger = { path = "../../storage/qmdb-ledger" }
-kora-rpc = { path = "../rpc" }
+monmouth-consensus = { path = "../consensus" }
+monmouth-domain = { path = "../domain" }
+monmouth-executor = { path = "../executor" }
+monmouth-ledger = { path = "../ledger" }
+monmouth-overlay = { path = "../../storage/overlay" }
+monmouth-qmdb-ledger = { path = "../../storage/qmdb-ledger" }
+monmouth-rpc = { path = "../rpc" }
 
 # Commonware
 commonware-codec.workspace = true

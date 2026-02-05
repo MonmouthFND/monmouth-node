@@ -1,8 +1,8 @@
 //! StateDb trait implementations for QmdbHandle.
 
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256};
-use kora_qmdb::{AccountEncoding, ChangeSet, QmdbBatchable, QmdbGettable, StateRoot, StorageKey};
-use kora_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
+use monmouth_qmdb::{AccountEncoding, ChangeSet, QmdbBatchable, QmdbGettable, StateRoot, StorageKey};
+use monmouth_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
 
 use crate::QmdbHandle;
 
@@ -162,7 +162,7 @@ where
 mod tests {
     use std::{collections::HashMap as StdHashMap, sync::Mutex};
 
-    use kora_qmdb::{QmdbBatchable, QmdbGettable};
+    use monmouth_qmdb::{QmdbBatchable, QmdbGettable};
 
     use super::*;
 

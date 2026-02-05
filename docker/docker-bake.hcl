@@ -1,9 +1,9 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# Kora Docker Buildx Bake Configuration
+# Monmouth Docker Buildx Bake Configuration
 # ═══════════════════════════════════════════════════════════════════════════
 
 variable "REGISTRY" {
-  default = "ghcr.io/refcell/kora"
+  default = "ghcr.io/monmouth-ai/monmouth"
 }
 
 variable "PLATFORMS" {
@@ -23,11 +23,11 @@ variable "BUILD_PROFILE" {
 # ───────────────────────────────────────────────────────────────────────────
 
 group "default" {
-  targets = ["kora"]
+  targets = ["monmouth"]
 }
 
 group "all" {
-  targets = ["kora", "kora-dev"]
+  targets = ["monmouth", "monmouth-dev"]
 }
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -35,14 +35,14 @@ group "all" {
 # ───────────────────────────────────────────────────────────────────────────
 
 target "docker-metadata-action" {
-  tags = ["${REGISTRY}/kora:${GIT_REF_NAME}"]
+  tags = ["${REGISTRY}/monmouth:${GIT_REF_NAME}"]
 }
 
 # ───────────────────────────────────────────────────────────────────────────
 # Production build - multi-platform
 # ───────────────────────────────────────────────────────────────────────────
 
-target "kora" {
+target "monmouth" {
   inherits   = ["docker-metadata-action"]
   context    = ".."
   dockerfile = "docker/Dockerfile"
@@ -56,11 +56,11 @@ target "kora" {
 # Local development build - single platform, local only
 # ───────────────────────────────────────────────────────────────────────────
 
-target "kora-local" {
+target "monmouth-local" {
   context    = ".."
   dockerfile = "docker/Dockerfile"
   platforms  = ["linux/amd64"]
-  tags       = ["kora:local"]
+  tags       = ["monmouth:local"]
   args = {
     BUILD_PROFILE = "release"
   }
@@ -70,11 +70,11 @@ target "kora-local" {
 # Development build with debug symbols
 # ───────────────────────────────────────────────────────────────────────────
 
-target "kora-dev" {
+target "monmouth-dev" {
   context    = ".."
   dockerfile = "docker/Dockerfile"
   platforms  = ["linux/amd64"]
-  tags       = ["kora:dev"]
+  tags       = ["monmouth:dev"]
   args = {
     BUILD_PROFILE = "dev"
   }

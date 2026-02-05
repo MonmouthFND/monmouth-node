@@ -1,11 +1,11 @@
 [package]
-name = "kora-builder"
+name = "monmouth-builder"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Block builder for Kora nodes"
+description = "Block builder for Monmouth nodes"
 
 [lints]
 workspace = true

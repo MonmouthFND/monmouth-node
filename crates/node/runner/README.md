@@ -1,13 +1,13 @@
-# `kora-runner`
+# `monmouth-runner`
 
-<a href="https://github.com/refcell/kora/actions/workflows/ci.yml"><img src="https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-<a href="https://github.com/refcell/kora/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
+<a href="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml"><img src="https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="https://github.com/monmouth-ai/monmouth/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-d1d1f6.svg" alt="License"></a>
 
-Production node runner for Kora validators. Orchestrates all node components including consensus, execution, storage, and networking.
+Production node runner for Monmouth validators. Orchestrates all node components including consensus, execution, storage, and networking.
 
 ## Overview
 
-This crate provides the high-level runner that assembles and starts a complete Kora validator node. It integrates:
+This crate provides the high-level runner that assembles and starts a complete Monmouth validator node. It integrates:
 
 - **BLS12-381 threshold consensus** via commonware simplex
 - **REVM execution** for EVM state transitions
@@ -18,9 +18,9 @@ This crate provides the high-level runner that assembles and starts a complete K
 ## Usage
 
 ```rust,ignore
-use kora_runner::{ProductionRunner, ThresholdScheme, load_threshold_scheme};
-use kora_config::NodeConfig;
-use kora_domain::BootstrapConfig;
+use monmouth_runner::{ProductionRunner, ThresholdScheme, load_threshold_scheme};
+use monmouth_config::NodeConfig;
+use monmouth_domain::BootstrapConfig;
 
 // Load threshold signing scheme from DKG output
 let scheme = load_threshold_scheme("/path/to/dkg/output")?;
@@ -45,8 +45,8 @@ runner.run_standalone(config)?;
 ### Using with Custom Transport
 
 ```rust,ignore
-use kora_runner::ProductionRunner;
-use kora_service::{NodeRunContext, NodeRunner};
+use monmouth_runner::ProductionRunner;
+use monmouth_service::{NodeRunContext, NodeRunner};
 
 let runner = ProductionRunner::new(scheme, chain_id, gas_limit, bootstrap);
 
@@ -126,7 +126,7 @@ The runner is configured through:
 Load a threshold scheme from DKG ceremony output:
 
 ```rust,ignore
-use kora_runner::load_threshold_scheme;
+use monmouth_runner::load_threshold_scheme;
 
 // From file path
 let scheme = load_threshold_scheme("/path/to/dkg/output.json")?;

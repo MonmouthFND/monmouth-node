@@ -5,12 +5,12 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Key generation and setup tool for Kora devnet"
+description = "Key generation and setup tool for Monmouth devnet"
 
 [dependencies]
-kora-config.workspace = true
-kora-domain.workspace = true
-kora-dkg.workspace = true
+monmouth-config.workspace = true
+monmouth-domain.workspace = true
+monmouth-dkg.workspace = true
 
 commonware-cryptography.workspace = true
 commonware-codec.workspace = true

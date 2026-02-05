@@ -1,11 +1,11 @@
 [package]
-name = "kora-executor"
+name = "monmouth-executor"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Block execution abstractions and REVM implementation for Kora"
+description = "Block execution abstractions and REVM implementation for Monmouth"
 
 [dependencies]
 alloy-consensus.workspace = true
@@ -13,10 +13,11 @@ alloy-eips.workspace = true
 alloy-primitives.workspace = true
 alloy-rlp.workspace = true
 futures.workspace = true
-kora-qmdb = { path = "../../storage/qmdb" }
-kora-traits = { path = "../../storage/traits" }
+monmouth-qmdb = { path = "../../storage/qmdb" }
+monmouth-traits = { path = "../../storage/traits" }
 revm.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true

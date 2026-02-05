@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-//! Load generator for Kora devnet.
+//! Load generator for Monmouth devnet.
 //!
 //! Sends high volumes of EIP-1559 transactions to stress test the network.
 
@@ -23,7 +23,7 @@ use tracing::{error, info, warn};
 
 /// Load generator CLI.
 #[derive(Parser, Debug)]
-#[command(name = "loadgen", about = "Load generator for Kora devnet")]
+#[command(name = "loadgen", about = "Load generator for Monmouth devnet")]
 struct Args {
     /// RPC endpoint URL.
     #[arg(long, default_value = "http://127.0.0.1:8545")]

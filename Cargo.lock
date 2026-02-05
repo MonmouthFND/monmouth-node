@@ -3272,486 +3272,15 @@ dependencies = [
  "ed25519-consensus",
  "eyre",
  "hex",
- "kora-config",
- "kora-dkg",
- "kora-domain",
+ "monmouth-config",
+ "monmouth-dkg",
+ "monmouth-domain",
  "rand 0.8.5",
  "serde",
  "serde_json",
  "toml 0.8.23",
  "tracing",
  "tracing-subscriber 0.3.22",
-]
-
-[[package]]
-name = "kora"
-version = "0.1.0"
-dependencies = [
- "clap",
- "commonware-codec",
- "commonware-cryptography",
- "eyre",
- "hex",
- "kora-cli",
- "kora-config",
- "kora-dkg",
- "kora-domain",
- "kora-rpc",
- "kora-runner",
- "kora-service",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.22",
-]
-
-[[package]]
-name = "kora-backend"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "async-trait",
- "bytes",
- "commonware-codec",
- "commonware-cryptography",
- "commonware-runtime",
- "commonware-storage",
- "commonware-utils",
- "kora-handlers",
- "kora-qmdb",
- "tempfile",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "kora-builder"
-version = "0.1.0"
-dependencies = [
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-parallel",
-]
-
-[[package]]
-name = "kora-cli"
-version = "0.1.0"
-dependencies = [
- "libc",
-]
-
-[[package]]
-name = "kora-config"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "commonware-codec",
- "commonware-cryptography",
- "ed25519-consensus",
- "rand 0.8.5",
- "rstest",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.18",
- "toml 0.8.23",
-]
-
-[[package]]
-name = "kora-consensus"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-primitives",
- "commonware-cryptography",
- "futures",
- "kora-config",
- "kora-domain",
- "kora-executor",
- "kora-qmdb",
- "kora-traits",
- "parking_lot",
- "rstest",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "kora-crypto"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-utils",
- "kora-domain",
- "rand 0.8.5",
-]
-
-[[package]]
-name = "kora-dkg"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "commonware-codec",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-parallel",
- "commonware-runtime",
- "commonware-utils",
- "hex",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "kora-domain"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-eips",
- "alloy-evm",
- "alloy-primitives",
- "bytes",
- "commonware-codec",
- "commonware-consensus",
- "commonware-cryptography",
- "futures",
- "k256",
- "parking_lot",
- "serde",
- "serde_json",
- "sha3",
-]
-
-[[package]]
-name = "kora-e2e"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-primitives",
- "anyhow",
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-parallel",
- "commonware-runtime",
- "commonware-utils",
- "futures",
- "k256",
- "kora-consensus",
- "kora-crypto",
- "kora-domain",
- "kora-executor",
- "kora-ledger",
- "kora-marshal",
- "kora-overlay",
- "kora-qmdb-ledger",
- "kora-reporters",
- "kora-simplex",
- "kora-transport-sim",
- "rand 0.8.5",
- "rstest",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "kora-executor"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-eips",
- "alloy-primitives",
- "alloy-rlp",
- "futures",
- "kora-qmdb",
- "kora-traits",
- "revm",
- "rstest",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "kora-handlers"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "async-trait",
- "futures",
- "kora-qmdb",
- "kora-traits",
- "revm",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "kora-indexer"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "parking_lot",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "kora-ledger"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-evm",
- "alloy-primitives",
- "commonware-cryptography",
- "commonware-runtime",
- "commonware-utils",
- "futures",
- "k256",
- "kora-consensus",
- "kora-domain",
- "kora-executor",
- "kora-overlay",
- "kora-qmdb-ledger",
- "kora-traits",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "kora-marshal"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "commonware-broadcast",
- "commonware-codec",
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-macros",
- "commonware-p2p",
- "commonware-parallel",
- "commonware-resolver",
- "commonware-runtime",
- "commonware-storage",
- "commonware-utils",
- "futures",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "tracing",
- "tracing-subscriber 0.3.22",
-]
-
-[[package]]
-name = "kora-overlay"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "kora-qmdb",
- "kora-traits",
- "tokio",
-]
-
-[[package]]
-name = "kora-qmdb"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "rstest",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "kora-qmdb-ledger"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "commonware-runtime",
- "kora-backend",
- "kora-domain",
- "kora-handlers",
- "kora-qmdb",
- "kora-traits",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "kora-reporters"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "commonware-codec",
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-runtime",
- "commonware-utils",
- "kora-consensus",
- "kora-domain",
- "kora-executor",
- "kora-ledger",
- "kora-overlay",
- "kora-qmdb-ledger",
- "kora-rpc",
- "tracing",
-]
-
-[[package]]
-name = "kora-rpc"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "async-trait",
- "axum",
- "jsonrpsee",
- "kora-indexer",
- "kora-traits",
- "parking_lot",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tower 0.5.3",
- "tower-http",
- "tracing",
-]
-
-[[package]]
-name = "kora-runner"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-primitives",
- "anyhow",
- "commonware-codec",
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-parallel",
- "commonware-runtime",
- "commonware-utils",
- "futures",
- "kora-config",
- "kora-consensus",
- "kora-dkg",
- "kora-domain",
- "kora-executor",
- "kora-ledger",
- "kora-marshal",
- "kora-overlay",
- "kora-qmdb-ledger",
- "kora-reporters",
- "kora-rpc",
- "kora-service",
- "kora-simplex",
- "kora-transport",
- "rand 0.8.5",
- "tracing",
-]
-
-[[package]]
-name = "kora-service"
-version = "0.1.0"
-dependencies = [
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-runtime",
- "commonware-utils",
- "eyre",
- "futures",
- "kora-config",
- "kora-transport",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "kora-simplex"
-version = "0.1.0"
-dependencies = [
- "commonware-consensus",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-parallel",
- "commonware-runtime",
- "commonware-utils",
- "rand_core 0.6.4",
-]
-
-[[package]]
-name = "kora-sys"
-version = "0.1.0"
-dependencies = [
- "libc",
-]
-
-[[package]]
-name = "kora-traits"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "kora-qmdb",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "kora-transport"
-version = "0.1.0"
-dependencies = [
- "commonware-codec",
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-runtime",
- "commonware-utils",
- "hex",
- "kora-config",
- "rand_core 0.6.4",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
-name = "kora-transport-sim"
-version = "0.1.0"
-dependencies = [
- "commonware-cryptography",
- "commonware-p2p",
- "commonware-runtime",
- "commonware-utils",
- "governor",
- "kora-config",
- "kora-service",
- "kora-transport",
- "prometheus-client",
- "rand 0.8.5",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "kora-txpool"
-version = "0.1.0"
-dependencies = [
- "alloy-consensus",
- "alloy-eips",
- "alloy-primitives",
- "alloy-rlp",
- "k256",
- "kora-domain",
- "kora-traits",
- "parking_lot",
- "rand 0.8.5",
- "rstest",
- "sha3",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -3877,6 +3406,478 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "monmouth"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "commonware-codec",
+ "commonware-cryptography",
+ "eyre",
+ "hex",
+ "monmouth-cli",
+ "monmouth-config",
+ "monmouth-dkg",
+ "monmouth-domain",
+ "monmouth-rpc",
+ "monmouth-runner",
+ "monmouth-service",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.22",
+]
+
+[[package]]
+name = "monmouth-backend"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "async-trait",
+ "bytes",
+ "commonware-codec",
+ "commonware-cryptography",
+ "commonware-runtime",
+ "commonware-storage",
+ "commonware-utils",
+ "monmouth-handlers",
+ "monmouth-qmdb",
+ "tempfile",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "monmouth-builder"
+version = "0.1.0"
+dependencies = [
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-parallel",
+]
+
+[[package]]
+name = "monmouth-cli"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "monmouth-config"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "commonware-codec",
+ "commonware-cryptography",
+ "ed25519-consensus",
+ "rand 0.8.5",
+ "rstest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "toml 0.8.23",
+]
+
+[[package]]
+name = "monmouth-consensus"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-primitives",
+ "commonware-cryptography",
+ "futures",
+ "monmouth-config",
+ "monmouth-domain",
+ "monmouth-executor",
+ "monmouth-qmdb",
+ "monmouth-traits",
+ "parking_lot",
+ "rstest",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "monmouth-crypto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-utils",
+ "monmouth-domain",
+ "rand 0.8.5",
+]
+
+[[package]]
+name = "monmouth-dkg"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "commonware-codec",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-parallel",
+ "commonware-runtime",
+ "commonware-utils",
+ "hex",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-domain"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips",
+ "alloy-evm",
+ "alloy-primitives",
+ "bytes",
+ "commonware-codec",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "futures",
+ "k256",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "sha3",
+]
+
+[[package]]
+name = "monmouth-e2e"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-primitives",
+ "anyhow",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-parallel",
+ "commonware-runtime",
+ "commonware-utils",
+ "futures",
+ "k256",
+ "monmouth-consensus",
+ "monmouth-crypto",
+ "monmouth-domain",
+ "monmouth-executor",
+ "monmouth-ledger",
+ "monmouth-marshal",
+ "monmouth-overlay",
+ "monmouth-qmdb-ledger",
+ "monmouth-reporters",
+ "monmouth-simplex",
+ "monmouth-transport-sim",
+ "rand 0.8.5",
+ "rstest",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-executor"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips",
+ "alloy-primitives",
+ "alloy-rlp",
+ "futures",
+ "monmouth-qmdb",
+ "monmouth-traits",
+ "revm",
+ "rstest",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-handlers"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "async-trait",
+ "futures",
+ "monmouth-qmdb",
+ "monmouth-traits",
+ "revm",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "monmouth-indexer"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "parking_lot",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-ledger"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-evm",
+ "alloy-primitives",
+ "commonware-cryptography",
+ "commonware-runtime",
+ "commonware-utils",
+ "futures",
+ "k256",
+ "monmouth-consensus",
+ "monmouth-domain",
+ "monmouth-executor",
+ "monmouth-overlay",
+ "monmouth-qmdb-ledger",
+ "monmouth-traits",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "monmouth-marshal"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "commonware-broadcast",
+ "commonware-codec",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-macros",
+ "commonware-p2p",
+ "commonware-parallel",
+ "commonware-resolver",
+ "commonware-runtime",
+ "commonware-storage",
+ "commonware-utils",
+ "futures",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "tracing",
+ "tracing-subscriber 0.3.22",
+]
+
+[[package]]
+name = "monmouth-overlay"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "monmouth-qmdb",
+ "monmouth-traits",
+ "tokio",
+]
+
+[[package]]
+name = "monmouth-qmdb"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "rstest",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "monmouth-qmdb-ledger"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "commonware-runtime",
+ "monmouth-backend",
+ "monmouth-domain",
+ "monmouth-handlers",
+ "monmouth-qmdb",
+ "monmouth-traits",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "monmouth-reporters"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "commonware-codec",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-runtime",
+ "commonware-utils",
+ "monmouth-consensus",
+ "monmouth-domain",
+ "monmouth-executor",
+ "monmouth-ledger",
+ "monmouth-overlay",
+ "monmouth-qmdb-ledger",
+ "monmouth-rpc",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-rpc"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "async-trait",
+ "axum",
+ "jsonrpsee",
+ "monmouth-indexer",
+ "monmouth-traits",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tower 0.5.3",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-runner"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-primitives",
+ "anyhow",
+ "commonware-codec",
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-parallel",
+ "commonware-runtime",
+ "commonware-utils",
+ "futures",
+ "monmouth-config",
+ "monmouth-consensus",
+ "monmouth-dkg",
+ "monmouth-domain",
+ "monmouth-executor",
+ "monmouth-ledger",
+ "monmouth-marshal",
+ "monmouth-overlay",
+ "monmouth-qmdb-ledger",
+ "monmouth-reporters",
+ "monmouth-rpc",
+ "monmouth-service",
+ "monmouth-simplex",
+ "monmouth-transport",
+ "rand 0.8.5",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-service"
+version = "0.1.0"
+dependencies = [
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-runtime",
+ "commonware-utils",
+ "eyre",
+ "futures",
+ "monmouth-config",
+ "monmouth-transport",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-simplex"
+version = "0.1.0"
+dependencies = [
+ "commonware-consensus",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-parallel",
+ "commonware-runtime",
+ "commonware-utils",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "monmouth-sys"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "monmouth-traits"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "monmouth-qmdb",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "monmouth-transport"
+version = "0.1.0"
+dependencies = [
+ "commonware-codec",
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-runtime",
+ "commonware-utils",
+ "hex",
+ "monmouth-config",
+ "rand_core 0.6.4",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "monmouth-transport-sim"
+version = "0.1.0"
+dependencies = [
+ "commonware-cryptography",
+ "commonware-p2p",
+ "commonware-runtime",
+ "commonware-utils",
+ "governor",
+ "monmouth-config",
+ "monmouth-service",
+ "monmouth-transport",
+ "prometheus-client",
+ "rand 0.8.5",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "monmouth-txpool"
+version = "0.1.0"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips",
+ "alloy-primitives",
+ "alloy-rlp",
+ "k256",
+ "monmouth-domain",
+ "monmouth-traits",
+ "parking_lot",
+ "rand 0.8.5",
+ "rstest",
+ "sha3",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

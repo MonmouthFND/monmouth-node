@@ -5,9 +5,9 @@ use std::collections::BTreeSet;
 use alloy_consensus::Header;
 use alloy_primitives::{Address, B256, Bytes};
 use commonware_cryptography::Committable as _;
-use kora_domain::{Block, StateRoot, Tx};
-use kora_executor::{BlockContext, BlockExecutor};
-use kora_traits::StateDb;
+use monmouth_domain::{Block, StateRoot, Tx};
+use monmouth_executor::{BlockContext, BlockExecutor};
+use monmouth_traits::StateDb;
 
 use crate::{ConsensusError, Digest, Mempool, Snapshot, SnapshotStore, TxId};
 
@@ -15,7 +15,7 @@ fn block_context(height: u64, prevrandao: B256) -> BlockContext {
     let header = Header {
         number: height,
         timestamp: height,
-        gas_limit: kora_config::DEFAULT_GAS_LIMIT,
+        gas_limit: monmouth_config::DEFAULT_GAS_LIMIT,
         beneficiary: Address::ZERO,
         base_fee_per_gas: Some(0),
         ..Default::default()
@@ -194,8 +194,8 @@ mod tests {
     };
 
     use alloy_primitives::{Address, Bytes, U256};
-    use kora_executor::ExecutionOutcome;
-    use kora_qmdb::ChangeSet;
+    use monmouth_executor::ExecutionOutcome;
+    use monmouth_qmdb::ChangeSet;
 
     use super::*;
 
@@ -212,20 +212,20 @@ mod tests {
         }
     }
 
-    impl kora_traits::StateDbRead for MockStateDb {
-        async fn nonce(&self, _address: &Address) -> Result<u64, kora_traits::StateDbError> {
+    impl monmouth_traits::StateDbRead for MockStateDb {
+        async fn nonce(&self, _address: &Address) -> Result<u64, monmouth_traits::StateDbError> {
             Ok(0)
         }
 
-        async fn balance(&self, _address: &Address) -> Result<U256, kora_traits::StateDbError> {
+        async fn balance(&self, _address: &Address) -> Result<U256, monmouth_traits::StateDbError> {
             Ok(U256::ZERO)
         }
 
-        async fn code_hash(&self, _address: &Address) -> Result<B256, kora_traits::StateDbError> {
+        async fn code_hash(&self, _address: &Address) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
 
-        async fn code(&self, _code_hash: &B256) -> Result<Bytes, kora_traits::StateDbError> {
+        async fn code(&self, _code_hash: &B256) -> Result<Bytes, monmouth_traits::StateDbError> {
             Ok(Bytes::new())
         }
 
@@ -233,20 +233,20 @@ mod tests {
             &self,
             _address: &Address,
             _slot: &U256,
-        ) -> Result<U256, kora_traits::StateDbError> {
+        ) -> Result<U256, monmouth_traits::StateDbError> {
             Ok(U256::ZERO)
         }
     }
 
-    impl kora_traits::StateDbWrite for MockStateDb {
-        async fn commit(&self, _changes: ChangeSet) -> Result<B256, kora_traits::StateDbError> {
+    impl monmouth_traits::StateDbWrite for MockStateDb {
+        async fn commit(&self, _changes: ChangeSet) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::repeat_byte(0x42))
         }
 
         async fn compute_root(
             &self,
             _changes: &ChangeSet,
-        ) -> Result<B256, kora_traits::StateDbError> {
+        ) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::repeat_byte(0x42))
         }
 
@@ -256,8 +256,8 @@ mod tests {
         }
     }
 
-    impl kora_traits::StateDb for MockStateDb {
-        async fn state_root(&self) -> Result<B256, kora_traits::StateDbError> {
+    impl monmouth_traits::StateDb for MockStateDb {
+        async fn state_root(&self) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(self.root)
         }
     }
@@ -376,7 +376,7 @@ mod tests {
             _state: &MockStateDb,
             _context: &BlockContext,
             txs: &[Self::Tx],
-        ) -> Result<ExecutionOutcome, kora_executor::ExecutionError> {
+        ) -> Result<ExecutionOutcome, monmouth_executor::ExecutionError> {
             Ok(ExecutionOutcome {
                 changes: ChangeSet::new(),
                 receipts: Vec::new(),
@@ -384,7 +384,7 @@ mod tests {
             })
         }
 
-        fn validate_header(&self, _header: &Header) -> Result<(), kora_executor::ExecutionError> {
+        fn validate_header(&self, _header: &Header) -> Result<(), monmouth_executor::ExecutionError> {
             Ok(())
         }
     }
@@ -395,7 +395,7 @@ mod tests {
 
     fn parent_block() -> Block {
         Block {
-            parent: kora_domain::BlockId(B256::ZERO),
+            parent: monmouth_domain::BlockId(B256::ZERO),
             height: 0,
             prevrandao: B256::ZERO,
             state_root: StateRoot(B256::ZERO),
@@ -613,7 +613,7 @@ mod tests {
 
         let tx = Tx::new(vec![9].into());
         let parent = Block {
-            parent: kora_domain::BlockId(B256::ZERO),
+            parent: monmouth_domain::BlockId(B256::ZERO),
             height: 0,
             prevrandao: B256::ZERO,
             state_root: StateRoot(B256::ZERO),

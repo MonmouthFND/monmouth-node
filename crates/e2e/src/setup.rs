@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use alloy_primitives::{Address, U256};
 use k256::ecdsa::SigningKey;
-use kora_domain::{BootstrapConfig, Tx, evm::Evm};
-use kora_transport_sim::SimLinkConfig;
+use monmouth_domain::{BootstrapConfig, Tx, evm::Evm};
+use monmouth_transport_sim::SimLinkConfig;
 
 /// Configuration for an e2e test run.
 #[derive(Clone, Debug)]

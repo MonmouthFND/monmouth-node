@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use commonware_cryptography::ed25519;
 use commonware_p2p::Ingress;
 use commonware_runtime::{Clock, Metrics, Network as RNetwork, Resolver, Spawner};
-use kora_config::NetworkConfig;
+use monmouth_config::NetworkConfig;
 use rand_core::CryptoRngCore;
 
 use crate::{

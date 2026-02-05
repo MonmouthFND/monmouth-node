@@ -1,15 +1,23 @@
-//! Block execution abstractions and REVM-based implementation for Kora.
+//! Block execution abstractions and REVM-based implementation for Monmouth.
 
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/monmouth-ai/monmouth/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
 mod adapter;
 pub use adapter::StateDbAdapter;
 
+pub mod classifier;
+pub use classifier::{
+    ClassificationResult, ClassifierConfig, TransactionClassification, TransactionClassifier,
+};
+
 mod config;
 pub use config::{BaseFeeParams, ExecutionConfig, GasLimitBounds};
+
+pub mod precompiles;
+pub use precompiles::MonmouthPrecompiles;
 
 mod context;
 pub use context::{BlockContext, ParentBlock};

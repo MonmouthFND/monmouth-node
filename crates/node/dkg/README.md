@@ -1,9 +1,9 @@
-# `kora-dkg`
+# `monmouth-dkg`
 
-[![CI](https://github.com/refcell/kora/actions/workflows/ci.yml/badge.svg)](https://github.com/refcell/kora/actions/workflows/ci.yml)
+[![CI](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml/badge.svg)](https://github.com/monmouth-ai/monmouth/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-Interactive Distributed Key Generation (DKG) for Kora threshold cryptography.
+Interactive Distributed Key Generation (DKG) for Monmouth threshold cryptography.
 
 Implements the Joint-Feldman DKG protocol using [commonware-cryptography](https://docs.rs/commonware-cryptography) BLS12-381 primitives. Each participant contributes to the key generation process, and no single party learns the master secret.
 
@@ -58,13 +58,13 @@ Rather than fixed timeouts, the ceremony advances based on quorum conditions:
 ### Interactive DKG Ceremony
 
 ```bash
-kora dkg --peers /path/to/peers.json --data-dir /path/to/data
+monmouth dkg --peers /path/to/peers.json --data-dir /path/to/data
 ```
 
 ### Force Restart (ignore persisted state)
 
 ```bash
-kora dkg --peers /path/to/peers.json --data-dir /path/to/data --force-restart
+monmouth dkg --peers /path/to/peers.json --data-dir /path/to/data --force-restart
 ```
 
 ## License

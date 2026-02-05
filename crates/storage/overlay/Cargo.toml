@@ -1,5 +1,5 @@
 [package]
-name = "kora-overlay"
+name = "monmouth-overlay"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,8 +11,8 @@ description = "Overlay state for unpersisted QMDB changes"
 workspace = true
 
 [dependencies]
-kora-qmdb = { path = "../qmdb" }
-kora-traits = { path = "../traits" }
+monmouth-qmdb = { path = "../qmdb" }
+monmouth-traits = { path = "../traits" }
 
 alloy-primitives.workspace = true
 

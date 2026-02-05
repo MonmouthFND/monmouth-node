@@ -2,7 +2,7 @@
 
 [![MIT License](https://img.shields.io/badge/License-MIT-a78bfa.svg?style=flat&labelColor=1C2C2E)](../../LICENSE)
 
-Load generator for Kora devnet. Generates and submits signed EIP-1559 transactions at high throughput using concurrent execution.
+Load generator for Monmouth devnet. Generates and submits signed EIP-1559 transactions at high throughput using concurrent execution.
 
 ## Usage
 

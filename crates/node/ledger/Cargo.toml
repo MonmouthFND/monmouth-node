@@ -1,22 +1,22 @@
 [package]
-name = "kora-ledger"
+name = "monmouth-ledger"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Ledger services for Kora nodes"
+description = "Ledger services for Monmouth nodes"
 
 [lints]
 workspace = true
 
 [dependencies]
 # Local crates
-kora-consensus = { path = "../consensus" }
-kora-domain = { path = "../domain" }
-kora-overlay = { path = "../../storage/overlay" }
-kora-qmdb-ledger = { path = "../../storage/qmdb-ledger" }
-kora-traits = { path = "../../storage/traits" }
+monmouth-consensus = { path = "../consensus" }
+monmouth-domain = { path = "../domain" }
+monmouth-overlay = { path = "../../storage/overlay" }
+monmouth-qmdb-ledger = { path = "../../storage/qmdb-ledger" }
+monmouth-traits = { path = "../../storage/traits" }
 
 # Commonware
 commonware-cryptography.workspace = true
@@ -33,7 +33,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 # Local crates
-kora-executor = { path = "../executor" }
+monmouth-executor = { path = "../executor" }
 
 # Commonware
 commonware-runtime.workspace = true

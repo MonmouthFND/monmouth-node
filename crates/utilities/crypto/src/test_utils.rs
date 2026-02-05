@@ -9,7 +9,7 @@ use commonware_cryptography::{
     ed25519,
 };
 use commonware_utils::{N3f1, TryCollect as _, ordered::Set};
-use kora_domain::PublicKey;
+use monmouth_domain::PublicKey;
 use rand::{SeedableRng as _, rngs::StdRng};
 
 /// Threshold BLS signing scheme using MinSig variant.

@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use alloy_primitives::{Address, B256, Bytes, U64, U256};
 use async_trait::async_trait;
-use kora_indexer::{BlockIndex, IndexedBlock, IndexedReceipt, IndexedTransaction, LogFilter};
-use kora_traits::{StateDbError, StateDbRead};
+use monmouth_indexer::{BlockIndex, IndexedBlock, IndexedReceipt, IndexedTransaction, LogFilter};
+use monmouth_traits::{StateDbError, StateDbRead};
 
 use crate::{
     error::RpcError,
@@ -263,7 +263,7 @@ fn indexed_receipt_to_rpc(receipt: IndexedReceipt) -> RpcTransactionReceipt {
 
 #[cfg(test)]
 mod tests {
-    use kora_indexer::IndexedLog;
+    use monmouth_indexer::IndexedLog;
 
     use super::*;
 

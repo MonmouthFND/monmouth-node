@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256};
-use kora_qmdb::{AccountEncoding, ChangeSet, QmdbBatchable, QmdbGettable, StorageKey};
+use monmouth_qmdb::{AccountEncoding, ChangeSet, QmdbBatchable, QmdbGettable, StorageKey};
 use revm::{
     bytecode::Bytecode,
     database_interface::{
@@ -211,7 +211,7 @@ where
     fn commit(&mut self, changes: HashMap<Address, Account>) {
         use std::collections::BTreeMap;
 
-        use kora_qmdb::AccountUpdate;
+        use monmouth_qmdb::AccountUpdate;
 
         let mut changeset = ChangeSet::new();
 
@@ -248,7 +248,7 @@ where
 mod tests {
     use std::{collections::HashMap as StdHashMap, sync::Mutex};
 
-    use kora_qmdb::{QmdbBatchable, QmdbGettable};
+    use monmouth_qmdb::{QmdbBatchable, QmdbGettable};
     use revm::database_interface::DatabaseRef;
 
     use super::*;

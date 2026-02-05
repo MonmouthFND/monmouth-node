@@ -9,7 +9,7 @@ use thiserror::Error;
 pub enum ExecutionError {
     /// State database error.
     #[error("state error: {0}")]
-    State(#[from] kora_traits::StateDbError),
+    State(#[from] monmouth_traits::StateDbError),
 
     /// Transaction decoding failed.
     #[error("failed to decode transaction: {0}")]
@@ -37,7 +37,7 @@ impl DBErrorMarker for ExecutionError {}
 #[cfg(test)]
 mod tests {
     use alloy_primitives::Address;
-    use kora_traits::StateDbError;
+    use monmouth_traits::StateDbError;
 
     use super::*;
 

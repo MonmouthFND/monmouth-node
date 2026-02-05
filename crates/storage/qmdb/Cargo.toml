@@ -1,11 +1,11 @@
 [package]
-name = "kora-qmdb"
+name = "monmouth-qmdb"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Pure QMDB store logic for Kora"
+description = "Pure QMDB store logic for Monmouth"
 
 [dependencies]
 alloy-primitives.workspace = true

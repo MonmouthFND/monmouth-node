@@ -4,10 +4,10 @@ default:
     @just --list
 
 build:
-    docker buildx bake --allow=fs.read=.. -f docker-bake.hcl kora-local
+    docker buildx bake --allow=fs.read=.. -f docker-bake.hcl monmouth-local
 
 build-fresh:
-    docker buildx bake --allow=fs.read=.. -f docker-bake.hcl kora-local --no-cache
+    docker buildx bake --allow=fs.read=.. -f docker-bake.hcl monmouth-local --no-cache
 
 # Start devnet with interactive DKG (production-like)
 devnet:
@@ -64,7 +64,7 @@ redo-dkg:
     
     echo "Removing old DKG shares..."
     for i in 0 1 2 3; do
-        docker run --rm -v kora-devnet_data_node${i}:/data alpine rm -f /data/share.key /data/output.json
+        docker run --rm -v monmouth-devnet_data_node${i}:/data alpine rm -f /data/share.key /data/output.json
     done
     
     echo "Starting interactive DKG ceremony..."

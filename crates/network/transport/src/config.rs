@@ -14,12 +14,12 @@ pub const DEFAULT_MAX_MESSAGE_SIZE: u32 = 1024 * 1024;
 /// Default channel backlog size.
 pub const DEFAULT_BACKLOG: usize = 256;
 
-/// Default namespace for kora network messages.
+/// Default namespace for monmouth network messages.
 pub const DEFAULT_NAMESPACE: &[u8] = b"_COMMONWARE_KORA_NETWORK";
 
 /// Transport configuration for authenticated discovery network.
 ///
-/// This wraps the commonware discovery config with kora-specific defaults
+/// This wraps the commonware discovery config with monmouth-specific defaults
 /// and provides builder methods for customization.
 #[derive(Clone)]
 pub struct TransportConfig<C: commonware_cryptography::Signer> {

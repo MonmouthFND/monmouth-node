@@ -1,11 +1,11 @@
 [package]
-name = "kora-config"
+name = "monmouth-config"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Configuration types for Kora node"
+description = "Configuration types for Monmouth node"
 
 [lints]
 workspace = true

@@ -455,7 +455,7 @@ impl Web3ApiImpl {
 
 impl Web3ApiServer for Web3ApiImpl {
     fn client_version(&self) -> RpcResult<String> {
-        Ok(format!("kora/{}", env!("CARGO_PKG_VERSION")))
+        Ok(format!("monmouth/{}", env!("CARGO_PKG_VERSION")))
     }
 
     fn sha3(&self, data: Bytes) -> RpcResult<B256> {
@@ -472,7 +472,7 @@ mod tests {
     fn web3_client_version() {
         let api = Web3ApiImpl::new();
         let version = Web3ApiServer::client_version(&api).unwrap();
-        assert!(version.starts_with("kora/"));
+        assert!(version.starts_with("monmouth/"));
     }
 
     #[tokio::test]

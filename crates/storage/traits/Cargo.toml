@@ -1,15 +1,15 @@
 [package]
-name = "kora-traits"
+name = "monmouth-traits"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Core trait abstractions for Kora storage and consensus"
+description = "Core trait abstractions for Monmouth storage and consensus"
 
 [dependencies]
 alloy-primitives.workspace = true
-kora-qmdb = { path = "../qmdb" }
+monmouth-qmdb = { path = "../qmdb" }
 
 # Error handling
 thiserror.workspace = true

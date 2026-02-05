@@ -1,7 +1,7 @@
-//! Ledger services for Kora nodes.
+//! Ledger services for Monmouth nodes.
 
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/monmouth-ai/monmouth/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
@@ -11,16 +11,16 @@ use alloy_primitives::{Address, B256, U256};
 use commonware_cryptography::Committable as _;
 use commonware_runtime::{Metrics as _, buffer::PoolRef, tokio};
 use futures::{channel::mpsc::UnboundedReceiver, lock::Mutex};
-use kora_consensus::{
+use monmouth_consensus::{
     ConsensusError, Mempool as _, SeedTracker as _, Snapshot, SnapshotStore as _,
     components::{InMemoryMempool, InMemorySeedTracker, InMemorySnapshotStore},
 };
-use kora_domain::{
+use monmouth_domain::{
     Block, BlockId, ConsensusDigest, LedgerEvent, LedgerEvents, StateRoot, Tx, TxId,
 };
-use kora_overlay::OverlayState;
-use kora_qmdb_ledger::{Error as QmdbError, QmdbChangeSet, QmdbConfig, QmdbLedger, QmdbState};
-use kora_traits::{StateDbError, StateDbRead, StateDbWrite};
+use monmouth_overlay::OverlayState;
+use monmouth_qmdb_ledger::{Error as QmdbError, QmdbChangeSet, QmdbConfig, QmdbLedger, QmdbState};
+use monmouth_traits::{StateDbError, StateDbRead, StateDbWrite};
 use thiserror::Error;
 
 /// Snapshot type used by the ledger.
@@ -416,10 +416,10 @@ mod tests {
     use commonware_runtime::{Runner, buffer::PoolRef, tokio};
     use commonware_utils::{NZU16, NZUsize};
     use k256::ecdsa::SigningKey;
-    use kora_domain::{Block, ConsensusDigest, Tx, evm::Evm};
-    use kora_executor::{BlockContext, BlockExecutor, RevmExecutor};
-    use kora_overlay::OverlayState;
-    use kora_traits::StateDbRead;
+    use monmouth_domain::{Block, ConsensusDigest, Tx, evm::Evm};
+    use monmouth_executor::{BlockContext, BlockExecutor, RevmExecutor};
+    use monmouth_overlay::OverlayState;
+    use monmouth_traits::StateDbRead;
 
     use super::{LedgerService, LedgerSnapshot, LedgerView};
 

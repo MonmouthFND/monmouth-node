@@ -1,19 +1,19 @@
 [package]
-name = "kora-consensus"
+name = "monmouth-consensus"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Consensus application layer for Kora"
+description = "Consensus application layer for Monmouth"
 
 [dependencies]
 # Local crates
-kora-config = { path = "../config" }
-kora-domain = { path = "../domain" }
-kora-executor = { path = "../executor" }
-kora-qmdb = { path = "../../storage/qmdb" }
-kora-traits = { path = "../../storage/traits" }
+monmouth-config = { path = "../config" }
+monmouth-domain = { path = "../domain" }
+monmouth-executor = { path = "../executor" }
+monmouth-qmdb = { path = "../../storage/qmdb" }
+monmouth-traits = { path = "../../storage/traits" }
 
 # Alloy
 alloy-primitives.workspace = true

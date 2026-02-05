@@ -1,4 +1,4 @@
-//! Trait that defines the components required to build a kora node.
+//! Trait that defines the components required to build a monmouth node.
 
 // Re-export common types for convenience
 pub use commonware_consensus::simplex::elector::Random;

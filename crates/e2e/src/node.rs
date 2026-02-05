@@ -1,8 +1,8 @@
 //! Test node wrapper for e2e testing.
 
 use alloy_primitives::{Address, B256, U256};
-use kora_domain::{ConsensusDigest, StateRoot, Tx};
-use kora_ledger::LedgerService;
+use monmouth_domain::{ConsensusDigest, StateRoot, Tx};
+use monmouth_ledger::LedgerService;
 
 /// Handle for interacting with a test node.
 #[derive(Clone)]
@@ -40,7 +40,7 @@ impl TestNode {
     }
 
     /// Get the genesis block from this node.
-    pub fn genesis_block(&self) -> kora_domain::Block {
+    pub fn genesis_block(&self) -> monmouth_domain::Block {
         self.ledger.genesis_block()
     }
 }

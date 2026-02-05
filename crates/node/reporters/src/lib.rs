@@ -1,6 +1,6 @@
-//! Consensus reporters for Kora nodes.
+//! Consensus reporters for Monmouth nodes.
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/monmouth-ai/monmouth/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
@@ -18,13 +18,13 @@ use commonware_consensus::{
 use commonware_cryptography::{Committable as _, bls12381::primitives::variant::Variant};
 use commonware_runtime::{Spawner as _, tokio};
 use commonware_utils::acknowledgement::Acknowledgement as _;
-use kora_consensus::BlockExecution;
-use kora_domain::{Block, ConsensusDigest, PublicKey};
-use kora_executor::{BlockContext, BlockExecutor};
-use kora_ledger::LedgerService;
-use kora_overlay::OverlayState;
-use kora_qmdb_ledger::QmdbState;
-use kora_rpc::NodeState;
+use monmouth_consensus::BlockExecution;
+use monmouth_domain::{Block, ConsensusDigest, PublicKey};
+use monmouth_executor::{BlockContext, BlockExecutor};
+use monmouth_ledger::LedgerService;
+use monmouth_overlay::OverlayState;
+use monmouth_qmdb_ledger::QmdbState;
+use monmouth_rpc::NodeState;
 use tracing::{error, trace, warn};
 
 /// Provides block execution context for finalized block verification.

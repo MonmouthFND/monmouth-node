@@ -1,7 +1,7 @@
 //! Core execution traits.
 
 use alloy_consensus::Header;
-use kora_traits::StateDb;
+use monmouth_traits::StateDb;
 
 use crate::{BlockContext, ExecutionError, ExecutionOutcome};
 

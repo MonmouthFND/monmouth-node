@@ -4,7 +4,7 @@
 //! to bridge the async StateDb traits into the sync REVM interface.
 
 use alloy_primitives::{Address, B256, KECCAK256_EMPTY, U256};
-use kora_traits::{StateDbError, StateDbRead};
+use monmouth_traits::{StateDbError, StateDbRead};
 use revm::{bytecode::Bytecode, database_interface::DatabaseRef, state::AccountInfo};
 
 use crate::ExecutionError;

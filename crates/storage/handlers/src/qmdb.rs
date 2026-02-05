@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use alloy_primitives::{Address, B256, U256};
 use async_trait::async_trait;
-use kora_qmdb::{
+use monmouth_qmdb::{
     AccountEncoding, AccountUpdate, ChangeSet, QmdbBatchable, QmdbGettable, QmdbStore, StorageKey,
 };
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -130,7 +130,7 @@ impl<A, S, C> std::fmt::Debug for QmdbHandle<A, S, C> {
 mod tests {
     use std::{collections::HashMap as StdHashMap, sync::Mutex};
 
-    use kora_qmdb::{QmdbBatchable, QmdbGettable};
+    use monmouth_qmdb::{QmdbBatchable, QmdbGettable};
 
     use super::*;
 

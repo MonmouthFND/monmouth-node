@@ -1,4 +1,4 @@
-//! Generates initial configuration for a Kora devnet.
+//! Generates initial configuration for a Monmouth devnet.
 
 use std::{collections::BTreeMap, fs, path::PathBuf};
 

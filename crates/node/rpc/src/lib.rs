@@ -1,7 +1,7 @@
-//! RPC server for Kora nodes.
+//! RPC server for Monmouth nodes.
 
 #![doc = include_str!("../README.md")]
-#![doc(issue_tracker_base_url = "https://github.com/refcell/kora/issues/")]
+#![doc(issue_tracker_base_url = "https://github.com/monmouth-ai/monmouth/issues/")]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
@@ -17,8 +17,8 @@ pub use eth::{
     Web3ApiServer,
 };
 
-mod kora;
-pub use kora::{KoraApiImpl, KoraApiServer};
+mod monmouth;
+pub use monmouth::{MonmouthApiImpl, MonmouthApiServer};
 
 mod server;
 pub use server::{JsonRpcServer, RpcServer, RpcServerHandle, ServerError};

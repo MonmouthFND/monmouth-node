@@ -3,7 +3,7 @@
 use alloy_primitives::Address;
 use commonware_cryptography::sha256::Digest as QmdbDigest;
 use commonware_storage::{kv::Batchable as _, qmdb::any::VariableConfig, translator::EightCap};
-use kora_qmdb::{AccountEncoding, QmdbBatchable, QmdbGettable};
+use monmouth_qmdb::{AccountEncoding, QmdbBatchable, QmdbGettable};
 
 use crate::{
     BackendError,
@@ -14,7 +14,7 @@ use crate::{
 ///
 /// Stores account state including nonce, balance, code hash, and generation number.
 /// Each account is keyed by its 20-byte address and encoded as a fixed 80-byte value
-/// using [`AccountEncoding`](kora_qmdb::AccountEncoding).
+/// using [`AccountEncoding`](monmouth_qmdb::AccountEncoding).
 ///
 /// Implements [`QmdbGettable`] for reads and [`QmdbBatchable`] for batch writes.
 /// All writes are atomic and update the authenticated Merkle root.

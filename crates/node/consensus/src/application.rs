@@ -1,7 +1,7 @@
 //! Consensus application trait for block proposal and verification.
 
 use alloy_primitives::B256;
-use kora_domain::Block;
+use monmouth_domain::Block;
 
 use crate::{ConsensusError, Digest};
 
@@ -135,10 +135,10 @@ mod tests {
     impl ConsensusApplication for MockApp {
         fn propose(&self, _parent: Digest) -> Result<Block, ConsensusError> {
             Ok(Block {
-                parent: kora_domain::BlockId(alloy_primitives::B256::ZERO),
+                parent: monmouth_domain::BlockId(alloy_primitives::B256::ZERO),
                 height: 0,
                 prevrandao: alloy_primitives::B256::ZERO,
-                state_root: kora_domain::StateRoot(alloy_primitives::B256::ZERO),
+                state_root: monmouth_domain::StateRoot(alloy_primitives::B256::ZERO),
                 txs: Vec::new(),
             })
         }
@@ -165,10 +165,10 @@ mod tests {
     fn mock_app_verify() {
         let app = MockApp;
         let block = Block {
-            parent: kora_domain::BlockId(alloy_primitives::B256::ZERO),
+            parent: monmouth_domain::BlockId(alloy_primitives::B256::ZERO),
             height: 0,
             prevrandao: alloy_primitives::B256::ZERO,
-            state_root: kora_domain::StateRoot(alloy_primitives::B256::ZERO),
+            state_root: monmouth_domain::StateRoot(alloy_primitives::B256::ZERO),
             txs: Vec::new(),
         };
         let digest = app.verify(&block).unwrap();

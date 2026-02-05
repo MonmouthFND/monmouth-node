@@ -1,11 +1,11 @@
 [package]
-name = "kora-dkg"
+name = "monmouth-dkg"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Distributed Key Generation for Kora threshold cryptography"
+description = "Distributed Key Generation for Monmouth threshold cryptography"
 
 [dependencies]
 commonware-cryptography.workspace = true

@@ -1,11 +1,11 @@
 [package]
-name = "kora-sys"
+name = "monmouth-sys"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "System utilities for Kora"
+description = "System utilities for Monmouth"
 
 [lints]
 workspace = true

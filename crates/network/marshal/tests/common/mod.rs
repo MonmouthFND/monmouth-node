@@ -1,4 +1,4 @@
-//! Shared test utilities for kora-marshal integration tests.
+//! Shared test utilities for monmouth-marshal integration tests.
 
 use commonware_codec::{FixedSize, Read, ReadExt, Write};
 use commonware_consensus::{Block as BlockTrait, Heightable, types::Height};

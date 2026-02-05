@@ -45,7 +45,7 @@ case "$MODE" in
             log "Bootstrap peer reachable"
         fi
         
-        exec /usr/local/bin/kora dkg \
+        exec /usr/local/bin/monmouth dkg \
             --data-dir "$DATA_DIR" \
             --peers "${SHARED_DIR}/peers.json" \
             --chain-id "$CHAIN_ID" \
@@ -76,7 +76,7 @@ case "$MODE" in
             done
         fi
         
-        exec /usr/local/bin/kora validator \
+        exec /usr/local/bin/monmouth validator \
             --data-dir "$DATA_DIR" \
             --peers "${SHARED_DIR}/peers.json" \
             --chain-id "$CHAIN_ID" \

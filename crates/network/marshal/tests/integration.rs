@@ -1,4 +1,4 @@
-//! Integration tests for kora-marshal initializers.
+//! Integration tests for monmouth-marshal initializers.
 //!
 //! These tests verify that all initializers work together to start a marshal actor,
 //! following the pattern from commonware-consensus tests.
@@ -41,7 +41,7 @@ use commonware_p2p::{
 use commonware_parallel::Sequential;
 use commonware_runtime::{Clock, Metrics, Quota, Runner, buffer::PoolRef, deterministic};
 use commonware_utils::{Acknowledgement, NZU16, NZUsize};
-use kora_marshal::{ActorInitializer, ArchiveInitializer, BroadcastInitializer, PeerInitializer};
+use monmouth_marshal::{ActorInitializer, ArchiveInitializer, BroadcastInitializer, PeerInitializer};
 
 use crate::common::Block;
 
@@ -114,7 +114,7 @@ fn make_finalization(proposal: Proposal<D>, schemes: &[S], quorum: u32) -> Final
     Finalization::from_finalizes(&schemes[0], &finalizes, &Sequential).unwrap()
 }
 
-/// Sets up a validator using the kora-marshal initializers.
+/// Sets up a validator using the monmouth-marshal initializers.
 async fn setup_validator(
     context: deterministic::Context,
     oracle: &mut Oracle<K, deterministic::Context>,

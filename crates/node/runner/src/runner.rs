@@ -15,14 +15,14 @@ use commonware_parallel::Sequential;
 use commonware_runtime::{Metrics as _, Spawner, buffer::PoolRef, tokio};
 use commonware_utils::{NZU64, NZUsize, acknowledgement::Exact};
 use futures::StreamExt;
-use kora_domain::{Block, BlockCfg, BootstrapConfig, ConsensusDigest, LedgerEvent, TxCfg};
-use kora_executor::{BlockContext, RevmExecutor};
-use kora_ledger::{LedgerService, LedgerView};
-use kora_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
-use kora_reporters::{BlockContextProvider, FinalizedReporter, NodeStateReporter, SeedReporter};
-use kora_service::{NodeRunContext, NodeRunner};
-use kora_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool};
-use kora_transport::NetworkTransport;
+use monmouth_domain::{Block, BlockCfg, BootstrapConfig, ConsensusDigest, LedgerEvent, TxCfg};
+use monmouth_executor::{BlockContext, ClassifierConfig, RevmExecutor, TransactionClassifier};
+use monmouth_ledger::{LedgerService, LedgerView};
+use monmouth_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
+use monmouth_reporters::{BlockContextProvider, FinalizedReporter, NodeStateReporter, SeedReporter};
+use monmouth_service::{NodeRunContext, NodeRunner};
+use monmouth_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool};
+use monmouth_transport::NetworkTransport;
 use tracing::{debug, info, trace};
 
 use crate::{RevmApplication, RunnerError, scheme::ThresholdScheme};
@@ -30,7 +30,7 @@ use crate::{RevmApplication, RunnerError, scheme::ThresholdScheme};
 const BLOCK_CODEC_MAX_TXS: usize = 64;
 const BLOCK_CODEC_MAX_TX_BYTES: usize = 1024;
 const EPOCH_LENGTH: u64 = u64::MAX;
-const PARTITION_PREFIX: &str = "kora";
+const PARTITION_PREFIX: &str = "monmouth";
 
 type Peer = ed25519::PublicKey;
 type CertArchive = Finalization<ThresholdScheme, ConsensusDigest>;
@@ -119,7 +119,11 @@ pub struct ProductionRunner {
     /// Storage partition prefix.
     pub partition_prefix: String,
     /// Optional RPC configuration (state, bind address).
-    pub rpc_config: Option<(kora_rpc::NodeState, std::net::SocketAddr)>,
+    pub rpc_config: Option<(monmouth_rpc::NodeState, std::net::SocketAddr)>,
+    /// Whether the agent transaction classifier is enabled.
+    pub enable_agent_pool: bool,
+    /// Confidence threshold for agent classification.
+    pub confidence_threshold: f64,
 }
 
 impl ProductionRunner {
@@ -137,22 +141,46 @@ impl ProductionRunner {
             bootstrap,
             partition_prefix: PARTITION_PREFIX.to_string(),
             rpc_config: None,
+            enable_agent_pool: false,
+            confidence_threshold: monmouth_config::DEFAULT_CONFIDENCE_THRESHOLD,
         }
     }
 
     /// Configure RPC server.
     #[must_use]
-    pub fn with_rpc(mut self, state: kora_rpc::NodeState, addr: std::net::SocketAddr) -> Self {
+    pub fn with_rpc(mut self, state: monmouth_rpc::NodeState, addr: std::net::SocketAddr) -> Self {
         self.rpc_config = Some((state, addr));
         self
+    }
+
+    /// Configure agent features from execution config.
+    #[must_use]
+    pub fn with_agent_config(mut self, enable: bool, confidence: f64) -> Self {
+        self.enable_agent_pool = enable;
+        self.confidence_threshold = confidence;
+        self
+    }
+
+    /// Build a `RevmExecutor`, optionally with the agent classifier.
+    fn build_executor(&self) -> RevmExecutor {
+        let executor = RevmExecutor::new(self.chain_id);
+        if self.enable_agent_pool {
+            let classifier = TransactionClassifier::new(ClassifierConfig {
+                confidence_threshold: self.confidence_threshold,
+                enabled: true,
+            });
+            executor.with_classifier(classifier)
+        } else {
+            executor
+        }
     }
 }
 
 impl ProductionRunner {
     /// Run the validator as a standalone process.
-    pub fn run_standalone(self, config: kora_config::NodeConfig) -> Result<(), RunnerError> {
+    pub fn run_standalone(self, config: monmouth_config::NodeConfig) -> Result<(), RunnerError> {
         use commonware_runtime::Runner;
-        use kora_transport::NetworkConfigExt;
+        use monmouth_transport::NetworkConfigExt;
 
         let rpc_config = self.rpc_config.clone();
 
@@ -160,7 +188,7 @@ impl ProductionRunner {
         executor.start(|context| async move {
             // Start RPC server if configured
             if let Some((state, addr)) = rpc_config {
-                let rpc = kora_rpc::RpcServer::new(state, addr);
+                let rpc = monmouth_rpc::RpcServer::new(state, addr);
                 drop(rpc.start());
             }
 
@@ -174,7 +202,7 @@ impl ProductionRunner {
                 .map_err(|e| anyhow::anyhow!("failed to build transport: {}", e))?;
 
             let ctx =
-                kora_service::NodeRunContext::new(context, std::sync::Arc::new(config), transport);
+                monmouth_service::NodeRunContext::new(context, std::sync::Arc::new(config), transport);
 
             let _ledger = self.run(ctx).await?;
 
@@ -218,7 +246,7 @@ impl NodeRunner for ProductionRunner {
             .map_err(|e| anyhow::anyhow!("failed to load validator key: {}", e))?;
         let my_pk = commonware_cryptography::Signer::public_key(&validator_key);
 
-        let executor = RevmExecutor::new(self.chain_id);
+        let executor = self.build_executor();
         let context_provider = RevmContextProvider { gas_limit: self.gas_limit };
         let finalized_reporter =
             FinalizedReporter::new(ledger.clone(), context.clone(), executor, context_provider);
@@ -259,7 +287,7 @@ impl NodeRunner for ProductionRunner {
         .context("init blocks archive")?;
 
         let (actor, marshal_mailbox, _last_processed_height) =
-            kora_marshal::ActorInitializer::init::<_, Block, _, _, _, Exact>(
+            monmouth_marshal::ActorInitializer::init::<_, Block, _, _, _, Exact>(
                 context.clone(),
                 finalizations_by_height,
                 finalized_blocks,
@@ -271,7 +299,7 @@ impl NodeRunner for ProductionRunner {
         actor.start(finalized_reporter, buffer, resolver);
 
         let epocher = FixedEpocher::new(NZU64!(EPOCH_LENGTH));
-        let executor = RevmExecutor::new(self.chain_id);
+        let executor = self.build_executor();
         let mut app = RevmApplication::<ThresholdScheme, _>::new(
             ledger.clone(),
             executor,

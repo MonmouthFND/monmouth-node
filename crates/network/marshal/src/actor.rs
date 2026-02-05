@@ -27,7 +27,7 @@ use rand_core::CryptoRngCore;
 /// # Example
 ///
 /// ```ignore
-/// use kora_marshal::ActorInitializer;
+/// use monmouth_marshal::ActorInitializer;
 ///
 /// let (actor, mailbox, processed_height) = ActorInitializer::init(
 ///     context,

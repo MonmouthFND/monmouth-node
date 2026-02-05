@@ -93,7 +93,7 @@ extern "C" fn print_stack_trace(_: libc::c_int) {
     };
 
     // Just a stack trace is cryptic. Explain what we're doing.
-    raw_errln!("error: kora interrupted by SIGSEGV, printing backtrace\n");
+    raw_errln!("error: monmouth interrupted by SIGSEGV, printing backtrace\n");
     let mut written = 1;
     let mut consumed = 0;
     // Begin elaborating return addrs into symbols and writing them directly to stderr
@@ -137,14 +137,14 @@ extern "C" fn print_stack_trace(_: libc::c_int) {
         // technically speculation, but assert it with confidence anyway.
         // We only arrived in this signal handler because bad things happened
         // and this message is for explaining it's not the programmer's fault
-        raw_errln!("note: kora unexpectedly overflowed its stack! this is a bug");
+        raw_errln!("note: monmouth unexpectedly overflowed its stack! this is a bug");
         written += 1;
     }
     if stack.len() == MAX_FRAMES {
         raw_errln!("note: maximum backtrace depth reached, frames may have been lost");
         written += 1;
     }
-    raw_errln!("note: we would appreciate a report at https://github.com/refcell/kora");
+    raw_errln!("note: we would appreciate a report at https://github.com/monmouth-ai/monmouth");
     written += 1;
     if written > 24 {
         // We probably just scrolled the earlier "we got SIGSEGV" message off the terminal

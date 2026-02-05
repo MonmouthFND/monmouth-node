@@ -1,28 +1,28 @@
 [package]
-name = "kora-e2e"
+name = "monmouth-e2e"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "End-to-end tests for Kora consensus network"
+description = "End-to-end tests for Monmouth consensus network"
 
 [lints]
 workspace = true
 
 [dependencies]
 # Local crates
-kora-consensus.workspace = true
-kora-crypto = { workspace = true, features = ["test-utils"] }
-kora-domain = { workspace = true, features = ["evm"] }
-kora-executor.workspace = true
-kora-ledger.workspace = true
-kora-marshal.workspace = true
-kora-overlay.workspace = true
-kora-qmdb-ledger.workspace = true
-kora-reporters.workspace = true
-kora-simplex.workspace = true
-kora-transport-sim.workspace = true
+monmouth-consensus.workspace = true
+monmouth-crypto = { workspace = true, features = ["test-utils"] }
+monmouth-domain = { workspace = true, features = ["evm"] }
+monmouth-executor.workspace = true
+monmouth-ledger.workspace = true
+monmouth-marshal.workspace = true
+monmouth-overlay.workspace = true
+monmouth-qmdb-ledger.workspace = true
+monmouth-reporters.workspace = true
+monmouth-simplex.workspace = true
+monmouth-transport-sim.workspace = true
 
 # Commonware
 commonware-consensus.workspace = true

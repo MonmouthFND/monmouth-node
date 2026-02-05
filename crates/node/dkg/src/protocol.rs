@@ -39,7 +39,7 @@ impl CeremonySession {
     /// ensuring all participants can independently compute the same ID.
     pub fn new(chain_id: u64, participants: &[ed25519::PublicKey], timestamp_nanos: u64) -> Self {
         let mut hasher = Sha256::default();
-        hasher.update(b"kora-dkg-ceremony-v1");
+        hasher.update(b"monmouth-dkg-ceremony-v1");
         hasher.update(&chain_id.to_le_bytes());
         hasher.update(&(participants.len() as u64).to_le_bytes());
 
@@ -365,7 +365,7 @@ impl DkgParticipant {
 
         // Create round info - all participants are both dealers and players
         let info = Info::<MinSig, ed25519::PublicKey>::new::<N3f1>(
-            format!("kora-dkg-{}", config.chain_id).as_bytes(),
+            format!("monmouth-dkg-{}", config.chain_id).as_bytes(),
             0,    // round 0 for initial DKG
             None, // no previous output
             Mode::default(),

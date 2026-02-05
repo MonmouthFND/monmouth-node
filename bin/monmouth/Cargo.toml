@@ -1,0 +1,30 @@
+[package]
+name = "monmouth"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+monmouth-cli.workspace = true
+monmouth-config.workspace = true
+monmouth-service.workspace = true
+monmouth-dkg.workspace = true
+monmouth-runner.workspace = true
+monmouth-domain.workspace = true
+monmouth-rpc.workspace = true
+
+commonware-cryptography.workspace = true
+commonware-codec.workspace = true
+
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+eyre.workspace = true
+serde_json.workspace = true
+hex.workspace = true
+
+[lints]
+workspace = true

@@ -1,6 +1,6 @@
-# Kora Docker Devnet
+# Monmouth Docker Devnet
 
-This directory contains Docker configurations for running a local Kora devnet with either:
+This directory contains Docker configurations for running a local Monmouth devnet with either:
 - **Interactive DKG** (production-like, no single party learns the master secret)
 - **Trusted Dealer DKG** (fast, insecure, for local development)
 
@@ -74,7 +74,7 @@ Run from repository root (`just <cmd>`) or from `docker/` directory (`just <cmd>
 ### Interactive DKG Flow (default)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Kora Devnet (Interactive DKG)                  │
+│                   Monmouth Devnet (Interactive DKG)                  │
 ├─────────────────────────────────────────────────────────────────┤
 │  init-setup (runs once)                                          │
 │    - Generates ed25519 identity keys                             │
@@ -101,7 +101,7 @@ Run from repository root (`just <cmd>`) or from `docker/` directory (`just <cmd>
 ### Trusted Dealer Flow (fast)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                  Kora Devnet (Trusted Dealer)                    │
+│                  Monmouth Devnet (Trusted Dealer)                    │
 ├─────────────────────────────────────────────────────────────────┤
 │  init-config (runs once)                                         │
 │    - Generates ed25519 identity keys                             │

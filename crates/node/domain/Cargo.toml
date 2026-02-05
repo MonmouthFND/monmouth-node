@@ -1,11 +1,11 @@
 [package]
-name = "kora-domain"
+name = "monmouth-domain"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Domain types for kora"
+description = "Domain types for monmouth"
 
 [lints]
 workspace = true

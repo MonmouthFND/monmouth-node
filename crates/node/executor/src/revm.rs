@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 
 use alloy_consensus::Header;
 use alloy_primitives::{B256, Bytes, U256, keccak256};
-use kora_qmdb::{AccountUpdate, ChangeSet};
-use kora_traits::StateDb;
+use monmouth_qmdb::{AccountUpdate, ChangeSet};
+use monmouth_traits::StateDb;
 use revm::{
     Context, ExecuteEvm, Journal, MainBuilder,
     bytecode::Bytecode,
@@ -24,7 +24,7 @@ use revm::{
 
 use crate::{
     BlockContext, BlockExecutor, ExecutionConfig, ExecutionError, ExecutionOutcome,
-    ExecutionReceipt, ParentBlock, StateDbAdapter,
+    ExecutionReceipt, ParentBlock, StateDbAdapter, TransactionClassifier,
 };
 
 /// REVM-based block executor.
@@ -35,19 +35,28 @@ use crate::{
 pub struct RevmExecutor {
     /// Execution configuration.
     config: ExecutionConfig,
+    /// Optional agent-aware transaction classifier.
+    classifier: Option<TransactionClassifier>,
 }
 
 impl RevmExecutor {
     /// Create a new REVM executor with the given chain ID.
     #[must_use]
     pub const fn new(chain_id: u64) -> Self {
-        Self { config: ExecutionConfig::new(chain_id) }
+        Self { config: ExecutionConfig::new(chain_id), classifier: None }
     }
 
     /// Create a new REVM executor with full configuration.
     #[must_use]
     pub const fn with_config(config: ExecutionConfig) -> Self {
-        Self { config }
+        Self { config, classifier: None }
+    }
+
+    /// Enable agent-aware transaction classification.
+    #[must_use]
+    pub fn with_classifier(mut self, classifier: TransactionClassifier) -> Self {
+        self.classifier = Some(classifier);
+        self
     }
 
     /// Get the chain ID.
@@ -167,7 +176,7 @@ impl RevmExecutor {
 
 impl Default for RevmExecutor {
     fn default() -> Self {
-        Self::new(1)
+        Self { config: ExecutionConfig::default(), classifier: None }
     }
 }
 
@@ -229,7 +238,9 @@ impl<S: StateDb> BlockExecutor<S> for RevmExecutor {
                 blk.prevrandao = Some(context.prevrandao);
             });
 
-        let mut evm = ctx.build_mainnet();
+        let mut evm = ctx
+            .build_mainnet()
+            .with_precompiles(crate::MonmouthPrecompiles::new(self.config.spec_id));
 
         let mut outcome = ExecutionOutcome::new();
         let mut cumulative_gas = 0u64;
@@ -238,6 +249,23 @@ impl<S: StateDb> BlockExecutor<S> for RevmExecutor {
             let tx_hash = keccak256(tx_bytes);
 
             let tx_env = decode_tx_env(tx_bytes, self.config.chain_id)?;
+
+            // Pre-execution: classify the transaction if classifier is enabled
+            if let Some(ref classifier) = self.classifier {
+                let to = match tx_env.kind {
+                    TxKind::Call(addr) => Some(addr),
+                    TxKind::Create => None,
+                };
+                let result = classifier.classify(to, &tx_env.data);
+                tracing::info!(
+                    tx_hash = %tx_hash,
+                    classification = %result.classification,
+                    confidence = result.confidence,
+                    reason = %result.reason,
+                    "pre-execution classification"
+                );
+            }
+
             evm.set_tx(tx_env);
 
             let result_and_state =
@@ -508,8 +536,8 @@ fn extract_changes(state: EvmState) -> ChangeSet {
 #[cfg(test)]
 mod tests {
     use alloy_primitives::{Address, Bytes, KECCAK256_EMPTY};
-    use kora_qmdb::ChangeSet;
-    use kora_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
+    use monmouth_qmdb::ChangeSet;
+    use monmouth_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
     use revm::state::Account;
 
     use super::*;
@@ -563,7 +591,7 @@ mod tests {
     #[test]
     fn revm_executor_default() {
         let executor = RevmExecutor::default();
-        assert_eq!(executor.chain_id(), 1);
+        assert_eq!(executor.chain_id(), 7750);
     }
 
     #[test]

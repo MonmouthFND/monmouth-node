@@ -1,18 +1,18 @@
 [package]
-name = "kora-handlers"
+name = "monmouth-handlers"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Database handles with synchronization for Kora"
+description = "Database handles with synchronization for Monmouth"
 
 [lints]
 workspace = true
 
 [dependencies]
-kora-qmdb = { path = "../qmdb" }
-kora-traits = { path = "../traits" }
+monmouth-qmdb = { path = "../qmdb" }
+monmouth-traits = { path = "../traits" }
 
 alloy-primitives.workspace = true
 async-trait = "0.1"

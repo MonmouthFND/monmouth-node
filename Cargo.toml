@@ -1,6 +1,6 @@
 [workspace]
 members = ["bin/*", "crates/e2e", "crates/network/*", "crates/node/*", "crates/storage/*", "crates/utilities/*"]
-default-members = ["bin/kora"]
+default-members = ["bin/monmouth"]
 resolver = "2"
 
 [workspace.package]
@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
-repository = "https://github.com/refcell/kora"
+repository = "https://github.com/monmouth-ai/monmouth"
 
 [workspace.lints.rust]
 missing-debug-implementations = "warn"
@@ -46,33 +46,33 @@ codegen-units = 1
 
 [workspace.dependencies]
 # Local crates
-kora-builder = { path = "crates/node/builder" }
-kora-domain = { path = "crates/node/domain" }
-kora-cli = { path = "crates/utilities/cli" }
-kora-crypto = { path = "crates/utilities/crypto" }
-kora-backend = { path = "crates/storage/backend" }
-kora-config = { path = "crates/node/config" }
-kora-consensus = { path = "crates/node/consensus" }
-kora-executor = { path = "crates/node/executor" }
-kora-ledger = { path = "crates/node/ledger" }
-kora-marshal = { path = "crates/network/marshal" }
-kora-reporters = { path = "crates/node/reporters" }
-kora-service = { path = "crates/node/service" }
-kora-simplex = { path = "crates/node/simplex" }
-kora-transport = { path = "crates/network/transport" }
-kora-transport-sim = { path = "crates/network/transport-sim" }
-kora-sys = { path = "crates/utilities/sys" }
-kora-handlers = { path = "crates/storage/handlers" }
-kora-overlay = { path = "crates/storage/overlay" }
-kora-qmdb = { path = "crates/storage/qmdb" }
-kora-qmdb-ledger = { path = "crates/storage/qmdb-ledger" }
-kora-traits = { path = "crates/storage/traits" }
-kora-indexer = { path = "crates/storage/indexer" }
-kora-dkg = { path = "crates/node/dkg" }
-kora-runner = { path = "crates/node/runner" }
-kora-rpc = { path = "crates/node/rpc" }
-kora-txpool = { path = "crates/node/txpool" }
-kora-e2e = { path = "crates/e2e" }
+monmouth-builder = { path = "crates/node/builder" }
+monmouth-domain = { path = "crates/node/domain" }
+monmouth-cli = { path = "crates/utilities/cli" }
+monmouth-crypto = { path = "crates/utilities/crypto" }
+monmouth-backend = { path = "crates/storage/backend" }
+monmouth-config = { path = "crates/node/config" }
+monmouth-consensus = { path = "crates/node/consensus" }
+monmouth-executor = { path = "crates/node/executor" }
+monmouth-ledger = { path = "crates/node/ledger" }
+monmouth-marshal = { path = "crates/network/marshal" }
+monmouth-reporters = { path = "crates/node/reporters" }
+monmouth-service = { path = "crates/node/service" }
+monmouth-simplex = { path = "crates/node/simplex" }
+monmouth-transport = { path = "crates/network/transport" }
+monmouth-transport-sim = { path = "crates/network/transport-sim" }
+monmouth-sys = { path = "crates/utilities/sys" }
+monmouth-handlers = { path = "crates/storage/handlers" }
+monmouth-overlay = { path = "crates/storage/overlay" }
+monmouth-qmdb = { path = "crates/storage/qmdb" }
+monmouth-qmdb-ledger = { path = "crates/storage/qmdb-ledger" }
+monmouth-traits = { path = "crates/storage/traits" }
+monmouth-indexer = { path = "crates/storage/indexer" }
+monmouth-dkg = { path = "crates/node/dkg" }
+monmouth-runner = { path = "crates/node/runner" }
+monmouth-rpc = { path = "crates/node/rpc" }
+monmouth-txpool = { path = "crates/node/txpool" }
+monmouth-e2e = { path = "crates/e2e" }
 
 commonware-p2p = "0.0.65"
 commonware-utils = "0.0.65"
