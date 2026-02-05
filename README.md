@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./assets/diver.png" alt="Monmouth" width="200">
+    <img src="./assets/monmouth-github.png" alt="Monmouth" width="200">
 </p>
 
 <h1 align="center">Monmouth</h1>
@@ -23,7 +23,7 @@
 </p>
 
 > [!CAUTION]
-> Monmouth is pre-alpha software. Do not expect this to run. Do not run this in production.
+> Monmouth is pre-alpha software.
 
 > [!IMPORTANT]
 > Monmouth uses BLS12-381 threshold consensus via [commonware](https://github.com/commonwarexyz/monorepo), [REVM](https://github.com/bluealloy/revm) for EVM execution, and [QMDB](https://github.com/commonwarexyz/monorepo/tree/main/storage) for state storage.
