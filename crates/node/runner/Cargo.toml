@@ -34,7 +34,9 @@ commonware-utils.workspace = true
 alloy-consensus = { workspace = true }
 alloy-primitives.workspace = true
 
+axum = "0.8"
 futures.workspace = true
+tokio = { workspace = true, features = ["net"] }
 tracing.workspace = true
 anyhow.workspace = true
 rand.workspace = true

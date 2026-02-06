@@ -59,7 +59,6 @@ target "monmouth" {
 target "monmouth-local" {
   context    = ".."
   dockerfile = "docker/Dockerfile"
-  platforms  = ["linux/amd64"]
   tags       = ["monmouth:local"]
   args = {
     BUILD_PROFILE = "release"
@@ -73,7 +72,6 @@ target "monmouth-local" {
 target "monmouth-dev" {
   context    = ".."
   dockerfile = "docker/Dockerfile"
-  platforms  = ["linux/amd64"]
   tags       = ["monmouth:dev"]
   args = {
     BUILD_PROFILE = "dev"

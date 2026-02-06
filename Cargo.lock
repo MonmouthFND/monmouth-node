@@ -3755,6 +3755,7 @@ dependencies = [
  "alloy-consensus",
  "alloy-primitives",
  "anyhow",
+ "axum",
  "commonware-codec",
  "commonware-consensus",
  "commonware-cryptography",
@@ -3778,6 +3779,7 @@ dependencies = [
  "monmouth-simplex",
  "monmouth-transport",
  "rand 0.8.5",
+ "tokio",
  "tracing",
 ]
 

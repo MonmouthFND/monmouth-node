@@ -1,8 +1,9 @@
-use std::{sync::Arc, time::Duration};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use alloy_consensus::Header;
 use alloy_primitives::{Address, B256};
 use anyhow::Context as _;
+use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
 use commonware_consensus::{
     Reporters,
     application::marshaled::Marshaled,
@@ -122,6 +123,8 @@ pub struct ProductionRunner {
     pub partition_prefix: String,
     /// Optional RPC configuration (state, bind address).
     pub rpc_config: Option<(monmouth_rpc::NodeState, std::net::SocketAddr)>,
+    /// Optional Prometheus metrics server address.
+    pub metrics_addr: Option<SocketAddr>,
     /// Whether the agent transaction classifier is enabled.
     pub enable_agent_pool: bool,
     /// Confidence threshold for agent classification.
@@ -143,6 +146,7 @@ impl ProductionRunner {
             bootstrap,
             partition_prefix: PARTITION_PREFIX.to_string(),
             rpc_config: None,
+            metrics_addr: None,
             enable_agent_pool: false,
             confidence_threshold: monmouth_config::DEFAULT_CONFIDENCE_THRESHOLD,
         }
@@ -152,6 +156,13 @@ impl ProductionRunner {
     #[must_use]
     pub fn with_rpc(mut self, state: monmouth_rpc::NodeState, addr: std::net::SocketAddr) -> Self {
         self.rpc_config = Some((state, addr));
+        self
+    }
+
+    /// Configure Prometheus metrics server.
+    #[must_use]
+    pub const fn with_metrics(mut self, addr: SocketAddr) -> Self {
+        self.metrics_addr = Some(addr);
         self
     }
 
@@ -186,6 +197,7 @@ impl ProductionRunner {
         use monmouth_transport::NetworkConfigExt;
 
         let rpc_config = self.rpc_config.clone();
+        let metrics_addr = self.metrics_addr;
 
         let executor = tokio::Runner::default();
         executor.start(|context| async move {
@@ -193,6 +205,14 @@ impl ProductionRunner {
             if let Some((state, addr)) = rpc_config {
                 let rpc = monmouth_rpc::RpcServer::new(state, addr);
                 drop(rpc.start());
+            }
+
+            // Start metrics server if configured
+            if let Some(addr) = metrics_addr {
+                let metrics_ctx = context.clone();
+                ::tokio::task::spawn(async move {
+                    serve_metrics(metrics_ctx, addr).await;
+                });
             }
 
             let validator_key = config
@@ -360,5 +380,36 @@ impl NodeRunner for ProductionRunner {
 
         info!("Validator started successfully");
         Ok(ledger)
+    }
+}
+
+async fn metrics_handler(
+    axum::extract::State(ctx): axum::extract::State<tokio::Context>,
+) -> impl IntoResponse {
+    let body = ctx.encode();
+    (
+        StatusCode::OK,
+        [("content-type", "text/plain; version=0.0.4; charset=utf-8")],
+        body,
+    )
+}
+
+async fn serve_metrics(ctx: tokio::Context, addr: SocketAddr) {
+    let app = Router::new()
+        .route("/metrics", get(metrics_handler))
+        .with_state(ctx);
+
+    info!(addr = %addr, "Starting metrics server");
+
+    let listener = match ::tokio::net::TcpListener::bind(addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to bind metrics server");
+            return;
+        }
+    };
+
+    if let Err(e) = axum::serve(listener, app).await {
+        tracing::error!(error = %e, "Metrics server error");
     }
 }

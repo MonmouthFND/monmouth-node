@@ -19,7 +19,7 @@ x-node-common: &node-common
     - monmouth-net
   environment:
     - RUST_LOG=${RUST_LOG:-info}
-    - CHAIN_ID=${CHAIN_ID:-1337}
+    - CHAIN_ID=${CHAIN_ID:-7750}
 
 x-validator-common: &validator-common
   <<: *node-common
@@ -32,7 +32,7 @@ x-validator-common: &validator-common
     start_period: 30s
   environment:
     - RUST_LOG=${RUST_LOG:-info}
-    - CHAIN_ID=${CHAIN_ID:-1337}
+    - CHAIN_ID=${CHAIN_ID:-7750}
     - HEALTHCHECK_MODE=ready
 
 services:
@@ -47,7 +47,7 @@ services:
         /usr/local/bin/keygen setup \
           --validators=4 \
           --threshold=3 \
-          --chain-id=${CHAIN_ID:-1337} \
+          --chain-id=${CHAIN_ID:-7750} \
           --output-dir=/shared && \
         echo "[init] Setting permissions..." && \
         chown -R 1000:1000 /shared/node0 /shared/node1 /shared/node2 /shared/node3 && \
@@ -70,7 +70,7 @@ services:
         /usr/local/bin/keygen setup \
           --validators=4 \
           --threshold=3 \
-          --chain-id=${CHAIN_ID:-1337} \
+          --chain-id=${CHAIN_ID:-7750} \
           --output-dir=/shared && \
         echo "[init] Running trusted dealer DKG..." && \
         /usr/local/bin/keygen dkg-deal \
@@ -101,7 +101,7 @@ services:
       - data_node0:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=0
       - IS_BOOTSTRAP=true
       - IS_LEADER=true
@@ -123,7 +123,7 @@ services:
       - data_node1:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=1
       - IS_BOOTSTRAP=false
       - BOOTSTRAP_PEERS=node0:30303
@@ -145,7 +145,7 @@ services:
       - data_node2:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=2
       - IS_BOOTSTRAP=false
       - BOOTSTRAP_PEERS=node0:30303
@@ -167,7 +167,7 @@ services:
       - data_node3:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=3
       - IS_BOOTSTRAP=false
       - BOOTSTRAP_PEERS=node0:30303
@@ -186,7 +186,7 @@ services:
       - data_node0:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=0
       - IS_BOOTSTRAP=true
       - HEALTHCHECK_MODE=ready
@@ -209,7 +209,7 @@ services:
       - data_node1:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=1
       - IS_BOOTSTRAP=false
       - BOOTSTRAP_PEERS=node0:30303
@@ -233,7 +233,7 @@ services:
       - data_node2:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=2
       - IS_BOOTSTRAP=false
       - BOOTSTRAP_PEERS=node0:30303
@@ -257,7 +257,7 @@ services:
       - data_node3:/data
     environment:
       - RUST_LOG=${RUST_LOG:-info}
-      - CHAIN_ID=${CHAIN_ID:-1337}
+      - CHAIN_ID=${CHAIN_ID:-7750}
       - VALIDATOR_INDEX=3
       - IS_BOOTSTRAP=false
       - BOOTSTRAP_PEERS=node0:30303

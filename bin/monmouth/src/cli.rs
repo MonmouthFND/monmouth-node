@@ -169,6 +169,8 @@ impl Cli {
         let rpc_addr: std::net::SocketAddr = format!("0.0.0.0:{}", rpc_port).parse()?;
         let node_state = NodeState::new(config.chain_id, dkg_output.share_index);
 
+        let metrics_addr: std::net::SocketAddr = "0.0.0.0:9002".parse()?;
+
         let runner = ProductionRunner::new(
             scheme,
             config.chain_id,
@@ -176,6 +178,7 @@ impl Cli {
             bootstrap,
         )
         .with_rpc(node_state, rpc_addr)
+        .with_metrics(metrics_addr)
         .with_agent_config(
             config.execution.enable_agent_pool,
             config.execution.confidence_threshold,
