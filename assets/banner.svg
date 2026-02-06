@@ -10,6 +10,6 @@
     </linearGradient>
   </defs>
   <rect width="100%" height="100%" fill="url(#bg)"/>
-  <text x="400" y="110" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="url(#accent)" text-anchor="middle">kora</text>
-  <text x="400" y="150" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#9ca3af" text-anchor="middle">A minimal commonware + revm execution client</text>
+  <text x="400" y="110" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="url(#accent)" text-anchor="middle">monmouth</text>
+  <text x="400" y="150" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#9ca3af" text-anchor="middle">The settlement layer for autonomous AI agents</text>
 </svg>

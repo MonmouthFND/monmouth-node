@@ -38,7 +38,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 
 # Build all binaries
-RUN cargo build --release -p kora -p keygen
+RUN cargo build --release -p monmouth -p keygen
 
 # ───────────────────────────────────────────────────────────────────────────
 # Stage 4: Runtime - Minimal production image
@@ -55,12 +55,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
-RUN useradd -m -u 1000 -s /bin/bash kora && \
-    mkdir -p /var/lib/monmouth /etc/kora /data /shared && \
-    chown -R kora:kora /var/lib/monmouth /etc/kora /data /shared
+RUN useradd -m -u 1000 -s /bin/bash monmouth && \
+    mkdir -p /var/lib/monmouth /etc/monmouth /data /shared && \
+    chown -R monmouth:monmouth /var/lib/monmouth /etc/monmouth /data /shared
 
 # Copy binaries from builder
-COPY --from=builder /app/target/release/kora /usr/local/bin/
+COPY --from=builder /app/target/release/monmouth /usr/local/bin/
 COPY --from=builder /app/target/release/keygen /usr/local/bin/
 
 # Copy entrypoint scripts
@@ -68,7 +68,7 @@ COPY docker/scripts/ /scripts/
 RUN chmod +x /scripts/*.sh
 
 # Switch to non-root user
-USER kora
+USER monmouth
 WORKDIR /data
 
 # Expose ports

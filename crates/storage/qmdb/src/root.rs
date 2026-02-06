@@ -2,7 +2,7 @@
 
 use alloy_primitives::{B256, keccak256};
 
-const KORA_ROOT_NAMESPACE: &[u8] = b"_KORA_QMDB_ROOT";
+const MONMOUTH_ROOT_NAMESPACE: &[u8] = b"_MONMOUTH_QMDB_ROOT";
 
 /// State root computation utility.
 #[derive(Debug, Clone, Copy)]
@@ -11,8 +11,8 @@ pub struct StateRoot;
 impl StateRoot {
     /// Compute state root from three partition roots.
     pub fn compute(accounts_root: B256, storage_root: B256, code_root: B256) -> B256 {
-        let mut buf = Vec::with_capacity(KORA_ROOT_NAMESPACE.len() + 96);
-        buf.extend_from_slice(KORA_ROOT_NAMESPACE);
+        let mut buf = Vec::with_capacity(MONMOUTH_ROOT_NAMESPACE.len() + 96);
+        buf.extend_from_slice(MONMOUTH_ROOT_NAMESPACE);
         buf.extend_from_slice(accounts_root.as_slice());
         buf.extend_from_slice(storage_root.as_slice());
         buf.extend_from_slice(code_root.as_slice());

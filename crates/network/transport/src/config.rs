@@ -15,7 +15,7 @@ pub const DEFAULT_MAX_MESSAGE_SIZE: u32 = 1024 * 1024;
 pub const DEFAULT_BACKLOG: usize = 256;
 
 /// Default namespace for monmouth network messages.
-pub const DEFAULT_NAMESPACE: &[u8] = b"_COMMONWARE_KORA_NETWORK";
+pub const DEFAULT_NAMESPACE: &[u8] = b"_COMMONWARE_MONMOUTH_NETWORK";
 
 /// Transport configuration for authenticated discovery network.
 ///
@@ -237,6 +237,6 @@ mod tests {
     fn constants_values() {
         assert_eq!(DEFAULT_MAX_MESSAGE_SIZE, 1024 * 1024);
         assert_eq!(DEFAULT_BACKLOG, 256);
-        assert_eq!(DEFAULT_NAMESPACE, b"_COMMONWARE_KORA_NETWORK");
+        assert_eq!(DEFAULT_NAMESPACE, b"_COMMONWARE_MONMOUTH_NETWORK");
     }
 }

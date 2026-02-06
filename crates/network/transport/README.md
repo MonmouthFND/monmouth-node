@@ -20,7 +20,7 @@ use commonware_runtime::tokio;
 // Create transport config
 let config = TransportConfig::recommended(
     signer,
-    b"_KORA_NETWORK",
+    b"_MONMOUTH_NETWORK",
     listen_addr,
     dialable_addr,
     bootstrappers,

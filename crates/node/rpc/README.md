@@ -10,7 +10,7 @@ RPC server for Monmouth nodes. Provides HTTP status endpoints and a full Ethereu
 This crate implements the RPC layer for Monmouth nodes, exposing:
 
 - **Ethereum JSON-RPC API** (`eth_*`, `net_*`, `web3_*`) for wallet and tooling compatibility
-- **Monmouth-specific API** (`kora_*`) for node status and consensus information
+- **Monmouth-specific API** (`monmouth_*`) for node status and consensus information
 - **HTTP endpoints** for health checks and node monitoring
 
 ## Usage
@@ -77,7 +77,7 @@ The following standard Ethereum methods are supported:
 
 | Method | Description |
 |--------|-------------|
-| `kora_nodeStatus` | Returns node status including consensus info |
+| `monmouth_nodeStatus` | Returns node status including consensus info |
 
 ## HTTP Endpoints
 

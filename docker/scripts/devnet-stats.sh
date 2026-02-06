@@ -13,7 +13,7 @@ DIM='\033[2m'
 NC='\033[0m'
 
 REFRESH_INTERVAL=${1:-0.3}
-CHAIN_ID="${CHAIN_ID:-1337}"
+CHAIN_ID="${CHAIN_ID:-7750}"
 RPC_PORTS=(8545 8546 8547 8548)
 
 cleanup() {
@@ -38,7 +38,7 @@ fetch_all_statuses() {
     # Launch parallel fetches using JSON-RPC POST to get block number (indicates node is alive)
     for i in 0 1 2 3; do
         (curl -s --max-time 0.2 -X POST -H "Content-Type: application/json" \
-            -d '{"jsonrpc":"2.0","method":"kora_nodeStatus","params":[],"id":1}' \
+            -d '{"jsonrpc":"2.0","method":"monmouth_nodeStatus","params":[],"id":1}' \
             "http://localhost:${RPC_PORTS[$i]}" 2>/dev/null | \
             jq -c '.result // {}' > "$tmpdir/$i" 2>/dev/null || echo "{}" > "$tmpdir/$i") &
     done
@@ -58,7 +58,7 @@ render() {
     local now=$(date "+%H:%M:%S")
     
     echo -e "${BOLD}${BLUE}╔══════════════════════════════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${BLUE}║${NC}                              ${BOLD}KORA DEVNET MONITOR${NC}                                        ${BOLD}${BLUE}║${NC}"
+    echo -e "${BOLD}${BLUE}║${NC}                           ${BOLD}MONMOUTH DEVNET MONITOR${NC}                                     ${BOLD}${BLUE}║${NC}"
     echo -e "${BOLD}${BLUE}╚══════════════════════════════════════════════════════════════════════════════════════════╝${NC}"
     echo -e "  ${DIM}$now${NC}  │  ${DIM}Chain:${NC} ${CYAN}$CHAIN_ID${NC}  │  ${DIM}Refresh:${NC} ${REFRESH_INTERVAL}s  │  ${DIM}Ctrl+C to exit${NC}"
     echo ""

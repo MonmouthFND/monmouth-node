@@ -227,7 +227,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             );
             let net_api = NetApiImpl::new(chain_id);
             let web3_api = Web3ApiImpl::new();
-            let kora_api = MonmouthApiImpl::new(node_state_for_jsonrpc);
+            let monmouth_api = MonmouthApiImpl::new(node_state_for_jsonrpc);
 
             let mut module = jsonrpsee::RpcModule::new(());
             if let Err(e) = module.merge(eth_api.into_rpc()) {
@@ -242,7 +242,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
                 error!(error = %e, "Failed to merge web3 API");
                 return None;
             }
-            if let Err(e) = module.merge(kora_api.into_rpc()) {
+            if let Err(e) = module.merge(monmouth_api.into_rpc()) {
                 error!(error = %e, "Failed to merge monmouth API");
                 return None;
             }

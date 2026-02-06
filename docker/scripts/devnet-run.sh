@@ -77,13 +77,13 @@ print_header() {
     echo ""
     echo -e "${BOLD}${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
     if [[ "$INTERACTIVE_DKG" == "true" ]]; then
-        echo -e "${BOLD}${BLUE}║${NC}        ${BOLD}KORA DEVNET${NC} ${GREEN}(Interactive DKG)${NC}                 ${BOLD}${BLUE}║${NC}"
+        echo -e "${BOLD}${BLUE}║${NC}        ${BOLD}MONMOUTH DEVNET${NC} ${GREEN}(Interactive DKG)${NC}            ${BOLD}${BLUE}║${NC}"
     else
-        echo -e "${BOLD}${BLUE}║${NC}        ${BOLD}KORA DEVNET${NC} ${YELLOW}(Trusted Dealer)${NC}                  ${BOLD}${BLUE}║${NC}"
+        echo -e "${BOLD}${BLUE}║${NC}        ${BOLD}MONMOUTH DEVNET${NC} ${YELLOW}(Trusted Dealer)${NC}             ${BOLD}${BLUE}║${NC}"
     fi
     echo -e "${BOLD}${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo -e "  ${DIM}Chain ID:${NC} ${CHAIN_ID:-1337}  ${DIM}│${NC}  ${DIM}Validators:${NC} 4  ${DIM}│${NC}  ${DIM}Threshold:${NC} 3"
+    echo -e "  ${DIM}Chain ID:${NC} ${CHAIN_ID:-7750}  ${DIM}│${NC}  ${DIM}Validators:${NC} 4  ${DIM}│${NC}  ${DIM}Threshold:${NC} 3"
     echo ""
 }
 

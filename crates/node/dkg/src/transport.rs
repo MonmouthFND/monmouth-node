@@ -21,7 +21,7 @@ use crate::{DkgConfig, DkgError};
 pub const CHANNEL_DKG: u64 = 10;
 
 /// Default namespace for DKG network messages.
-pub const DKG_NAMESPACE: &[u8] = b"_KORA_DKG_CEREMONY";
+pub const DKG_NAMESPACE: &[u8] = b"_MONMOUTH_DKG_CEREMONY";
 
 /// Default maximum message size for DKG (256 KB).
 pub const DEFAULT_MAX_MESSAGE_SIZE: u32 = 256 * 1024;
