@@ -117,10 +117,9 @@ mod tests {
 
     #[test]
     fn test_execution_config_agent_fields() {
-        let config: ExecutionConfig = serde_json::from_str(
-            r#"{"enable_agent_pool": true, "confidence_threshold": 0.5}"#,
-        )
-        .expect("deserialize");
+        let config: ExecutionConfig =
+            serde_json::from_str(r#"{"enable_agent_pool": true, "confidence_threshold": 0.5}"#)
+                .expect("deserialize");
         assert!(config.enable_agent_pool);
         assert!((config.confidence_threshold - 0.5).abs() < f64::EPSILON);
     }

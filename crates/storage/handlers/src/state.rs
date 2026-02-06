@@ -1,7 +1,9 @@
 //! StateDb trait implementations for QmdbHandle.
 
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256};
-use monmouth_qmdb::{AccountEncoding, ChangeSet, QmdbBatchable, QmdbGettable, StateRoot, StorageKey};
+use monmouth_qmdb::{
+    AccountEncoding, ChangeSet, QmdbBatchable, QmdbGettable, StateRoot, StorageKey,
+};
 use monmouth_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
 
 use crate::QmdbHandle;

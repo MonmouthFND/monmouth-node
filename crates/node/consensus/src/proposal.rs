@@ -221,7 +221,10 @@ mod tests {
             Ok(U256::ZERO)
         }
 
-        async fn code_hash(&self, _address: &Address) -> Result<B256, monmouth_traits::StateDbError> {
+        async fn code_hash(
+            &self,
+            _address: &Address,
+        ) -> Result<B256, monmouth_traits::StateDbError> {
             Ok(B256::ZERO)
         }
 
@@ -384,7 +387,10 @@ mod tests {
             })
         }
 
-        fn validate_header(&self, _header: &Header) -> Result<(), monmouth_executor::ExecutionError> {
+        fn validate_header(
+            &self,
+            _header: &Header,
+        ) -> Result<(), monmouth_executor::ExecutionError> {
             Ok(())
         }
     }

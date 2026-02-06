@@ -41,7 +41,9 @@ use commonware_p2p::{
 use commonware_parallel::Sequential;
 use commonware_runtime::{Clock, Metrics, Quota, Runner, buffer::PoolRef, deterministic};
 use commonware_utils::{Acknowledgement, NZU16, NZUsize};
-use monmouth_marshal::{ActorInitializer, ArchiveInitializer, BroadcastInitializer, PeerInitializer};
+use monmouth_marshal::{
+    ActorInitializer, ArchiveInitializer, BroadcastInitializer, PeerInitializer,
+};
 
 use crate::common::Block;
 

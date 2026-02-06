@@ -276,7 +276,11 @@ mod tests {
             Ok(Bytes::new())
         }
 
-        async fn storage(&self, _: &Address, _: &U256) -> Result<U256, monmouth_traits::StateDbError> {
+        async fn storage(
+            &self,
+            _: &Address,
+            _: &U256,
+        ) -> Result<U256, monmouth_traits::StateDbError> {
             Ok(U256::ZERO)
         }
     }

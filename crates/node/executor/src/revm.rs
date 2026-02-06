@@ -31,7 +31,7 @@ use crate::{
 ///
 /// This executor uses REVM to execute EVM transactions against a state database.
 /// The actual EVM execution is performed via the REVM handler traits.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct RevmExecutor {
     /// Execution configuration.
     config: ExecutionConfig,
@@ -54,7 +54,7 @@ impl RevmExecutor {
 
     /// Enable agent-aware transaction classification.
     #[must_use]
-    pub fn with_classifier(mut self, classifier: TransactionClassifier) -> Self {
+    pub const fn with_classifier(mut self, classifier: TransactionClassifier) -> Self {
         self.classifier = Some(classifier);
         self
     }
@@ -171,12 +171,6 @@ impl RevmExecutor {
         }
 
         Ok(())
-    }
-}
-
-impl Default for RevmExecutor {
-    fn default() -> Self {
-        Self { config: ExecutionConfig::default(), classifier: None }
     }
 }
 
@@ -608,20 +602,19 @@ mod tests {
             GasLimitBounds { min: 5000, max: 30_000_000, max_delta_divisor: 1024 },
         ));
 
-        let mut header = Header::default();
-        header.gas_limit = 1000;
+        let header = Header { gas_limit: 1000, ..Default::default() };
         assert!(
             <RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header)
                 .is_err()
         );
 
-        header.gas_limit = 100_000_000;
+        let header = Header { gas_limit: 100_000_000, ..Default::default() };
         assert!(
             <RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header)
                 .is_err()
         );
 
-        header.gas_limit = 15_000_000;
+        let header = Header { gas_limit: 15_000_000, ..Default::default() };
         assert!(
             <RevmExecutor as BlockExecutor<MockStateDb>>::validate_header(&executor, &header)
                 .is_ok()
@@ -641,15 +634,17 @@ mod tests {
             base_fee_per_gas: None,
         };
 
-        let mut header = Header::default();
-        header.parent_hash = B256::repeat_byte(1);
-        header.number = 101;
-        header.timestamp = 1001;
-        header.gas_limit = 30_000_000;
+        let header = Header {
+            parent_hash: B256::repeat_byte(1),
+            number: 101,
+            timestamp: 1001,
+            gas_limit: 30_000_000,
+            ..Default::default()
+        };
 
         assert!(executor.validate_header_against_parent(&header, &parent).is_ok());
 
-        header.number = 103;
+        let header = Header { number: 103, ..header };
         assert!(executor.validate_header_against_parent(&header, &parent).is_err());
     }
 
@@ -666,11 +661,13 @@ mod tests {
             base_fee_per_gas: None,
         };
 
-        let mut header = Header::default();
-        header.parent_hash = B256::repeat_byte(1);
-        header.number = 101;
-        header.timestamp = 999;
-        header.gas_limit = 30_000_000;
+        let header = Header {
+            parent_hash: B256::repeat_byte(1),
+            number: 101,
+            timestamp: 999,
+            gas_limit: 30_000_000,
+            ..Default::default()
+        };
 
         assert!(executor.validate_header_against_parent(&header, &parent).is_err());
     }
@@ -688,11 +685,13 @@ mod tests {
             base_fee_per_gas: None,
         };
 
-        let mut header = Header::default();
-        header.parent_hash = B256::repeat_byte(1);
-        header.number = 101;
-        header.timestamp = 1001;
-        header.gas_limit = 35_000_000;
+        let header = Header {
+            parent_hash: B256::repeat_byte(1),
+            number: 101,
+            timestamp: 1001,
+            gas_limit: 35_000_000,
+            ..Default::default()
+        };
 
         assert!(executor.validate_header_against_parent(&header, &parent).is_err());
     }

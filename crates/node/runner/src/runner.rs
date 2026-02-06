@@ -19,7 +19,9 @@ use monmouth_domain::{Block, BlockCfg, BootstrapConfig, ConsensusDigest, LedgerE
 use monmouth_executor::{BlockContext, ClassifierConfig, RevmExecutor, TransactionClassifier};
 use monmouth_ledger::{LedgerService, LedgerView};
 use monmouth_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
-use monmouth_reporters::{BlockContextProvider, FinalizedReporter, NodeStateReporter, SeedReporter};
+use monmouth_reporters::{
+    BlockContextProvider, FinalizedReporter, NodeStateReporter, SeedReporter,
+};
 use monmouth_service::{NodeRunContext, NodeRunner};
 use monmouth_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool};
 use monmouth_transport::NetworkTransport;
@@ -155,13 +157,14 @@ impl ProductionRunner {
 
     /// Configure agent features from execution config.
     #[must_use]
-    pub fn with_agent_config(mut self, enable: bool, confidence: f64) -> Self {
+    pub const fn with_agent_config(mut self, enable: bool, confidence: f64) -> Self {
         self.enable_agent_pool = enable;
         self.confidence_threshold = confidence;
         self
     }
 
     /// Build a `RevmExecutor`, optionally with the agent classifier.
+    #[allow(clippy::missing_const_for_fn)]
     fn build_executor(&self) -> RevmExecutor {
         let executor = RevmExecutor::new(self.chain_id);
         if self.enable_agent_pool {
@@ -201,8 +204,11 @@ impl ProductionRunner {
                 .build_local_transport(validator_key, context.clone())
                 .map_err(|e| anyhow::anyhow!("failed to build transport: {}", e))?;
 
-            let ctx =
-                monmouth_service::NodeRunContext::new(context, std::sync::Arc::new(config), transport);
+            let ctx = monmouth_service::NodeRunContext::new(
+                context,
+                std::sync::Arc::new(config),
+                transport,
+            );
 
             let _ledger = self.run(ctx).await?;
 

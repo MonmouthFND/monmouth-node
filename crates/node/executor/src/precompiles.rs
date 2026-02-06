@@ -126,16 +126,8 @@ impl<CTX: ContextTr> PrecompileProvider<CTX> for MonmouthPrecompiles {
         if Self::is_custom(&inputs.bytecode_address) {
             let input_bytes: Vec<u8> = match &inputs.input {
                 CallInput::SharedBuffer(range) => {
-                    if let Some(slice) =
-                        LocalContextTr::shared_memory_buffer_slice(
-                            context.local(),
-                            range.clone(),
-                        )
-                    {
-                        slice.to_vec()
-                    } else {
-                        Vec::new()
-                    }
+                    LocalContextTr::shared_memory_buffer_slice(context.local(), range.clone())
+                        .map_or_else(Vec::new, |slice| slice.to_vec())
                 }
                 CallInput::Bytes(bytes) => bytes.0.to_vec(),
             };

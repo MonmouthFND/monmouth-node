@@ -8,7 +8,7 @@ mod runner;
 pub use runner::{NodeRunContext, NodeRunner};
 
 mod service;
-pub use service::{MonmouthNodeService, LegacyNodeService};
+pub use service::{LegacyNodeService, MonmouthNodeService};
 
 mod stubs;
 pub use stubs::{StubAutomaton, StubBlocker, StubDigest, StubPublicKey, StubRelay, StubReporter};

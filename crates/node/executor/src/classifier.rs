@@ -49,7 +49,8 @@ pub mod precompiles {
     /// SVM Router precompile.
     pub const SVM_ROUTER: Address = address!("0x0000000000000000000000000000000000001003");
     /// Cross-Chain Message Passer precompile.
-    pub const CROSS_CHAIN_MESSAGE_PASSER: Address = address!("0x0000000000000000000000000000000000004200");
+    pub const CROSS_CHAIN_MESSAGE_PASSER: Address =
+        address!("0x0000000000000000000000000000000000004200");
 }
 
 /// Classification of a transaction before execution.
@@ -337,7 +338,8 @@ mod tests {
     #[test]
     fn classify_cross_chain_message_passer() {
         let classifier = TransactionClassifier::enabled();
-        let result = classifier.classify(Some(precompiles::CROSS_CHAIN_MESSAGE_PASSER), &Bytes::new());
+        let result =
+            classifier.classify(Some(precompiles::CROSS_CHAIN_MESSAGE_PASSER), &Bytes::new());
         assert_eq!(result.classification, TransactionClassification::HybridCrossChain);
     }
 
