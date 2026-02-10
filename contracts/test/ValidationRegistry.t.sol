@@ -2,9 +2,11 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
+import "../src/IdentityRegistry.sol";
 import "../src/ValidationRegistry.sol";
 
 contract ValidationRegistryTest is Test {
+    IdentityRegistry public identity;
     ValidationRegistry public registry;
     address public requester = address(0xA11CE);
     address public validator = address(0xB0B);
@@ -28,15 +30,25 @@ contract ValidationRegistryTest is Test {
         string tag
     );
 
+    uint256 public agentId1;
+    uint256 public agentId42;
+
     function setUp() public {
-        registry = new ValidationRegistry();
+        identity = new IdentityRegistry();
+        registry = new ValidationRegistry(address(identity), 0); // no cooldown for tests
+
+        // Register two agents for tests
+        vm.startPrank(requester);
+        agentId1 = identity.register("ipfs://agent1");   // = 1
+        agentId42 = identity.register("ipfs://agent42");  // = 2
+        vm.stopPrank();
     }
 
     // --- validationRequest ---
 
     function test_validationRequest_success() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req1", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req1", REQ_HASH);
 
         (uint256 agentId, address req, address val, bool responded) = registry.getRequest(REQ_HASH);
         assertEq(agentId, 1);
@@ -48,19 +60,19 @@ contract ValidationRegistryTest is Test {
     function test_validationRequest_emits_event() public {
         vm.prank(requester);
         vm.expectEmit(true, true, true, true);
-        emit ValidationRequested(REQ_HASH, 1, validator, requester, "ipfs://req1");
-        registry.validationRequest(validator, 1, "ipfs://req1", REQ_HASH);
+        emit ValidationRequested(REQ_HASH, agentId1, validator, requester, "ipfs://req1");
+        registry.validationRequest(validator, agentId1, "ipfs://req1", REQ_HASH);
     }
 
     function test_validationRequest_reverts_zero_validator() public {
         vm.prank(requester);
         vm.expectRevert(ValidationRegistry.ZeroValidator.selector);
-        registry.validationRequest(address(0), 1, "ipfs://req1", REQ_HASH);
+        registry.validationRequest(address(0), agentId1, "ipfs://req1", REQ_HASH);
     }
 
     function test_validationRequest_reverts_duplicate_hash() public {
         vm.startPrank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req1", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req1", REQ_HASH);
 
         vm.expectRevert(abi.encodeWithSelector(ValidationRegistry.RequestAlreadyExists.selector, REQ_HASH));
         registry.validationRequest(validator, 2, "ipfs://req2", REQ_HASH);
@@ -72,20 +84,20 @@ contract ValidationRegistryTest is Test {
         bytes32 hash2 = keccak256("req-2");
 
         vm.startPrank(requester);
-        registry.validationRequest(validator, 42, "uri1", hash1);
-        registry.validationRequest(validator, 42, "uri2", hash2);
+        registry.validationRequest(validator, agentId42, "uri1", hash1);
+        registry.validationRequest(validator, agentId42, "uri2", hash2);
         vm.stopPrank();
 
-        assertEq(registry.getAgentRequestCount(42), 2);
-        assertEq(registry.getAgentRequestAt(42, 0), hash1);
-        assertEq(registry.getAgentRequestAt(42, 1), hash2);
+        assertEq(registry.getAgentRequestCount(agentId42), 2);
+        assertEq(registry.getAgentRequestAt(agentId42, 0), hash1);
+        assertEq(registry.getAgentRequestAt(agentId42, 1), hash2);
     }
 
     // --- validationResponse ---
 
     function test_validationResponse_approved() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         registry.validationResponse(REQ_HASH, 1, "ipfs://resp", RESP_HASH, "capability");
@@ -100,7 +112,7 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_rejected() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         registry.validationResponse(REQ_HASH, 2, "ipfs://resp", RESP_HASH, "capability");
@@ -111,7 +123,7 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_inconclusive() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         registry.validationResponse(REQ_HASH, 3, "ipfs://resp", RESP_HASH, "capability");
@@ -122,17 +134,17 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_emits_event() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         vm.expectEmit(true, true, true, true);
-        emit ValidationResponded(REQ_HASH, 1, validator, 1, "capability");
+        emit ValidationResponded(REQ_HASH, agentId1, validator, 1, "capability");
         registry.validationResponse(REQ_HASH, 1, "ipfs://resp", RESP_HASH, "capability");
     }
 
     function test_validationResponse_marks_responded() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         registry.validationResponse(REQ_HASH, 1, "ipfs://resp", RESP_HASH, "tag");
@@ -150,7 +162,7 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_reverts_not_designated_validator() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(stranger);
         vm.expectRevert(
@@ -161,7 +173,7 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_reverts_already_responded() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.startPrank(validator);
         registry.validationResponse(REQ_HASH, 1, "uri", RESP_HASH, "tag");
@@ -173,7 +185,7 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_reverts_invalid_response_zero() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         vm.expectRevert(abi.encodeWithSelector(ValidationRegistry.InvalidResponseCode.selector, 0));
@@ -182,7 +194,7 @@ contract ValidationRegistryTest is Test {
 
     function test_validationResponse_reverts_invalid_response_four() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.prank(validator);
         vm.expectRevert(abi.encodeWithSelector(ValidationRegistry.InvalidResponseCode.selector, 4));
@@ -205,7 +217,7 @@ contract ValidationRegistryTest is Test {
 
     function test_getResponse_reverts_not_responded() public {
         vm.prank(requester);
-        registry.validationRequest(validator, 1, "ipfs://req", REQ_HASH);
+        registry.validationRequest(validator, agentId1, "ipfs://req", REQ_HASH);
 
         vm.expectRevert(abi.encodeWithSelector(ValidationRegistry.RequestNotFound.selector, REQ_HASH));
         registry.getResponse(REQ_HASH);
@@ -215,6 +227,12 @@ contract ValidationRegistryTest is Test {
 
     function test_getAgentRequestCount_zero_for_unknown() public view {
         assertEq(registry.getAgentRequestCount(999), 0);
+    }
+
+    function test_validationRequest_reverts_agent_not_found() public {
+        vm.prank(requester);
+        vm.expectRevert(abi.encodeWithSelector(ValidationRegistry.AgentNotFound.selector, 999));
+        registry.validationRequest(validator, 999, "ipfs://req", keccak256("no-agent"));
     }
 
     // --- Response code constants ---

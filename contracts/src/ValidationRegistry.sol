@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
 /// @title ValidationRegistry - ERC-8004 Agent Validation
 /// @author Monmouth Team
 /// @notice Independent validation system for agent capabilities on Monmouth.
@@ -8,8 +10,10 @@ pragma solidity ^0.8.24;
 ///      a request-response pattern. Validation requests are indexed by their
 ///      content hash, and responses include tags for categorization.
 ///      Security: custom errors, events on all state changes,
-///      input validation, no external calls (no reentrancy risk).
+///      input validation, agent existence verification via IdentityRegistry.
 contract ValidationRegistry {
+    /// @notice Reference to the IdentityRegistry for agent existence checks.
+    IERC721 public immutable identityRegistry;
     /// @notice Response codes for validation results.
     /// @dev 0 = Pending, 1 = Approved, 2 = Rejected, 3 = Inconclusive
     uint8 public constant RESPONSE_PENDING = 0;
@@ -58,6 +62,12 @@ contract ValidationRegistry {
     /// @notice Validation request hashes associated with each agent.
     mapping(uint256 => bytes32[]) private _agentRequests;
 
+    /// @notice Minimum seconds between validation requests per sender.
+    uint256 public requestCooldown;
+
+    /// @notice Timestamp of last validation request per sender.
+    mapping(address => uint256) private _lastRequestTime;
+
     /// @notice Emitted when a validation request is created.
     event ValidationRequested(
         bytes32 indexed requestHash,
@@ -94,9 +104,27 @@ contract ValidationRegistry {
     /// @notice Thrown when an invalid response code is provided.
     error InvalidResponseCode(uint8 response);
 
+    /// @notice Thrown when a request is submitted too frequently.
+    error CooldownNotElapsed(address sender, uint256 remainingSeconds);
+
+    /// @notice Thrown when the referenced agent does not exist.
+    error AgentNotFound(uint256 agentId);
+
+    /// @param _identityRegistry Address of the IdentityRegistry contract.
+    /// @param _requestCooldown Minimum seconds between validation requests per sender. 0 = no cooldown.
+    constructor(address _identityRegistry, uint256 _requestCooldown) {
+        identityRegistry = IERC721(_identityRegistry);
+        requestCooldown = _requestCooldown;
+    }
+
     /// @notice Submit a validation request for an agent.
     /// @dev The requestHash serves as the unique identifier for the request.
     ///      It must not have been used before.
+    ///      IMPORTANT: To prevent front-running, callers SHOULD include msg.sender
+    ///      in the requestHash preimage, e.g.:
+    ///        requestHash = keccak256(abi.encode(msg.sender, agentId, nonce))
+    ///      Without this, an attacker could observe a pending transaction and submit
+    ///      the same requestHash first, causing the original transaction to revert.
     /// @param validator The address designated to respond to this request.
     /// @param agentId The agent to be validated.
     /// @param requestURI URI pointing to detailed request data.
@@ -109,6 +137,19 @@ contract ValidationRegistry {
     ) external {
         if (validator == address(0)) revert ZeroValidator();
         if (_requests[requestHash].timestamp != 0) revert RequestAlreadyExists(requestHash);
+
+        // Verify agent exists in IdentityRegistry
+        try identityRegistry.ownerOf(agentId) returns (address) {} catch {
+            revert AgentNotFound(agentId);
+        }
+
+        if (requestCooldown > 0) {
+            uint256 elapsed = block.timestamp - _lastRequestTime[msg.sender];
+            if (_lastRequestTime[msg.sender] != 0 && elapsed < requestCooldown) {
+                revert CooldownNotElapsed(msg.sender, requestCooldown - elapsed);
+            }
+            _lastRequestTime[msg.sender] = block.timestamp;
+        }
 
         _requests[requestHash] = ValidationRequest({
             agentId: agentId,

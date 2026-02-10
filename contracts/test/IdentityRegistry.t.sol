@@ -220,4 +220,34 @@ contract IdentityRegistryTest is Test {
         vm.expectRevert(abi.encodeWithSelector(IdentityRegistry.NotAgentOwner.selector, agentId, alice));
         registry.setAgentWallet(agentId, address(0));
     }
+
+    // --- Fuzz tests ---
+
+    /// @dev Fuzz: agentId counter is always monotonically increasing.
+    function testFuzz_agentId_monotonic(string calldata uri1, string calldata uri2) public {
+        vm.assume(bytes(uri1).length > 0 && bytes(uri2).length > 0);
+
+        vm.prank(alice);
+        uint256 id1 = registry.register(uri1);
+        vm.prank(bob);
+        uint256 id2 = registry.register(uri2);
+
+        assertTrue(id2 > id1);
+    }
+
+    /// @dev Fuzz: only the NFT owner can set metadata.
+    function testFuzz_metadata_owner_only(bytes calldata value) public {
+        vm.prank(alice);
+        uint256 agentId = registry.register("ipfs://agent");
+
+        // Bob should always fail
+        vm.prank(bob);
+        vm.expectRevert(abi.encodeWithSelector(IdentityRegistry.NotAgentOwner.selector, agentId, bob));
+        registry.setMetadata(agentId, "key", value);
+
+        // Alice should always succeed
+        vm.prank(alice);
+        registry.setMetadata(agentId, "key", value);
+        assertEq(registry.getMetadata(agentId, "key"), value);
+    }
 }

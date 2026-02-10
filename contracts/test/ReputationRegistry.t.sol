@@ -2,9 +2,11 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
+import "../src/IdentityRegistry.sol";
 import "../src/ReputationRegistry.sol";
 
 contract ReputationRegistryTest is Test {
+    IdentityRegistry public identity;
     ReputationRegistry public registry;
     address public alice = address(0xA11CE);
     address public bob = address(0xB0B);
@@ -22,7 +24,22 @@ contract ReputationRegistryTest is Test {
     event FeedbackRevoked(uint256 indexed feedbackId, uint256 indexed agentId, address indexed client);
 
     function setUp() public {
-        registry = new ReputationRegistry();
+        identity = new IdentityRegistry();
+        registry = new ReputationRegistry(address(identity), 0); // no cooldown for tests
+
+        // Register agents used in tests
+        vm.startPrank(alice);
+        identity.register("ipfs://agent1"); // agentId = 1
+        identity.register("ipfs://agent2"); // agentId = 2
+        vm.stopPrank();
+        vm.prank(bob);
+        identity.register("ipfs://agent42"); // agentId = 3
+    }
+
+    /// @dev Helper to register a specific agent and return its ID.
+    function _registerAgent(address owner, string memory uri) internal returns (uint256) {
+        vm.prank(owner);
+        return identity.register(uri);
     }
 
     // --- giveFeedback ---
@@ -52,10 +69,11 @@ contract ReputationRegistryTest is Test {
     }
 
     function test_giveFeedback_emits_event() public {
+        uint256 agent42 = _registerAgent(alice, "ipfs://agent42");
         vm.prank(alice);
         vm.expectEmit(true, true, true, true);
-        emit FeedbackGiven(1, 42, alice, 100, 2, "speed", "inference");
-        registry.giveFeedback(42, 100, 2, "speed", "inference", "/infer", "ipfs://fb", keccak256("fb"));
+        emit FeedbackGiven(1, agent42, alice, 100, 2, "speed", "inference");
+        registry.giveFeedback(agent42, 100, 2, "speed", "inference", "/infer", "ipfs://fb", keccak256("fb"));
     }
 
     function test_giveFeedback_negative_value() public {
@@ -64,6 +82,20 @@ contract ReputationRegistryTest is Test {
 
         (,, int128 value,,) = registry.getFeedback(1);
         assertEq(value, -50);
+    }
+
+    function test_giveFeedback_reverts_agent_not_found() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(ReputationRegistry.AgentNotFound.selector, 999));
+        registry.giveFeedback(999, 100, 2, "", "", "", "", bytes32(0));
+    }
+
+    function test_giveFeedback_reverts_decimals_mismatch() public {
+        vm.startPrank(alice);
+        registry.giveFeedback(1, 100, 2, "", "", "", "", bytes32(0));
+        vm.expectRevert(abi.encodeWithSelector(ReputationRegistry.DecimalsMismatch.selector, 1, 2, 4));
+        registry.giveFeedback(1, 200, 4, "", "", "", "", bytes32(0));
+        vm.stopPrank();
     }
 
     // --- totalFeedback ---
@@ -152,7 +184,7 @@ contract ReputationRegistryTest is Test {
         vm.stopPrank();
 
         address[] memory noClients = new address[](0);
-        (uint256 count, int256 sum, uint8 decimals) = registry.getSummary(1, noClients, "", "");
+        (uint256 count, int256 sum, uint8 decimals,) = registry.getSummary(1, noClients, "", "", 0, 0);
         assertEq(count, 2);
         assertEq(sum, 150);
         assertEq(decimals, 2);
@@ -166,7 +198,7 @@ contract ReputationRegistryTest is Test {
         vm.stopPrank();
 
         address[] memory noClients = new address[](0);
-        (uint256 count, int256 sum,) = registry.getSummary(1, noClients, "", "");
+        (uint256 count, int256 sum,,) = registry.getSummary(1, noClients, "", "", 0, 0);
         assertEq(count, 1);
         assertEq(sum, 50);
     }
@@ -178,7 +210,7 @@ contract ReputationRegistryTest is Test {
         vm.stopPrank();
 
         address[] memory noClients = new address[](0);
-        (uint256 count, int256 sum,) = registry.getSummary(1, noClients, "speed", "");
+        (uint256 count, int256 sum,,) = registry.getSummary(1, noClients, "speed", "", 0, 0);
         assertEq(count, 1);
         assertEq(sum, 100);
     }
@@ -190,7 +222,7 @@ contract ReputationRegistryTest is Test {
         vm.stopPrank();
 
         address[] memory noClients = new address[](0);
-        (uint256 count, int256 sum,) = registry.getSummary(1, noClients, "", "inference");
+        (uint256 count, int256 sum,,) = registry.getSummary(1, noClients, "", "inference", 0, 0);
         assertEq(count, 1);
         assertEq(sum, 200);
     }
@@ -203,7 +235,7 @@ contract ReputationRegistryTest is Test {
 
         address[] memory clients = new address[](1);
         clients[0] = alice;
-        (uint256 count, int256 sum,) = registry.getSummary(1, clients, "", "");
+        (uint256 count, int256 sum,,) = registry.getSummary(1, clients, "", "", 0, 0);
         assertEq(count, 1);
         assertEq(sum, 100);
     }
@@ -215,16 +247,109 @@ contract ReputationRegistryTest is Test {
         vm.stopPrank();
 
         address[] memory noClients = new address[](0);
-        (uint256 count, int256 sum,) = registry.getSummary(1, noClients, "", "");
+        (uint256 count, int256 sum,,) = registry.getSummary(1, noClients, "", "", 0, 0);
         assertEq(count, 2);
         assertEq(sum, -50);
     }
 
+    function test_getSummary_pagination() public {
+        vm.startPrank(alice);
+        registry.giveFeedback(1, 10, 2, "", "", "", "", bytes32(0));
+        registry.giveFeedback(1, 20, 2, "", "", "", "", bytes32(0));
+        registry.giveFeedback(1, 30, 2, "", "", "", "", bytes32(0));
+        registry.giveFeedback(1, 40, 2, "", "", "", "", bytes32(0));
+        vm.stopPrank();
+
+        address[] memory noClients = new address[](0);
+
+        // Page 1: first 2 entries
+        (uint256 c1, int256 s1,, uint256 next1) = registry.getSummary(1, noClients, "", "", 0, 2);
+        assertEq(c1, 2);
+        assertEq(s1, 30); // 10 + 20
+        assertEq(next1, 2);
+
+        // Page 2: next 2 entries
+        (uint256 c2, int256 s2,, uint256 next2) = registry.getSummary(1, noClients, "", "", next1, 2);
+        assertEq(c2, 2);
+        assertEq(s2, 70); // 30 + 40
+        assertEq(next2, 0); // no more
+
+        // Full total matches
+        assertEq(c1 + c2, 4);
+        assertEq(s1 + s2, 100);
+    }
+
+    function test_getSummary_offset_beyond_length() public {
+        vm.prank(alice);
+        registry.giveFeedback(1, 100, 2, "", "", "", "", bytes32(0));
+
+        address[] memory noClients = new address[](0);
+        (uint256 count, int256 sum,, uint256 nextOffset) = registry.getSummary(1, noClients, "", "", 999, 0);
+        assertEq(count, 0);
+        assertEq(sum, 0);
+        assertEq(nextOffset, 0);
+    }
+
     function test_getSummary_empty_for_nonexistent_agent() public view {
         address[] memory noClients = new address[](0);
-        (uint256 count, int256 sum, uint8 decimals) = registry.getSummary(999, noClients, "", "");
+        (uint256 count, int256 sum, uint8 decimals,) = registry.getSummary(999, noClients, "", "", 0, 0);
         assertEq(count, 0);
         assertEq(sum, 0);
         assertEq(decimals, 0);
+    }
+
+    // --- Fuzz tests ---
+
+    /// @dev Fuzz: feedback counter is always monotonically increasing.
+    function testFuzz_feedbackId_monotonic(int128 value) public {
+        vm.prank(alice);
+        registry.giveFeedback(1, value, 2, "", "", "", "", bytes32(0));
+        uint256 total1 = registry.totalFeedback();
+
+        vm.prank(bob);
+        registry.giveFeedback(1, value, 2, "", "", "", "", bytes32(0));
+        uint256 total2 = registry.totalFeedback();
+
+        assertTrue(total2 > total1);
+    }
+
+    /// @dev Fuzz: getSummary count never exceeds number of feedbacks given.
+    function testFuzz_summary_count_bounded(uint8 numFeedbacks) public {
+        uint8 n = numFeedbacks % 20; // cap at 20 for gas
+        vm.startPrank(alice);
+        for (uint8 i = 0; i < n; i++) {
+            registry.giveFeedback(1, int128(int8(i)) + 1, 2, "", "", "", "", bytes32(0));
+        }
+        vm.stopPrank();
+
+        address[] memory noClients = new address[](0);
+        (uint256 count,,,) = registry.getSummary(1, noClients, "", "", 0, 0);
+        assertTrue(count <= n);
+    }
+
+    /// @dev Fuzz: pagination always returns correct nextOffset.
+    function testFuzz_pagination_nextOffset(uint8 numFeedbacks, uint8 pageSize) public {
+        uint8 n = (numFeedbacks % 10) + 1; // 1-10 feedbacks
+        uint8 ps = (pageSize % 5) + 1;      // 1-5 page size
+
+        vm.startPrank(alice);
+        for (uint8 i = 0; i < n; i++) {
+            registry.giveFeedback(1, 10, 2, "", "", "", "", bytes32(0));
+        }
+        vm.stopPrank();
+
+        address[] memory noClients = new address[](0);
+        uint256 totalCount = 0;
+        uint256 offset = 0;
+
+        // Paginate through all results
+        for (uint256 page = 0; page < 20; page++) {
+            (uint256 count,,, uint256 next) = registry.getSummary(1, noClients, "", "", offset, ps);
+            totalCount += count;
+            if (next == 0) break;
+            offset = next;
+        }
+
+        assertEq(totalCount, n);
     }
 }
