@@ -28,6 +28,7 @@ async-trait.workspace = true
 
 # Serialization
 serde.workspace = true
+serde_json.workspace = true
 
 # Error handling
 thiserror.workspace = true
@@ -37,6 +38,7 @@ tracing.workspace = true
 
 # Misc
 parking_lot = "0.12"
+hex.workspace = true
 
 # Monmouth crates
 monmouth-indexer = { path = "../../storage/indexer" }

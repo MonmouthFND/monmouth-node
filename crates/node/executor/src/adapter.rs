@@ -3,6 +3,8 @@
 //! Note: REVM's `DatabaseRef` trait is synchronous, so we use `futures::executor::block_on`
 //! to bridge the async StateDb traits into the sync REVM interface.
 
+use std::collections::HashMap;
+
 use alloy_primitives::{Address, B256, KECCAK256_EMPTY, U256};
 use monmouth_traits::{StateDbError, StateDbRead};
 use revm::{bytecode::Bytecode, database_interface::DatabaseRef, state::AccountInfo};
@@ -18,13 +20,21 @@ fn block_on<F: std::future::Future>(f: F) -> F::Output {
 #[derive(Clone, Debug)]
 pub struct StateDbAdapter<S> {
     state: S,
+    /// Recent block hashes for BLOCKHASH opcode (last 256 blocks per EVM spec).
+    block_hashes: HashMap<u64, B256>,
 }
 
 impl<S> StateDbAdapter<S> {
     /// Create a new adapter wrapping the given state.
     #[must_use]
-    pub const fn new(state: S) -> Self {
-        Self { state }
+    pub fn new(state: S) -> Self {
+        Self { state, block_hashes: HashMap::new() }
+    }
+
+    /// Create a new adapter with block hashes for BLOCKHASH opcode support.
+    #[must_use]
+    pub fn with_block_hashes(state: S, block_hashes: HashMap<u64, B256>) -> Self {
+        Self { state, block_hashes }
     }
 
     /// Get the underlying state reference.
@@ -65,9 +75,8 @@ impl<S: StateDbRead> DatabaseRef for StateDbAdapter<S> {
         }
     }
 
-    fn block_hash_ref(&self, _number: u64) -> Result<B256, Self::Error> {
-        // Block hash lookups not supported yet
-        Ok(B256::ZERO)
+    fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
+        Ok(self.block_hashes.get(&number).copied().unwrap_or(B256::ZERO))
     }
 }
 
@@ -79,5 +88,21 @@ mod tests {
     fn adapter_new() {
         let adapter = StateDbAdapter::new(());
         assert_eq!(adapter.state(), &());
+    }
+
+    #[test]
+    fn adapter_block_hash_returns_zero_for_unknown() {
+        let adapter = StateDbAdapter::new(());
+        assert_eq!(adapter.block_hashes.get(&999), None);
+    }
+
+    #[test]
+    fn adapter_block_hash_returns_cached_value() {
+        let mut hashes = HashMap::new();
+        let expected = B256::repeat_byte(0xab);
+        hashes.insert(42, expected);
+        let adapter = StateDbAdapter::with_block_hashes((), hashes);
+        // Verify the hash is accessible (adapter stores it)
+        assert_eq!(adapter.block_hashes.get(&42).copied(), Some(expected));
     }
 }

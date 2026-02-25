@@ -212,7 +212,8 @@ impl<S: StateDb> BlockExecutor<S> for RevmExecutor {
         context: &BlockContext,
         txs: &[Self::Tx],
     ) -> Result<ExecutionOutcome, ExecutionError> {
-        let adapter = StateDbAdapter::new(state.clone());
+        let adapter =
+            StateDbAdapter::with_block_hashes(state.clone(), context.block_hashes.clone());
 
         let db = State::builder().with_database_ref(adapter).build();
 

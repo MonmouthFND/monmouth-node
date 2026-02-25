@@ -20,6 +20,12 @@ pub use eth::{
 mod monmouth;
 pub use monmouth::{MonmouthApiImpl, MonmouthApiServer};
 
+mod pubsub;
+pub use pubsub::{EthPubSubApiImpl, EthPubSubApiServer, EventBroadcaster};
+
+mod filter;
+pub use filter::{EthFilterApiImpl, EthFilterApiServer, FilterConfig};
+
 mod server;
 pub use server::{JsonRpcServer, RpcServer, RpcServerHandle, ServerError};
 

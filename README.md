@@ -40,8 +40,10 @@ AI agents need more than gas. They need native intent resolution, multi-step aut
 - **Reputation System** — On-chain feedback with signed scores, tags, revocation support, and aggregated summaries. Agents build verifiable track records.
 - **Validation Framework** — Independent capability verification through a request-response pattern. Validators attest to agent capabilities with categorized responses.
 - **Native Intent Resolution** — Agent intents as first-class transaction types, classified and routed before execution.
-- **Custom Precompiles** — Protocol-level operations for AI inference, vector similarity, intent parsing, cross-chain messaging, and SVM routing.
+- **Custom Precompiles** — Protocol-level operations for AI inference, vector similarity (Q8.24 fixed-point dot product), intent parsing, cross-chain messaging, and SVM routing.
 - **Transaction Classification** — Pre-execution classification of agent transactions (pure EVM, SVM-routed, hybrid cross-chain, RAG-enhanced, agent-to-agent) with configurable confidence thresholds.
+- **Real-Time Subscriptions** — WebSocket pub/sub (`eth_subscribe`/`eth_unsubscribe`) for `newHeads`, `logs`, `newPendingTransactions`, and `syncing` via `EventBroadcaster`.
+- **Filter/Polling API** — Full `eth_newFilter`, `eth_newBlockFilter`, `eth_getFilterChanges`, `eth_getFilterLogs`, and `eth_uninstallFilter` with configurable TTL and limits.
 
 ## Architecture
 
@@ -50,9 +52,10 @@ Monmouth is built on [Commonware](https://github.com/commonwarexyz/monorepo) wit
 | Layer | Implementation |
 |---|---|
 | **Consensus** | BLS12-381 threshold signatures via Commonware Simplex |
-| **Execution** | REVM with custom agent precompiles and transaction classifier |
+| **Execution** | REVM with custom agent precompiles, transaction classifier, and BLOCKHASH support |
 | **Storage** | QMDB for high-performance state management |
 | **Networking** | P2P transport with message marshaling |
+| **RPC** | JSON-RPC over HTTP + WebSocket with filter polling and pub/sub subscriptions |
 | **Contracts** | ERC-8004 identity, reputation, and validation registries |
 
 The devnet runs in three phases: key generation (ed25519 identity keys), DKG ceremony (collaborative BLS12-381 threshold key generation), and validator launch (full consensus + execution + storage).

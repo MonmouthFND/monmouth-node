@@ -58,6 +58,18 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
+  contracts:
+    name: Solidity Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Run forge tests
+        working-directory: contracts
+        run: forge test -vvv
+
   deny:
     name: Deny
     runs-on: ubuntu-latest

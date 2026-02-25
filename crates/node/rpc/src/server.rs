@@ -14,7 +14,9 @@ use crate::{
         EthApiImpl, EthApiServer, NetApiImpl, NetApiServer, TxSubmitCallback, Web3ApiImpl,
         Web3ApiServer,
     },
+    filter::{EthFilterApiImpl, EthFilterApiServer, FilterConfig},
     monmouth::{MonmouthApiImpl, MonmouthApiServer},
+    pubsub::{EthPubSubApiImpl, EthPubSubApiServer, EventBroadcaster},
     state::NodeState,
     state_provider::{NoopStateProvider, StateProvider},
 };
@@ -77,6 +79,7 @@ pub struct RpcServer<S: StateProvider = NoopStateProvider> {
     state_provider: S,
     cors_config: CorsConfig,
     max_connections: u32,
+    event_broadcaster: Option<EventBroadcaster>,
 }
 
 impl<S: StateProvider> std::fmt::Debug for RpcServer<S> {
@@ -101,6 +104,7 @@ impl RpcServer<NoopStateProvider> {
             state_provider: NoopStateProvider,
             cors_config: CorsConfig::default(),
             max_connections: 100,
+            event_broadcaster: None,
         }
     }
 
@@ -114,6 +118,7 @@ impl RpcServer<NoopStateProvider> {
             state_provider: NoopStateProvider,
             cors_config: CorsConfig::default(),
             max_connections: 100,
+            event_broadcaster: None,
         }
     }
 }
@@ -134,6 +139,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             state_provider,
             cors_config: CorsConfig::default(),
             max_connections: 100,
+            event_broadcaster: None,
         }
     }
 
@@ -158,6 +164,13 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         self
     }
 
+    /// Enable WebSocket pub/sub subscriptions with the given event broadcaster.
+    #[must_use]
+    pub fn with_event_broadcaster(mut self, broadcaster: EventBroadcaster) -> Self {
+        self.event_broadcaster = Some(broadcaster);
+        self
+    }
+
     /// Create from configuration.
     pub fn from_config(state: NodeState, config: RpcServerConfig, state_provider: S) -> Self {
         Self {
@@ -168,6 +181,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             state_provider,
             cors_config: config.cors,
             max_connections: config.max_connections,
+            event_broadcaster: None,
         }
     }
 
@@ -184,6 +198,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         let cors_layer = build_cors_layer(&self.cors_config);
         let max_connections = self.max_connections;
         let state_provider = self.state_provider;
+        let event_broadcaster = self.event_broadcaster;
 
         let http_handle = tokio::spawn(async move {
             let app = Router::new()
@@ -221,6 +236,8 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
                 }
             };
 
+            let state_provider_arc =
+                Arc::new(tokio::sync::RwLock::new(state_provider.clone()));
             let eth_api = tx_submit.map_or_else(
                 || EthApiImpl::new(chain_id, state_provider.clone()),
                 |submit| EthApiImpl::with_tx_submit(chain_id, state_provider.clone(), submit),
@@ -228,6 +245,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             let net_api = NetApiImpl::new(chain_id);
             let web3_api = Web3ApiImpl::new();
             let monmouth_api = MonmouthApiImpl::new(node_state_for_jsonrpc);
+            let filter_api = EthFilterApiImpl::new(state_provider_arc, FilterConfig::default());
 
             let mut module = jsonrpsee::RpcModule::new(());
             if let Err(e) = module.merge(eth_api.into_rpc()) {
@@ -245,6 +263,17 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             if let Err(e) = module.merge(monmouth_api.into_rpc()) {
                 error!(error = %e, "Failed to merge monmouth API");
                 return None;
+            }
+            if let Err(e) = module.merge(filter_api.into_rpc()) {
+                error!(error = %e, "Failed to merge filter API");
+                return None;
+            }
+            if let Some(broadcaster) = event_broadcaster {
+                let pubsub_api = EthPubSubApiImpl::new(broadcaster);
+                if let Err(e) = module.merge(pubsub_api.into_rpc()) {
+                    error!(error = %e, "Failed to merge pubsub API");
+                    return None;
+                }
             }
 
             info!(addr = %jsonrpc_addr, "Starting JSON-RPC server");
@@ -299,6 +328,7 @@ pub struct JsonRpcServer<S: StateProvider = NoopStateProvider> {
     tx_submit: Option<TxSubmitCallback>,
     state_provider: S,
     max_connections: u32,
+    event_broadcaster: Option<EventBroadcaster>,
 }
 
 impl<S: StateProvider> std::fmt::Debug for JsonRpcServer<S> {
@@ -320,6 +350,7 @@ impl JsonRpcServer<NoopStateProvider> {
             tx_submit: None,
             state_provider: NoopStateProvider,
             max_connections: 100,
+            event_broadcaster: None,
         }
     }
 }
@@ -327,7 +358,14 @@ impl JsonRpcServer<NoopStateProvider> {
 impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
     /// Create a new JSON-RPC server with a custom state provider.
     pub fn with_state_provider(addr: SocketAddr, chain_id: u64, state_provider: S) -> Self {
-        Self { addr, chain_id, tx_submit: None, state_provider, max_connections: 100 }
+        Self {
+            addr,
+            chain_id,
+            tx_submit: None,
+            state_provider,
+            max_connections: 100,
+            event_broadcaster: None,
+        }
     }
 
     /// Set the transaction submission callback.
@@ -344,6 +382,13 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
         self
     }
 
+    /// Enable WebSocket pub/sub subscriptions with the given event broadcaster.
+    #[must_use]
+    pub fn with_event_broadcaster(mut self, broadcaster: EventBroadcaster) -> Self {
+        self.event_broadcaster = Some(broadcaster);
+        self
+    }
+
     /// Start the JSON-RPC server.
     pub async fn start(self) -> Result<ServerHandle, ServerError> {
         let server = Server::builder()
@@ -352,17 +397,25 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
             .await
             .map_err(|e| ServerError::Build(e.to_string()))?;
 
+        let state_provider_arc =
+            Arc::new(tokio::sync::RwLock::new(self.state_provider.clone()));
         let eth_api = self.tx_submit.map_or_else(
             || EthApiImpl::new(self.chain_id, self.state_provider.clone()),
             |submit| EthApiImpl::with_tx_submit(self.chain_id, self.state_provider.clone(), submit),
         );
         let net_api = NetApiImpl::new(self.chain_id);
         let web3_api = Web3ApiImpl::new();
+        let filter_api = EthFilterApiImpl::new(state_provider_arc, FilterConfig::default());
 
         let mut module = jsonrpsee::RpcModule::new(());
         module.merge(eth_api.into_rpc())?;
         module.merge(net_api.into_rpc())?;
         module.merge(web3_api.into_rpc())?;
+        module.merge(filter_api.into_rpc())?;
+        if let Some(broadcaster) = self.event_broadcaster {
+            let pubsub_api = EthPubSubApiImpl::new(broadcaster);
+            module.merge(pubsub_api.into_rpc())?;
+        }
 
         info!(addr = %self.addr, "Starting JSON-RPC server");
 

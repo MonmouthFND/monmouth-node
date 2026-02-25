@@ -1,5 +1,7 @@
 //! Block execution context.
 
+use std::collections::HashMap;
+
 use alloy_consensus::Header;
 use alloy_primitives::B256;
 
@@ -16,19 +18,28 @@ pub struct BlockContext {
     pub prevrandao: B256,
     /// Blob base fee for Cancun+ (EIP-4844).
     pub blob_base_fee: Option<u128>,
+    /// Recent block hashes for BLOCKHASH opcode (last 256 blocks).
+    pub block_hashes: HashMap<u64, B256>,
 }
 
 impl BlockContext {
     /// Create a new block context.
     #[must_use]
-    pub const fn new(header: Header, parent_hash: B256, prevrandao: B256) -> Self {
-        Self { header, parent_hash, prevrandao, blob_base_fee: None }
+    pub fn new(header: Header, parent_hash: B256, prevrandao: B256) -> Self {
+        Self { header, parent_hash, prevrandao, blob_base_fee: None, block_hashes: HashMap::new() }
     }
 
     /// Set the blob base fee.
     #[must_use]
     pub const fn with_blob_base_fee(mut self, blob_base_fee: u128) -> Self {
         self.blob_base_fee = Some(blob_base_fee);
+        self
+    }
+
+    /// Set block hashes for BLOCKHASH opcode lookups (last 256 blocks).
+    #[must_use]
+    pub fn with_block_hashes(mut self, block_hashes: HashMap<u64, B256>) -> Self {
+        self.block_hashes = block_hashes;
         self
     }
 

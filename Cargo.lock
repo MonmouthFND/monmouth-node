@@ -3735,6 +3735,7 @@ dependencies = [
  "alloy-primitives",
  "async-trait",
  "axum",
+ "hex",
  "jsonrpsee",
  "monmouth-indexer",
  "monmouth-traits",

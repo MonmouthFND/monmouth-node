@@ -18,14 +18,18 @@ use crate::classifier::precompiles as addrs;
 mod gas {
     /// Base gas for AI inference stub.
     pub(super) const AI_INFERENCE_BASE: u64 = 10_000;
-    /// Base gas for vector similarity stub.
-    pub(super) const VECTOR_SIMILARITY_BASE: u64 = 5_000;
+    /// Base gas for vector similarity: 200 + dimensions * 10.
+    pub(super) const VECTOR_SIMILARITY_BASE: u64 = 200;
+    /// Per-dimension gas for vector similarity.
+    pub(super) const VECTOR_SIMILARITY_PER_DIM: u64 = 10;
     /// Base gas for intent parser stub.
     pub(super) const INTENT_PARSER_BASE: u64 = 5_000;
     /// Base gas for SVM router stub.
     pub(super) const SVM_ROUTER_BASE: u64 = 10_000;
     /// Base gas for cross-chain message passer.
     pub(super) const CROSS_CHAIN_MESSAGE_PASSER_BASE: u64 = 20_000;
+    /// Maximum vector dimensions (DoS protection).
+    pub(super) const MAX_VECTOR_DIMENSIONS: u32 = 2048;
 }
 
 /// Custom precompile provider for Monmouth that extends standard Ethereum precompiles.
@@ -69,10 +73,13 @@ impl MonmouthPrecompiles {
 
     /// Execute a custom precompile.
     fn execute_custom(address: &Address, input: &[u8], gas_limit: u64) -> InterpreterResult {
+        // Vector similarity has dynamic gas based on dimensions — handle separately.
+        if *address == addrs::VECTOR_SIMILARITY {
+            return execute_vector_similarity(input, gas_limit);
+        }
+
         let (base_gas, output) = if *address == addrs::AI_INFERENCE {
             (gas::AI_INFERENCE_BASE, execute_ai_inference(input))
-        } else if *address == addrs::VECTOR_SIMILARITY {
-            (gas::VECTOR_SIMILARITY_BASE, execute_vector_similarity(input))
         } else if *address == addrs::INTENT_PARSER {
             (gas::INTENT_PARSER_BASE, execute_intent_parser(input))
         } else if *address == addrs::SVM_ROUTER {
@@ -170,14 +177,108 @@ fn execute_ai_inference(input: &[u8]) -> Bytes {
 }
 
 /// Vector Similarity precompile (0x1001).
-/// Semantic search stub.
-fn execute_vector_similarity(input: &[u8]) -> Bytes {
-    tracing::info!(input_len = input.len(), "Vector Similarity precompile called");
-    // Return mock similarity score: uint256 score (0.85 scaled to 1e18)
-    let mut output = [0u8; 32];
-    // 0.85 * 1e18 = 850000000000000000 = 0x0BC8D3F7B3340000
-    output[24..32].copy_from_slice(&850_000_000_000_000_000u64.to_be_bytes());
-    Bytes::from(output.to_vec())
+///
+/// Computes the dot product of two fixed-point Q8.24 integer vectors.
+/// For unit-normalized vectors, dot product equals cosine similarity.
+///
+/// Input layout (tight-packed):
+///   [0..4]              uint32 dimensions N (big-endian, max 2048)
+///   [4..4+N*4]          vector A as N x int32 (Q8.24 fixed-point, big-endian)
+///   [4+N*4..4+2*N*4]    vector B as N x int32 (Q8.24 fixed-point, big-endian)
+///
+/// Output:
+///   [0..32]             int256 dot product (Q16.48 scaled result, sign-extended)
+///
+/// Gas: 200 + N * 10
+fn execute_vector_similarity(input: &[u8], gas_limit: u64) -> InterpreterResult {
+    // Need at least 4 bytes for dimension count
+    if input.len() < 4 {
+        tracing::debug!("vector similarity: input too short for dimension count");
+        return InterpreterResult {
+            result: InstructionResult::PrecompileError,
+            gas: Gas::new(gas_limit),
+            output: Bytes::new(),
+        };
+    }
+
+    let dimensions =
+        u32::from_be_bytes([input[0], input[1], input[2], input[3]]);
+
+    // Validate dimensions
+    if dimensions == 0 || dimensions > gas::MAX_VECTOR_DIMENSIONS {
+        tracing::debug!(dimensions, max = gas::MAX_VECTOR_DIMENSIONS, "vector similarity: invalid dimensions");
+        return InterpreterResult {
+            result: InstructionResult::PrecompileError,
+            gas: Gas::new(gas_limit),
+            output: Bytes::new(),
+        };
+    }
+
+    let n = dimensions as usize;
+    let expected_len = 4 + n * 4 * 2; // 4 bytes header + 2 vectors of N int32s
+    if input.len() < expected_len {
+        tracing::debug!(input_len = input.len(), expected = expected_len, "vector similarity: input too short");
+        return InterpreterResult {
+            result: InstructionResult::PrecompileError,
+            gas: Gas::new(gas_limit),
+            output: Bytes::new(),
+        };
+    }
+
+    // Calculate and charge gas: BASE + N * PER_DIM
+    let total_gas = gas::VECTOR_SIMILARITY_BASE + (dimensions as u64) * gas::VECTOR_SIMILARITY_PER_DIM;
+    let mut gas = Gas::new(gas_limit);
+    if !gas.record_cost(total_gas) {
+        tracing::debug!(required = total_gas, limit = gas_limit, "vector similarity: out of gas");
+        return InterpreterResult {
+            result: InstructionResult::PrecompileOOG,
+            gas,
+            output: Bytes::new(),
+        };
+    }
+
+    // Compute dot product using i64 accumulator to avoid overflow.
+    // Each element is i32 (Q8.24), so each product is i64 (Q16.48).
+    // Summing up to 2048 i64 values fits in i64 (max sum ~2048 * 2^62 < 2^73,
+    // but Q8.24 elements are bounded to ~[-128, 128) so products are bounded
+    // to ~2^14 * 2^48 = 2^62, and 2048 of those is ~2^73 which overflows i64).
+    // Use i128 accumulator for safety.
+    let mut dot_product: i128 = 0;
+    let vec_a_start = 4;
+    let vec_b_start = 4 + n * 4;
+
+    for i in 0..n {
+        let a_offset = vec_a_start + i * 4;
+        let b_offset = vec_b_start + i * 4;
+
+        let a = i32::from_be_bytes([
+            input[a_offset],
+            input[a_offset + 1],
+            input[a_offset + 2],
+            input[a_offset + 3],
+        ]);
+        let b = i32::from_be_bytes([
+            input[b_offset],
+            input[b_offset + 1],
+            input[b_offset + 2],
+            input[b_offset + 3],
+        ]);
+
+        dot_product += (a as i64 as i128) * (b as i64 as i128);
+    }
+
+    // Encode as int256 (sign-extended to 32 bytes, big-endian)
+    let mut output = if dot_product < 0 { [0xffu8; 32] } else { [0u8; 32] };
+    let bytes = dot_product.to_be_bytes(); // 16 bytes
+    output[16..32].copy_from_slice(&bytes);
+
+    tracing::debug!(
+        dimensions,
+        gas_used = total_gas,
+        "vector similarity computed"
+    );
+
+    InterpreterResult { result: InstructionResult::Return, gas, output: Bytes::from(output.to_vec()) }
 }
 
 /// Intent Parser precompile (0x1002).
@@ -274,9 +375,70 @@ mod tests {
     }
 
     #[test]
-    fn vector_similarity_returns_score() {
-        let output = execute_vector_similarity(&[]);
-        assert_eq!(output.len(), 32);
+    fn vector_similarity_simple_dot_product() {
+        // 2 dimensions, vectors [1.0, 0.5] dot [0.5, 1.0] in Q8.24
+        // 1.0 in Q8.24 = 1 << 24 = 16777216 = 0x01000000
+        // 0.5 in Q8.24 = 1 << 23 = 8388608  = 0x00800000
+        let one_q24: i32 = 1 << 24;
+        let half_q24: i32 = 1 << 23;
+        let mut input = Vec::new();
+        input.extend_from_slice(&2u32.to_be_bytes()); // dims = 2
+        input.extend_from_slice(&one_q24.to_be_bytes()); // A[0] = 1.0
+        input.extend_from_slice(&half_q24.to_be_bytes()); // A[1] = 0.5
+        input.extend_from_slice(&half_q24.to_be_bytes()); // B[0] = 0.5
+        input.extend_from_slice(&one_q24.to_be_bytes()); // B[1] = 1.0
+
+        let result = execute_vector_similarity(&input, 100_000);
+        assert_eq!(result.result, InstructionResult::Return);
+        assert_eq!(result.output.len(), 32);
+
+        // dot = 1.0*0.5 + 0.5*1.0 = 1.0 in real, which in Q16.48 is:
+        // (1<<24)*(1<<23) + (1<<23)*(1<<24) = 2 * (1<<47) = 1<<48
+        // That's 1.0 in Q16.48 format
+        let expected: i128 = (one_q24 as i128) * (half_q24 as i128)
+            + (half_q24 as i128) * (one_q24 as i128);
+        let mut expected_bytes = [0u8; 32];
+        let be = expected.to_be_bytes();
+        expected_bytes[16..32].copy_from_slice(&be);
+        assert_eq!(&result.output[..], &expected_bytes[..]);
+    }
+
+    #[test]
+    fn vector_similarity_rejects_empty_input() {
+        let result = execute_vector_similarity(&[], 100_000);
+        assert_eq!(result.result, InstructionResult::PrecompileError);
+    }
+
+    #[test]
+    fn vector_similarity_rejects_zero_dimensions() {
+        let mut input = Vec::new();
+        input.extend_from_slice(&0u32.to_be_bytes());
+        let result = execute_vector_similarity(&input, 100_000);
+        assert_eq!(result.result, InstructionResult::PrecompileError);
+    }
+
+    #[test]
+    fn vector_similarity_rejects_excessive_dimensions() {
+        let mut input = Vec::new();
+        input.extend_from_slice(&3000u32.to_be_bytes()); // > MAX_VECTOR_DIMENSIONS
+        let result = execute_vector_similarity(&input, 100_000);
+        assert_eq!(result.result, InstructionResult::PrecompileError);
+    }
+
+    #[test]
+    fn vector_similarity_dynamic_gas() {
+        // 4 dimensions: gas = 200 + 4*10 = 240
+        let mut input = Vec::new();
+        input.extend_from_slice(&4u32.to_be_bytes());
+        input.extend_from_slice(&[0u8; 4 * 4 * 2]); // zero vectors
+
+        // With enough gas
+        let result = execute_vector_similarity(&input, 240);
+        assert_eq!(result.result, InstructionResult::Return);
+
+        // With insufficient gas
+        let result = execute_vector_similarity(&input, 239);
+        assert_eq!(result.result, InstructionResult::PrecompileOOG);
     }
 
     #[test]

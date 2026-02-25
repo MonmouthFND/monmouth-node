@@ -125,8 +125,10 @@ where
         Ok(block_on(store.get_storage(&key))?.unwrap_or(U256::ZERO))
     }
 
-    fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
-        Err(HandleError::BlockHashNotFound(number))
+    fn block_hash_ref(&self, _number: u64) -> Result<B256, Self::Error> {
+        // Block hashes are provided via StateDbAdapter's cache at the execution layer.
+        // At the raw storage level, return ZERO for unknown blocks (EVM spec behavior).
+        Ok(B256::ZERO)
     }
 }
 
@@ -195,9 +197,9 @@ where
 
     fn block_hash_async_ref(
         &self,
-        number: u64,
+        _number: u64,
     ) -> impl std::future::Future<Output = Result<B256, Self::Error>> + Send {
-        std::future::ready(Err(HandleError::BlockHashNotFound(number)))
+        std::future::ready(Ok(B256::ZERO))
     }
 }
 
@@ -342,9 +344,9 @@ mod tests {
     }
 
     #[test]
-    fn block_hash_returns_error() {
+    fn block_hash_returns_zero() {
         let handle = create_test_handle();
         let result = handle.block_hash_ref(100);
-        assert!(matches!(result, Err(HandleError::BlockHashNotFound(100))));
+        assert_eq!(result.unwrap(), B256::ZERO);
     }
 }
