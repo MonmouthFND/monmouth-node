@@ -236,8 +236,7 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
                 }
             };
 
-            let state_provider_arc =
-                Arc::new(tokio::sync::RwLock::new(state_provider.clone()));
+            let state_provider_arc = Arc::new(tokio::sync::RwLock::new(state_provider.clone()));
             let eth_api = tx_submit.map_or_else(
                 || EthApiImpl::new(chain_id, state_provider.clone()),
                 |submit| EthApiImpl::with_tx_submit(chain_id, state_provider.clone(), submit),
@@ -397,8 +396,7 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
             .await
             .map_err(|e| ServerError::Build(e.to_string()))?;
 
-        let state_provider_arc =
-            Arc::new(tokio::sync::RwLock::new(self.state_provider.clone()));
+        let state_provider_arc = Arc::new(tokio::sync::RwLock::new(self.state_provider.clone()));
         let eth_api = self.tx_submit.map_or_else(
             || EthApiImpl::new(self.chain_id, self.state_provider.clone()),
             |submit| EthApiImpl::with_tx_submit(self.chain_id, self.state_provider.clone(), submit),

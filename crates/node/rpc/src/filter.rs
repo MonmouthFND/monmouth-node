@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use alloy_primitives::{U256, U64};
+use alloy_primitives::{U64, U256};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use parking_lot::Mutex;
 use tracing::debug;
@@ -120,10 +120,8 @@ fn generate_filter_id() -> U256 {
     // Simple unique ID using timestamp + counter to avoid adding rand dependency.
     // For production public nodes, replace with crypto-random.
     static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let ts = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos() as u64;
+    let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_nanos()
+        as u64;
     let count = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     U256::from(ts) << 64 | U256::from(count)
 }
@@ -210,7 +208,8 @@ impl<S: StateProvider + 'static> EthFilterApiImpl<S> {
 #[jsonrpsee::core::async_trait]
 impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
     async fn new_filter(&self, filter: RpcLogFilter) -> RpcResult<String> {
-        let head = self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
+        let head =
+            self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
         let id = self
             .registry
             .install(FilterKind::Log(filter), head.saturating_add(1), self.config.max_filters)
@@ -225,7 +224,8 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
     }
 
     async fn new_block_filter(&self) -> RpcResult<String> {
-        let head = self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
+        let head =
+            self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
         let id = self
             .registry
             .install(FilterKind::Block, head.saturating_add(1), self.config.max_filters)
@@ -254,18 +254,18 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
     }
 
     async fn get_filter_changes(&self, filter_id: String) -> RpcResult<serde_json::Value> {
-        let id = parse_filter_id(&filter_id).map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
+        let id = parse_filter_id(&filter_id)
+            .map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
         let head =
             self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
 
-        let (kind, from_block) =
-            self.registry.advance_watermark(id, head).ok_or_else(|| {
-                jsonrpsee::types::ErrorObjectOwned::owned(
-                    codes::SERVER_ERROR,
-                    "filter not found",
-                    None::<()>,
-                )
-            })?;
+        let (kind, from_block) = self.registry.advance_watermark(id, head).ok_or_else(|| {
+            jsonrpsee::types::ErrorObjectOwned::owned(
+                codes::SERVER_ERROR,
+                "filter not found",
+                None::<()>,
+            )
+        })?;
 
         match kind {
             FilterKind::Log(criteria) => {
@@ -319,7 +319,8 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
     }
 
     async fn get_filter_logs(&self, filter_id: String) -> RpcResult<Vec<RpcLog>> {
-        let id = parse_filter_id(&filter_id).map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
+        let id = parse_filter_id(&filter_id)
+            .map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
 
         let kind = self.registry.get_kind(id).ok_or_else(|| {
             jsonrpsee::types::ErrorObjectOwned::owned(
@@ -359,7 +360,8 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
     }
 
     async fn uninstall_filter(&self, filter_id: String) -> RpcResult<bool> {
-        let id = parse_filter_id(&filter_id).map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
+        let id = parse_filter_id(&filter_id)
+            .map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
         Ok(self.registry.uninstall(id))
     }
 }

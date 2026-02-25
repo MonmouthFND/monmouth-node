@@ -33,7 +33,7 @@ impl<S> StateDbAdapter<S> {
 
     /// Create a new adapter with block hashes for BLOCKHASH opcode support.
     #[must_use]
-    pub fn with_block_hashes(state: S, block_hashes: HashMap<u64, B256>) -> Self {
+    pub const fn with_block_hashes(state: S, block_hashes: HashMap<u64, B256>) -> Self {
         Self { state, block_hashes }
     }
 

@@ -387,17 +387,11 @@ async fn metrics_handler(
     axum::extract::State(ctx): axum::extract::State<tokio::Context>,
 ) -> impl IntoResponse {
     let body = ctx.encode();
-    (
-        StatusCode::OK,
-        [("content-type", "text/plain; version=0.0.4; charset=utf-8")],
-        body,
-    )
+    (StatusCode::OK, [("content-type", "text/plain; version=0.0.4; charset=utf-8")], body)
 }
 
 async fn serve_metrics(ctx: tokio::Context, addr: SocketAddr) {
-    let app = Router::new()
-        .route("/metrics", get(metrics_handler))
-        .with_state(ctx);
+    let app = Router::new().route("/metrics", get(metrics_handler)).with_state(ctx);
 
     info!(addr = %addr, "Starting metrics server");
 

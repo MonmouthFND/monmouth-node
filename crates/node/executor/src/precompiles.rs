@@ -201,12 +201,15 @@ fn execute_vector_similarity(input: &[u8], gas_limit: u64) -> InterpreterResult 
         };
     }
 
-    let dimensions =
-        u32::from_be_bytes([input[0], input[1], input[2], input[3]]);
+    let dimensions = u32::from_be_bytes([input[0], input[1], input[2], input[3]]);
 
     // Validate dimensions
     if dimensions == 0 || dimensions > gas::MAX_VECTOR_DIMENSIONS {
-        tracing::debug!(dimensions, max = gas::MAX_VECTOR_DIMENSIONS, "vector similarity: invalid dimensions");
+        tracing::debug!(
+            dimensions,
+            max = gas::MAX_VECTOR_DIMENSIONS,
+            "vector similarity: invalid dimensions"
+        );
         return InterpreterResult {
             result: InstructionResult::PrecompileError,
             gas: Gas::new(gas_limit),
@@ -217,7 +220,11 @@ fn execute_vector_similarity(input: &[u8], gas_limit: u64) -> InterpreterResult 
     let n = dimensions as usize;
     let expected_len = 4 + n * 4 * 2; // 4 bytes header + 2 vectors of N int32s
     if input.len() < expected_len {
-        tracing::debug!(input_len = input.len(), expected = expected_len, "vector similarity: input too short");
+        tracing::debug!(
+            input_len = input.len(),
+            expected = expected_len,
+            "vector similarity: input too short"
+        );
         return InterpreterResult {
             result: InstructionResult::PrecompileError,
             gas: Gas::new(gas_limit),
@@ -226,7 +233,8 @@ fn execute_vector_similarity(input: &[u8], gas_limit: u64) -> InterpreterResult 
     }
 
     // Calculate and charge gas: BASE + N * PER_DIM
-    let total_gas = gas::VECTOR_SIMILARITY_BASE + (dimensions as u64) * gas::VECTOR_SIMILARITY_PER_DIM;
+    let total_gas =
+        gas::VECTOR_SIMILARITY_BASE + (dimensions as u64) * gas::VECTOR_SIMILARITY_PER_DIM;
     let mut gas = Gas::new(gas_limit);
     if !gas.record_cost(total_gas) {
         tracing::debug!(required = total_gas, limit = gas_limit, "vector similarity: out of gas");
@@ -272,13 +280,13 @@ fn execute_vector_similarity(input: &[u8], gas_limit: u64) -> InterpreterResult 
     let bytes = dot_product.to_be_bytes(); // 16 bytes
     output[16..32].copy_from_slice(&bytes);
 
-    tracing::debug!(
-        dimensions,
-        gas_used = total_gas,
-        "vector similarity computed"
-    );
+    tracing::debug!(dimensions, gas_used = total_gas, "vector similarity computed");
 
-    InterpreterResult { result: InstructionResult::Return, gas, output: Bytes::from(output.to_vec()) }
+    InterpreterResult {
+        result: InstructionResult::Return,
+        gas,
+        output: Bytes::from(output.to_vec()),
+    }
 }
 
 /// Intent Parser precompile (0x1002).
@@ -395,8 +403,8 @@ mod tests {
         // dot = 1.0*0.5 + 0.5*1.0 = 1.0 in real, which in Q16.48 is:
         // (1<<24)*(1<<23) + (1<<23)*(1<<24) = 2 * (1<<47) = 1<<48
         // That's 1.0 in Q16.48 format
-        let expected: i128 = (one_q24 as i128) * (half_q24 as i128)
-            + (half_q24 as i128) * (one_q24 as i128);
+        let expected: i128 =
+            (one_q24 as i128) * (half_q24 as i128) + (half_q24 as i128) * (one_q24 as i128);
         let mut expected_bytes = [0u8; 32];
         let be = expected.to_be_bytes();
         expected_bytes[16..32].copy_from_slice(&be);

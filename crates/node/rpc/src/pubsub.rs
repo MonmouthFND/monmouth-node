@@ -11,10 +11,8 @@
 use std::sync::Arc;
 
 use jsonrpsee::{
-    core::SubscriptionResult,
-    proc_macros::rpc,
+    PendingSubscriptionSink, SubscriptionMessage, core::SubscriptionResult, proc_macros::rpc,
     types::ErrorObjectOwned,
-    PendingSubscriptionSink, SubscriptionMessage,
 };
 use tokio::sync::broadcast;
 use tracing::{debug, warn};
@@ -98,7 +96,7 @@ impl std::fmt::Debug for EthPubSubApiImpl {
 
 impl EthPubSubApiImpl {
     /// Create a new pub/sub API implementation.
-    pub fn new(broadcaster: EventBroadcaster) -> Self {
+    pub const fn new(broadcaster: EventBroadcaster) -> Self {
         Self { broadcaster }
     }
 }
@@ -137,9 +135,8 @@ impl EthPubSubApiServer for EthPubSubApiImpl {
             }
             "logs" => {
                 // Parse optional log filter from params.
-                let filter: Option<RpcLogFilter> = params
-                    .map(|v| serde_json::from_value(v).ok())
-                    .flatten();
+                let filter: Option<RpcLogFilter> =
+                    params.and_then(|v| serde_json::from_value(v).ok());
 
                 let sink = pending.accept().await?;
                 let mut rx = self.broadcaster.logs.subscribe();
@@ -193,8 +190,7 @@ impl EthPubSubApiServer for EthPubSubApiImpl {
             "syncing" => {
                 // Syncing is a simple boolean for now (not syncing).
                 let sink = pending.accept().await?;
-                let msg = SubscriptionMessage::from_json(&false)
-                    .expect("bool is serializable");
+                let msg = SubscriptionMessage::from_json(&false).expect("bool is serializable");
                 // Send initial status, then the subscription stays open but idle.
                 let _ = sink.send(msg).await;
                 Ok(())
@@ -315,10 +311,7 @@ mod tests {
         let topic = B256::repeat_byte(0xab);
         let log = make_log(Address::ZERO, vec![topic]);
         // null in position 0 means "any topic"
-        let filter = RpcLogFilter {
-            topics: Some(vec![None]),
-            ..Default::default()
-        };
+        let filter = RpcLogFilter { topics: Some(vec![None]), ..Default::default() };
         assert!(matches_log_filter(&log, Some(&filter)));
     }
 
