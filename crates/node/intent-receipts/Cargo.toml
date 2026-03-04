@@ -1,0 +1,23 @@
+[package]
+name = "monmouth-intent-receipts"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Intent receipt store for Monmouth transaction audit trails"
+
+[lints]
+workspace = true
+
+[dependencies]
+monmouth-agent-types = { path = "../agent-types" }
+alloy-primitives = { workspace = true, features = ["serde"] }
+parking_lot.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

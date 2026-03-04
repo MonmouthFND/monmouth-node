@@ -18,7 +18,9 @@ pub use eth::{
 };
 
 mod monmouth;
-pub use monmouth::{MonmouthApiImpl, MonmouthApiServer};
+pub use monmouth::{
+    MonmouthApiImpl, MonmouthApiServer, SvmAccountInfo, SvmProgramInfo, SvmStatus,
+};
 
 mod pubsub;
 pub use pubsub::{EthPubSubApiImpl, EthPubSubApiServer, EventBroadcaster};

@@ -7,9 +7,7 @@ use std::{
 
 use alloy_consensus::Header;
 use alloy_primitives::{Address, B256, Bytes, U256};
-use monmouth_executor::{
-    BlockContext, BlockExecutor, ClassifierConfig, RevmExecutor, TransactionClassifier,
-};
+use monmouth_executor::{BlockContext, BlockExecutor, RevmExecutor};
 use monmouth_qmdb::{AccountUpdate, ChangeSet};
 use monmouth_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
 use rstest::rstest;
@@ -588,50 +586,3 @@ fn test_execute_with_populated_state() {
     assert_eq!(outcome.gas_used, 0);
 }
 
-// ----------------------------------------------------------------------------
-// Tests for RevmExecutor with agent classifier
-// ----------------------------------------------------------------------------
-
-#[test]
-fn test_executor_with_classifier_default_config() {
-    let classifier = TransactionClassifier::new(ClassifierConfig::default());
-    let executor = RevmExecutor::new(7750).with_classifier(classifier);
-
-    // Classifier is attached — executor still functions normally.
-    let state = MockStateDb::new();
-    let context = BlockContext::new(Header::default(), B256::ZERO, B256::ZERO);
-    let txs: Vec<Bytes> = vec![];
-
-    let outcome = executor.execute(&state, &context, &txs).expect("execution should succeed");
-    assert!(outcome.changes.is_empty());
-    assert_eq!(outcome.gas_used, 0);
-}
-
-#[test]
-fn test_executor_with_classifier_custom_threshold() {
-    let config = ClassifierConfig { confidence_threshold: 0.9, enabled: true };
-    let classifier = TransactionClassifier::new(config);
-    let executor = RevmExecutor::new(7750).with_classifier(classifier);
-
-    let state = MockStateDb::new();
-    let context = BlockContext::new(Header::default(), B256::ZERO, B256::ZERO);
-    let txs: Vec<Bytes> = vec![];
-
-    let outcome = executor.execute(&state, &context, &txs).expect("execution should succeed");
-    assert!(outcome.changes.is_empty());
-    assert_eq!(outcome.gas_used, 0);
-}
-
-#[test]
-fn test_executor_without_classifier_works() {
-    // Verify executor works fine without classifier attached.
-    let executor = RevmExecutor::new(7750);
-
-    let state = MockStateDb::new();
-    let context = BlockContext::new(Header::default(), B256::ZERO, B256::ZERO);
-    let txs: Vec<Bytes> = vec![];
-
-    let outcome = executor.execute(&state, &context, &txs).expect("execution should succeed");
-    assert!(outcome.changes.is_empty());
-    assert_eq!(outcome.gas_used, 0);
-}

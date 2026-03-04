@@ -1,0 +1,11 @@
+[package]
+name = "monmouth-verification"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Verification utilities for Monmouth (Q8.24 fixed-point math, vector similarity)"
+
+[lints]
+workspace = true

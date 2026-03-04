@@ -4,7 +4,12 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{ConfigError, ConsensusConfig, ExecutionConfig, NetworkConfig, RpcConfig};
+use crate::{
+    AttestationConfig, CapabilitiesConfig, ConditionalSubsConfig, ConfigError, ConsensusConfig,
+    CoordinationConfig, DelegationConfig, EnvelopeConfig, ExecutionConfig, IntentReceiptsConfig,
+    MemoryAnchoringConfig, NetworkConfig, ObservationConfig, PolicyConfig, RpcConfig,
+    SimulationConfig, SvmConfig,
+};
 
 /// Default chain ID for Monmouth network.
 pub const DEFAULT_CHAIN_ID: u64 = 7750;
@@ -38,6 +43,54 @@ pub struct NodeConfig {
     /// RPC configuration.
     #[serde(default)]
     pub rpc: RpcConfig,
+
+    /// Capabilities configuration.
+    #[serde(default)]
+    pub capabilities: CapabilitiesConfig,
+
+    /// Transaction envelope configuration.
+    #[serde(default)]
+    pub envelope: EnvelopeConfig,
+
+    /// Simulation / preview configuration.
+    #[serde(default)]
+    pub simulation: SimulationConfig,
+
+    /// Policy engine configuration.
+    #[serde(default)]
+    pub policy: PolicyConfig,
+
+    /// Delegation configuration.
+    #[serde(default)]
+    pub delegation: DelegationConfig,
+
+    /// Intent receipts configuration.
+    #[serde(default)]
+    pub intent_receipts: IntentReceiptsConfig,
+
+    /// Memory anchoring configuration.
+    #[serde(default)]
+    pub memory_anchoring: MemoryAnchoringConfig,
+
+    /// State observation configuration.
+    #[serde(default)]
+    pub observation: ObservationConfig,
+
+    /// Coordination protocol configuration.
+    #[serde(default)]
+    pub coordination: CoordinationConfig,
+
+    /// Conditional subscriptions configuration.
+    #[serde(default)]
+    pub conditional_subs: ConditionalSubsConfig,
+
+    /// Attestation configuration.
+    #[serde(default)]
+    pub attestation: AttestationConfig,
+
+    /// SVM module configuration.
+    #[serde(default)]
+    pub svm: SvmConfig,
 }
 
 impl Default for NodeConfig {
@@ -49,6 +102,18 @@ impl Default for NodeConfig {
             network: NetworkConfig::default(),
             execution: ExecutionConfig::default(),
             rpc: RpcConfig::default(),
+            capabilities: CapabilitiesConfig::default(),
+            envelope: EnvelopeConfig::default(),
+            simulation: SimulationConfig::default(),
+            policy: PolicyConfig::default(),
+            delegation: DelegationConfig::default(),
+            intent_receipts: IntentReceiptsConfig::default(),
+            memory_anchoring: MemoryAnchoringConfig::default(),
+            observation: ObservationConfig::default(),
+            coordination: CoordinationConfig::default(),
+            conditional_subs: ConditionalSubsConfig::default(),
+            attestation: AttestationConfig::default(),
+            svm: SvmConfig::default(),
         }
     }
 }

@@ -27,6 +27,8 @@ pub struct Block {
     pub prevrandao: B256,
     /// State commitment resulting from this block (pre-commit QMDB root).
     pub state_root: StateRoot,
+    /// SVM state commitment (None when SVM is disabled).
+    pub svm_state_root: Option<StateRoot>,
     /// Transactions included in the block.
     pub txs: Vec<Tx>,
 }
@@ -78,6 +80,15 @@ impl Write for Block {
         self.height.write(buf);
         Idents::write_b256(&self.prevrandao, buf);
         self.state_root.write(buf);
+        match &self.svm_state_root {
+            Some(root) => {
+                1u8.write(buf);
+                root.write(buf);
+            }
+            None => {
+                0u8.write(buf);
+            }
+        }
         self.txs.write(buf);
     }
 }
@@ -88,6 +99,8 @@ impl EncodeSize for Block {
             + self.height.encode_size()
             + 32
             + self.state_root.encode_size()
+            + 1 // svm_state_root tag
+            + if self.svm_state_root.is_some() { 32 } else { 0 }
             + self.txs.encode_size()
     }
 }
@@ -100,8 +113,14 @@ impl Read for Block {
         let height = u64::read(buf)?;
         let prevrandao = Idents::read_b256(buf)?;
         let state_root = StateRoot::read(buf)?;
+        let svm_tag = u8::read(buf)?;
+        let svm_state_root = if svm_tag == 1 {
+            Some(StateRoot::read(buf)?)
+        } else {
+            None
+        };
         let txs = Vec::<Tx>::read_cfg(buf, &(RangeCfg::new(0..=cfg.max_txs), cfg.tx))?;
-        Ok(Self { parent, height, prevrandao, state_root, txs })
+        Ok(Self { parent, height, prevrandao, state_root, svm_state_root, txs })
     }
 }
 
@@ -123,6 +142,7 @@ mod tests {
             height: 42,
             prevrandao: B256::repeat_byte(0xab),
             state_root: StateRoot(B256::repeat_byte(0xcd)),
+            svm_state_root: None,
             txs: vec![Tx::new(Bytes::from_static(&[0xde, 0xad, 0xbe, 0xef]))],
         }
     }
@@ -186,6 +206,7 @@ mod tests {
             height: 0,
             prevrandao: B256::ZERO,
             state_root: StateRoot(B256::ZERO),
+            svm_state_root: None,
             txs: vec![],
         };
         let encoded = block.encode();
@@ -207,5 +228,45 @@ mod tests {
         let parent_commitment = block.parent();
         let expected = digest_for_block_id(&block.parent);
         assert_eq!(parent_commitment, expected);
+    }
+
+    #[test]
+    fn block_with_svm_state_root_roundtrip() {
+        let block = Block {
+            parent: BlockId(B256::repeat_byte(0x01)),
+            height: 10,
+            prevrandao: B256::repeat_byte(0xab),
+            state_root: StateRoot(B256::repeat_byte(0xcd)),
+            svm_state_root: Some(StateRoot(B256::repeat_byte(0xef))),
+            txs: vec![],
+        };
+        let encoded = block.encode();
+        let decoded = Block::decode_cfg(encoded, &default_block_cfg()).expect("decode");
+        assert_eq!(block, decoded);
+        assert_eq!(decoded.svm_state_root, Some(StateRoot(B256::repeat_byte(0xef))));
+    }
+
+    #[test]
+    fn block_svm_state_root_none_roundtrip() {
+        let block = sample_block();
+        assert!(block.svm_state_root.is_none());
+        let encoded = block.encode();
+        let decoded = Block::decode_cfg(encoded, &default_block_cfg()).expect("decode");
+        assert!(decoded.svm_state_root.is_none());
+    }
+
+    #[test]
+    fn block_svm_state_root_affects_id() {
+        let block1 = sample_block();
+        let mut block2 = sample_block();
+        block2.svm_state_root = Some(StateRoot(B256::repeat_byte(0xef)));
+        assert_ne!(block1.id(), block2.id());
+    }
+
+    #[test]
+    fn block_encode_size_with_svm_root() {
+        let mut block = sample_block();
+        block.svm_state_root = Some(StateRoot(B256::repeat_byte(0xef)));
+        assert_eq!(block.encode_size(), block.encode().len());
     }
 }

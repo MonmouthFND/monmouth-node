@@ -8,6 +8,9 @@ use tower::limit::ConcurrencyLimitLayer;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tracing::{error, info};
 
+use monmouth_capabilities::CapabilityRegistry;
+use monmouth_svm::SvmStateStore;
+
 use crate::{
     config::{CorsConfig, RpcServerConfig},
     eth::{
@@ -80,6 +83,8 @@ pub struct RpcServer<S: StateProvider = NoopStateProvider> {
     cors_config: CorsConfig,
     max_connections: u32,
     event_broadcaster: Option<EventBroadcaster>,
+    capabilities: CapabilityRegistry,
+    svm_store: Option<SvmStateStore>,
 }
 
 impl<S: StateProvider> std::fmt::Debug for RpcServer<S> {
@@ -105,6 +110,8 @@ impl RpcServer<NoopStateProvider> {
             cors_config: CorsConfig::default(),
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -119,6 +126,8 @@ impl RpcServer<NoopStateProvider> {
             cors_config: CorsConfig::default(),
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 }
@@ -140,6 +149,8 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             cors_config: CorsConfig::default(),
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -171,6 +182,20 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         self
     }
 
+    /// Set the capability registry for the Monmouth RPC API.
+    #[must_use]
+    pub fn with_capabilities(mut self, capabilities: CapabilityRegistry) -> Self {
+        self.capabilities = capabilities;
+        self
+    }
+
+    /// Set the SVM state store for SVM RPC queries.
+    #[must_use]
+    pub fn with_svm_store(mut self, store: SvmStateStore) -> Self {
+        self.svm_store = Some(store);
+        self
+    }
+
     /// Create from configuration.
     pub fn from_config(state: NodeState, config: RpcServerConfig, state_provider: S) -> Self {
         Self {
@@ -182,6 +207,8 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             cors_config: config.cors,
             max_connections: config.max_connections,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -199,6 +226,8 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         let max_connections = self.max_connections;
         let state_provider = self.state_provider;
         let event_broadcaster = self.event_broadcaster;
+        let capabilities = self.capabilities;
+        let svm_store = self.svm_store;
 
         let http_handle = tokio::spawn(async move {
             let app = Router::new()
@@ -243,7 +272,10 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             );
             let net_api = NetApiImpl::new(chain_id);
             let web3_api = Web3ApiImpl::new();
-            let monmouth_api = MonmouthApiImpl::new(node_state_for_jsonrpc);
+            let mut monmouth_api = MonmouthApiImpl::new(node_state_for_jsonrpc, capabilities);
+            if let Some(store) = svm_store {
+                monmouth_api = monmouth_api.with_svm_store(store);
+            }
             let filter_api = EthFilterApiImpl::new(state_provider_arc, FilterConfig::default());
 
             let mut module = jsonrpsee::RpcModule::new(());
@@ -328,6 +360,8 @@ pub struct JsonRpcServer<S: StateProvider = NoopStateProvider> {
     state_provider: S,
     max_connections: u32,
     event_broadcaster: Option<EventBroadcaster>,
+    capabilities: CapabilityRegistry,
+    svm_store: Option<SvmStateStore>,
 }
 
 impl<S: StateProvider> std::fmt::Debug for JsonRpcServer<S> {
@@ -350,6 +384,8 @@ impl JsonRpcServer<NoopStateProvider> {
             state_provider: NoopStateProvider,
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 }
@@ -364,6 +400,8 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
             state_provider,
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -385,6 +423,20 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
     #[must_use]
     pub fn with_event_broadcaster(mut self, broadcaster: EventBroadcaster) -> Self {
         self.event_broadcaster = Some(broadcaster);
+        self
+    }
+
+    /// Set the capability registry.
+    #[must_use]
+    pub fn with_capabilities(mut self, capabilities: CapabilityRegistry) -> Self {
+        self.capabilities = capabilities;
+        self
+    }
+
+    /// Set the SVM state store for SVM RPC queries.
+    #[must_use]
+    pub fn with_svm_store(mut self, store: SvmStateStore) -> Self {
+        self.svm_store = Some(store);
         self
     }
 

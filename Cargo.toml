@@ -62,6 +62,7 @@ monmouth-simplex = { path = "crates/node/simplex" }
 monmouth-transport = { path = "crates/network/transport" }
 monmouth-transport-sim = { path = "crates/network/transport-sim" }
 monmouth-sys = { path = "crates/utilities/sys" }
+monmouth-verification = { path = "crates/utilities/verification" }
 monmouth-handlers = { path = "crates/storage/handlers" }
 monmouth-overlay = { path = "crates/storage/overlay" }
 monmouth-qmdb = { path = "crates/storage/qmdb" }
@@ -69,6 +70,18 @@ monmouth-qmdb-ledger = { path = "crates/storage/qmdb-ledger" }
 monmouth-traits = { path = "crates/storage/traits" }
 monmouth-indexer = { path = "crates/storage/indexer" }
 monmouth-dkg = { path = "crates/node/dkg" }
+monmouth-capabilities = { path = "crates/node/capabilities" }
+monmouth-agent-types = { path = "crates/node/agent-types" }
+monmouth-policy = { path = "crates/node/policy" }
+monmouth-simulation = { path = "crates/node/simulation" }
+monmouth-intent-receipts = { path = "crates/node/intent-receipts" }
+monmouth-memory-anchoring = { path = "crates/node/memory-anchoring" }
+monmouth-state-observation = { path = "crates/node/state-observation" }
+monmouth-coordination = { path = "crates/node/coordination" }
+monmouth-conditional-subs = { path = "crates/node/conditional-subs" }
+monmouth-attestation = { path = "crates/node/attestation" }
+monmouth-svm = { path = "crates/node/svm" }
+monmouth-envelope = { path = "crates/node/envelope" }
 monmouth-runner = { path = "crates/node/runner" }
 monmouth-rpc = { path = "crates/node/rpc" }
 monmouth-txpool = { path = "crates/node/txpool" }

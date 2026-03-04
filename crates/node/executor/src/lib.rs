@@ -8,16 +8,8 @@
 mod adapter;
 pub use adapter::StateDbAdapter;
 
-pub mod classifier;
-pub use classifier::{
-    ClassificationResult, ClassifierConfig, TransactionClassification, TransactionClassifier,
-};
-
 mod config;
 pub use config::{BaseFeeParams, ExecutionConfig, GasLimitBounds};
-
-pub mod precompiles;
-pub use precompiles::MonmouthPrecompiles;
 
 mod context;
 pub use context::{BlockContext, ParentBlock};

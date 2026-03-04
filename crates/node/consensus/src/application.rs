@@ -139,6 +139,7 @@ mod tests {
                 height: 0,
                 prevrandao: alloy_primitives::B256::ZERO,
                 state_root: monmouth_domain::StateRoot(alloy_primitives::B256::ZERO),
+                svm_state_root: None,
                 txs: Vec::new(),
             })
         }
@@ -169,6 +170,7 @@ mod tests {
             height: 0,
             prevrandao: alloy_primitives::B256::ZERO,
             state_root: monmouth_domain::StateRoot(alloy_primitives::B256::ZERO),
+            svm_state_root: None,
             txs: Vec::new(),
         };
         let digest = app.verify(&block).unwrap();

@@ -1,0 +1,24 @@
+[package]
+name = "monmouth-state-observation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Agent-friendly structured state queries for Monmouth"
+
+[lints]
+workspace = true
+
+[dependencies]
+monmouth-agent-types = { path = "../agent-types" }
+alloy-primitives = { workspace = true, features = ["serde"] }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
