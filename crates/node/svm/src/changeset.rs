@@ -33,7 +33,7 @@ pub struct SvmChangeSet {
 impl SvmChangeSet {
     /// Create an empty changeset.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { accounts: BTreeMap::new() }
     }
 

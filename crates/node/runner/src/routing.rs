@@ -144,4 +144,64 @@ mod tests {
         assert_eq!(result.evm.len(), 1);
         assert!(result.svm.is_empty());
     }
+
+    #[test]
+    fn all_svm_batch() {
+        let txs = vec![svm_envelope_tx(), svm_envelope_tx(), svm_envelope_tx()];
+        let result = partition_by_vm_target(&txs);
+        assert!(result.evm.is_empty());
+        assert_eq!(result.svm.len(), 3);
+        assert_eq!(result.svm[0].0, 0);
+        assert_eq!(result.svm[1].0, 1);
+        assert_eq!(result.svm[2].0, 2);
+    }
+
+    #[test]
+    fn large_mixed_batch() {
+        let txs: Vec<Tx> = (0..100)
+            .map(|i| {
+                if i % 2 == 0 {
+                    plain_evm_tx()
+                } else {
+                    svm_envelope_tx()
+                }
+            })
+            .collect();
+        let result = partition_by_vm_target(&txs);
+        assert_eq!(result.evm.len(), 50);
+        assert_eq!(result.svm.len(), 50);
+        for (idx, (orig_idx, _)) in result.evm.iter().enumerate() {
+            assert_eq!(*orig_idx, idx * 2);
+        }
+        for (idx, (orig_idx, _)) in result.svm.iter().enumerate() {
+            assert_eq!(*orig_idx, idx * 2 + 1);
+        }
+    }
+
+    #[test]
+    fn double_wrapped_envelope_treated_as_evm() {
+        // Inner envelope targeting SVM
+        let inner_bytes = encode_agent_envelope(&monmouth_envelope::AgentTxEnvelope {
+            vm_target: VmTarget::Svm,
+            module_hint: None,
+            session_id: None,
+            intent: None,
+            inner_tx: vec![0xaa, 0xbb],
+            raw: Vec::new(),
+        });
+        // Outer envelope targeting EVM wrapping the inner envelope
+        let outer = monmouth_envelope::AgentTxEnvelope {
+            vm_target: VmTarget::Evm,
+            module_hint: None,
+            session_id: None,
+            intent: None,
+            inner_tx: inner_bytes,
+            raw: Vec::new(),
+        };
+        let tx = Tx::new(Bytes::from(encode_agent_envelope(&outer)));
+        let result = partition_by_vm_target(&[tx]);
+        // Outer says EVM, so it goes to EVM regardless of inner
+        assert_eq!(result.evm.len(), 1);
+        assert!(result.svm.is_empty());
+    }
 }

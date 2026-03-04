@@ -433,3 +433,151 @@ fn store_to_bridge_empty_has_builtins() {
     // Even an empty store should have builtin program accounts
     assert!(bridge.get_account(&solana_system_program::id()).is_some());
 }
+
+// ---------------------------------------------------------------------------
+// Multi-transaction and edge case tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn multi_transfer_single_block() {
+    let sender = Keypair::new();
+    let recipient_a = Pubkey::new_unique();
+    let recipient_b = Pubkey::new_unique();
+    let height = 1u64;
+    let ts = 1_700_000_000u64;
+
+    let bridge = funded_bridge(vec![(sender.pubkey(), 10 * LAMPORTS_PER_SOL)]);
+    let bh = block_hash(height, ts);
+
+    let tx_a = system_transaction::transfer(&sender, &recipient_a, LAMPORTS_PER_SOL, bh);
+    let tx_b = system_transaction::transfer(&sender, &recipient_b, LAMPORTS_PER_SOL, bh);
+    let stx_a = SanitizedTransaction::from_transaction_for_tests(tx_a);
+    let stx_b = SanitizedTransaction::from_transaction_for_tests(tx_b);
+
+    let executor = SvmExecutor::new();
+    let outcome = executor.execute(&bridge, height, ts, &[stx_a, stx_b]).unwrap();
+
+    assert_eq!(outcome.tx_results.len(), 2);
+    // At least one should succeed (both may succeed depending on SVM scheduling).
+    let successes = outcome.tx_results.iter().filter(|r| r.success).count();
+    assert!(successes >= 1, "at least one transfer should succeed");
+    assert!(outcome.compute_units_used > 0, "CU should be non-zero");
+}
+
+#[test]
+fn transfer_insufficient_lamports_fails() {
+    let sender = Keypair::new();
+    let recipient = Pubkey::new_unique();
+    let height = 1u64;
+    let ts = 1_700_000_000u64;
+
+    // Fund sender with only 100 lamports — not enough for 1 SOL transfer.
+    let bridge = funded_bridge(vec![(sender.pubkey(), 100)]);
+    let bh = block_hash(height, ts);
+
+    let tx = system_transaction::transfer(&sender, &recipient, LAMPORTS_PER_SOL, bh);
+    let stx = SanitizedTransaction::from_transaction_for_tests(tx);
+
+    let executor = SvmExecutor::new();
+    let outcome = executor.execute(&bridge, height, ts, &[stx]).unwrap();
+
+    assert_eq!(outcome.tx_results.len(), 1);
+    assert!(!outcome.tx_results[0].success, "transfer should fail due to insufficient funds");
+}
+
+#[test]
+fn cross_block_transfer_chain() {
+    let alice = Keypair::new();
+    let bob = Keypair::new();
+    let carol = Pubkey::new_unique();
+    let executor = SvmExecutor::new();
+
+    // Block 1: Alice → Bob (1 SOL)
+    let height1 = 1u64;
+    let ts1 = 1_700_000_000u64;
+    let bridge1 = funded_bridge(vec![(alice.pubkey(), 5 * LAMPORTS_PER_SOL)]);
+    let bh1 = block_hash(height1, ts1);
+    let tx1 = system_transaction::transfer(&alice, &bob.pubkey(), LAMPORTS_PER_SOL, bh1);
+    let stx1 = SanitizedTransaction::from_transaction_for_tests(tx1);
+    let out1 = executor.execute(&bridge1, height1, ts1, &[stx1]).unwrap();
+    assert!(out1.tx_results[0].success, "block 1 transfer should succeed");
+
+    // Apply changes to store
+    let store = SvmStateStore::new();
+    store.apply_changes(&out1.changes);
+
+    // Block 2: Bob → Carol (0.5 SOL) using Bob's new balance
+    let height2 = 2u64;
+    let ts2 = 1_700_000_002u64;
+    let bridge2 = store.to_bridge();
+    let bh2 = block_hash(height2, ts2);
+    let tx2 = system_transaction::transfer(&bob, &carol, LAMPORTS_PER_SOL / 2, bh2);
+    let stx2 = SanitizedTransaction::from_transaction_for_tests(tx2);
+    let out2 = executor.execute(&bridge2, height2, ts2, &[stx2]).unwrap();
+    assert!(out2.tx_results[0].success, "block 2 transfer should succeed");
+
+    // Apply and verify final state
+    store.apply_changes(&out2.changes);
+    let carol_acct = store.get_account(&carol.to_bytes());
+    assert!(carol_acct.is_some(), "carol should exist after receiving funds");
+    assert_eq!(carol_acct.unwrap().lamports, LAMPORTS_PER_SOL / 2);
+}
+
+#[test]
+fn executor_with_store_bridge_round_trip() {
+    let sender = Keypair::new();
+    let recipient = Pubkey::new_unique();
+    let height = 1u64;
+    let ts = 1_700_000_000u64;
+
+    // Seed the store with sender's funds
+    let store = SvmStateStore::new();
+    let mut seed_changes = SvmChangeSet::new();
+    seed_changes.insert(
+        sender.pubkey().to_bytes(),
+        SvmAccountUpdate {
+            lamports: 5 * LAMPORTS_PER_SOL,
+            data: vec![],
+            owner: [0u8; 32], // system program owns SOL accounts
+            executable: false,
+            rent_epoch: 0,
+        },
+    );
+    store.apply_changes(&seed_changes);
+
+    // Convert store → bridge → execute → apply back to store
+    let bridge = store.to_bridge();
+    let bh = block_hash(height, ts);
+    let tx = system_transaction::transfer(&sender, &recipient, LAMPORTS_PER_SOL, bh);
+    let stx = SanitizedTransaction::from_transaction_for_tests(tx);
+
+    let executor = SvmExecutor::new();
+    let outcome = executor.execute(&bridge, height, ts, &[stx]).unwrap();
+    assert!(outcome.tx_results[0].success, "store→bridge transfer should succeed");
+
+    store.apply_changes(&outcome.changes);
+
+    // Verify recipient got funds in the store
+    let recipient_acct = store.get_account(&recipient.to_bytes());
+    assert!(recipient_acct.is_some(), "recipient should exist in store");
+    assert_eq!(recipient_acct.unwrap().lamports, LAMPORTS_PER_SOL);
+}
+
+#[test]
+fn deserialize_oversized_tx_fails() {
+    // 1MB of zeros — far too large to be a valid Solana transaction.
+    let oversized = vec![0u8; 1_000_000];
+    let result = deserialize_svm_tx(&oversized);
+    assert!(result.is_err(), "oversized bytes should fail to deserialize");
+}
+
+#[test]
+fn empty_batch_produces_zero_cu() {
+    let executor = SvmExecutor::new();
+    let bridge = SvmAccountBridge::empty();
+    let empty: Vec<SanitizedTransaction> = vec![];
+    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
+    assert_eq!(outcome.compute_units_used, 0);
+    assert!(outcome.tx_results.is_empty());
+    assert!(outcome.changes.is_empty());
+}

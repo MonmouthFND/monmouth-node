@@ -22,13 +22,13 @@ pub struct SvmAccountBridge {
 impl SvmAccountBridge {
     /// Create a new bridge with the given account map.
     #[must_use]
-    pub fn new(accounts: BTreeMap<Pubkey, AccountSharedData>) -> Self {
+    pub const fn new(accounts: BTreeMap<Pubkey, AccountSharedData>) -> Self {
         Self { accounts }
     }
 
     /// Create an empty bridge (no pre-existing accounts).
     #[must_use]
-    pub fn empty() -> Self {
+    pub const fn empty() -> Self {
         Self { accounts: BTreeMap::new() }
     }
 

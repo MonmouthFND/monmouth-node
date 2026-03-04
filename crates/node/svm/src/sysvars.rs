@@ -51,7 +51,7 @@ pub fn default_rent() -> Rent {
 /// Create Monmouth's default EpochSchedule.
 ///
 /// Single continuous epoch — no warmup, no leader rotation.
-pub fn default_epoch_schedule() -> EpochSchedule {
+pub const fn default_epoch_schedule() -> EpochSchedule {
     EpochSchedule {
         slots_per_epoch: DEFAULT_EPOCH_LENGTH,
         leader_schedule_slot_offset: DEFAULT_EPOCH_LENGTH,

@@ -45,19 +45,14 @@ impl From<AgentId> for Address {
 // ---------------------------------------------------------------------------
 
 /// Target virtual machine for transaction routing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum VmTarget {
     /// Ethereum Virtual Machine.
+    #[default]
     Evm,
     /// Solana Virtual Machine.
     Svm,
-}
-
-impl Default for VmTarget {
-    fn default() -> Self {
-        Self::Evm
-    }
 }
 
 impl fmt::Display for VmTarget {

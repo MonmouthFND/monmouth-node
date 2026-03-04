@@ -3825,7 +3825,6 @@ dependencies = [
  "alloy-primitives",
  "serde",
  "serde_json",
- "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -4074,6 +4073,8 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "futures",
+ "k256",
+ "monmouth-domain",
  "monmouth-qmdb",
  "monmouth-traits",
  "revm",

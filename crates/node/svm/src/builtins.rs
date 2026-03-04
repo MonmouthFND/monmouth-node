@@ -10,17 +10,17 @@ use solana_svm::transaction_processor::TransactionBatchProcessor;
 use crate::fork_graph::MonmouthForkGraph;
 
 /// System Program — handles SOL transfers, account creation.
-pub fn system_program_id() -> Pubkey {
+pub const fn system_program_id() -> Pubkey {
     solana_system_program::id()
 }
 
 /// BPF Loader v2 (upgradeable) — loads deployed SVM programs.
-pub fn bpf_loader_upgradeable_id() -> Pubkey {
+pub const fn bpf_loader_upgradeable_id() -> Pubkey {
     solana_sdk_ids::bpf_loader_upgradeable::id()
 }
 
 /// Compute Budget Program — sets compute unit limits/prices.
-pub fn compute_budget_program_id() -> Pubkey {
+pub const fn compute_budget_program_id() -> Pubkey {
     solana_sdk_ids::compute_budget::id()
 }
 

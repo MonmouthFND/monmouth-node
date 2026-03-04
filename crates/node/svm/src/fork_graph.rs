@@ -20,7 +20,7 @@ pub struct MonmouthForkGraph {
 
 impl MonmouthForkGraph {
     /// Create a new fork graph at the given slot.
-    pub fn new(slot: u64) -> Self {
+    pub const fn new(slot: u64) -> Self {
         Self { current_slot: RwLock::new(slot) }
     }
 

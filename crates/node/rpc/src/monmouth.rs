@@ -146,10 +146,10 @@ impl MonmouthApiServer for MonmouthApiImpl {
     }
 
     async fn svm_status(&self) -> RpcResult<SvmStatus> {
-        match &self.svm_store {
-            Some(store) => Ok(SvmStatus { enabled: true, account_count: store.len() as u64 }),
-            None => Ok(SvmStatus { enabled: false, account_count: 0 }),
-        }
+        Ok(self.svm_store.as_ref().map_or(
+            SvmStatus { enabled: false, account_count: 0 },
+            |store| SvmStatus { enabled: true, account_count: store.len() as u64 },
+        ))
     }
 
     async fn svm_get_account(&self, pubkey: String) -> RpcResult<Option<SvmAccountInfo>> {
@@ -186,5 +186,270 @@ impl MonmouthApiServer for MonmouthApiImpl {
                 data_len: 0,
             }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use monmouth_capabilities::{Capability, CapabilitySchema, Permission, PermissionKind};
+    use monmouth_svm::{SvmAccountUpdate, SvmChangeSet};
+
+    fn test_capability(id: &str) -> Capability {
+        Capability {
+            id: id.to_string(),
+            name: format!("Test {id}"),
+            description: "A test capability".to_string(),
+            version: "1.0.0".to_string(),
+            schema: CapabilitySchema {
+                input: serde_json::json!({"type": "object"}),
+                output: serde_json::json!({"type": "string"}),
+            },
+            permissions: vec![Permission {
+                kind: PermissionKind::Execute,
+                scope: "*".to_string(),
+            }],
+            rate_limit: None,
+            enabled: true,
+        }
+    }
+
+    fn make_api() -> MonmouthApiImpl {
+        let state = Arc::new(NodeState::new(7750, 0));
+        let capabilities = CapabilityRegistry::default();
+        MonmouthApiImpl::new(state, capabilities)
+    }
+
+    fn make_api_with_caps(caps: Vec<Capability>) -> MonmouthApiImpl {
+        let state = Arc::new(NodeState::new(7750, 0));
+        let capabilities = CapabilityRegistry::from_capabilities(caps).unwrap();
+        MonmouthApiImpl::new(state, capabilities)
+    }
+
+    fn make_svm_store_with_account(
+        pubkey: [u8; 32],
+        update: SvmAccountUpdate,
+    ) -> SvmStateStore {
+        let store = SvmStateStore::new();
+        let mut changes = SvmChangeSet::new();
+        changes.insert(pubkey, update);
+        store.apply_changes(&changes);
+        store
+    }
+
+    // --- node_status ---
+
+    #[tokio::test]
+    async fn node_status_returns_chain_id() {
+        let state = Arc::new(NodeState::new(7750, 2));
+        let api = MonmouthApiImpl::new(state, CapabilityRegistry::default());
+        let status = api.node_status().await.unwrap();
+        assert_eq!(status.chain_id, 7750);
+        assert_eq!(status.validator_index, 2);
+    }
+
+    // --- list_capabilities ---
+
+    #[tokio::test]
+    async fn list_capabilities_empty() {
+        let api = make_api();
+        let list = api.list_capabilities().await.unwrap();
+        assert!(list.is_empty());
+    }
+
+    #[tokio::test]
+    async fn list_capabilities_with_entries() {
+        let api = make_api_with_caps(vec![
+            test_capability("cap.alpha"),
+            test_capability("cap.beta"),
+        ]);
+        let list = api.list_capabilities().await.unwrap();
+        assert_eq!(list.len(), 2);
+        assert_eq!(list[0].id, "cap.alpha");
+        assert_eq!(list[1].id, "cap.beta");
+    }
+
+    // --- get_capability ---
+
+    #[tokio::test]
+    async fn get_capability_found() {
+        let api = make_api_with_caps(vec![test_capability("cap.one")]);
+        let cap = api.get_capability("cap.one".to_string()).await.unwrap();
+        assert!(cap.is_some());
+        assert_eq!(cap.unwrap().id, "cap.one");
+    }
+
+    #[tokio::test]
+    async fn get_capability_not_found() {
+        let api = make_api();
+        let cap = api.get_capability("missing.cap".to_string()).await.unwrap();
+        assert!(cap.is_none());
+    }
+
+    // --- get_capability_schema ---
+
+    #[tokio::test]
+    async fn get_capability_schema_found() {
+        let api = make_api_with_caps(vec![test_capability("cap.schema")]);
+        let schema = api
+            .get_capability_schema("cap.schema".to_string())
+            .await
+            .unwrap();
+        assert!(schema.is_some());
+        assert_eq!(
+            schema.unwrap().input,
+            serde_json::json!({"type": "object"})
+        );
+    }
+
+    #[tokio::test]
+    async fn get_capability_schema_not_found() {
+        let api = make_api();
+        let schema = api
+            .get_capability_schema("missing".to_string())
+            .await
+            .unwrap();
+        assert!(schema.is_none());
+    }
+
+    // --- svm_status ---
+
+    #[tokio::test]
+    async fn svm_status_disabled() {
+        let api = make_api();
+        let status = api.svm_status().await.unwrap();
+        assert!(!status.enabled);
+        assert_eq!(status.account_count, 0);
+    }
+
+    #[tokio::test]
+    async fn svm_status_enabled() {
+        let store = make_svm_store_with_account(
+            [1u8; 32],
+            SvmAccountUpdate {
+                lamports: 100,
+                data: vec![],
+                owner: [0u8; 32],
+                executable: false,
+                rent_epoch: 0,
+            },
+        );
+        let api = make_api().with_svm_store(store);
+        let status = api.svm_status().await.unwrap();
+        assert!(status.enabled);
+        assert_eq!(status.account_count, 1);
+    }
+
+    // --- svm_get_account ---
+
+    #[tokio::test]
+    async fn svm_get_account_found() {
+        let pubkey = [0xAB; 32];
+        let store = make_svm_store_with_account(
+            pubkey,
+            SvmAccountUpdate {
+                lamports: 5000,
+                data: vec![1, 2, 3],
+                owner: [0xFF; 32],
+                executable: false,
+                rent_epoch: 42,
+            },
+        );
+        let api = make_api().with_svm_store(store);
+        let hex_key = format!("0x{}", hex::encode(pubkey));
+        let acct = api.svm_get_account(hex_key).await.unwrap();
+        assert!(acct.is_some());
+        let acct = acct.unwrap();
+        assert_eq!(acct.lamports, 5000);
+        assert_eq!(acct.data_len, 3);
+        assert!(!acct.executable);
+        assert_eq!(acct.rent_epoch, 42);
+    }
+
+    #[tokio::test]
+    async fn svm_get_account_not_found() {
+        let store = SvmStateStore::new();
+        let api = make_api().with_svm_store(store);
+        let hex_key = format!("0x{}", hex::encode([0x99; 32]));
+        let acct = api.svm_get_account(hex_key).await.unwrap();
+        assert!(acct.is_none());
+    }
+
+    #[tokio::test]
+    async fn svm_get_account_disabled() {
+        let api = make_api();
+        let hex_key = format!("0x{}", hex::encode([0x99; 32]));
+        let err = api.svm_get_account(hex_key).await.unwrap_err();
+        assert_eq!(err.code(), -32890);
+    }
+
+    // --- svm_get_program_info ---
+
+    #[tokio::test]
+    async fn svm_get_program_info_program() {
+        let pubkey = [0xCC; 32];
+        let store = make_svm_store_with_account(
+            pubkey,
+            SvmAccountUpdate {
+                lamports: 1_000_000,
+                data: vec![0xBF; 256],
+                owner: [0xEE; 32],
+                executable: true,
+                rent_epoch: 0,
+            },
+        );
+        let api = make_api().with_svm_store(store);
+        let hex_key = format!("0x{}", hex::encode(pubkey));
+        let info = api.svm_get_program_info(hex_key).await.unwrap();
+        assert!(info.is_program);
+        assert_eq!(info.data_len, 256);
+    }
+
+    #[tokio::test]
+    async fn svm_get_program_info_not_found() {
+        let store = SvmStateStore::new();
+        let api = make_api().with_svm_store(store);
+        let hex_key = format!("0x{}", hex::encode([0xDD; 32]));
+        let info = api.svm_get_program_info(hex_key).await.unwrap();
+        assert!(!info.is_program);
+        assert_eq!(info.data_len, 0);
+    }
+
+    #[tokio::test]
+    async fn svm_get_program_info_disabled() {
+        let api = make_api();
+        let hex_key = format!("0x{}", hex::encode([0xDD; 32]));
+        let err = api.svm_get_program_info(hex_key).await.unwrap_err();
+        assert_eq!(err.code(), -32890);
+    }
+
+    // --- parse_pubkey ---
+
+    #[test]
+    fn parse_pubkey_valid_with_prefix() {
+        let key = [0xAB; 32];
+        let hex_str = format!("0x{}", hex::encode(key));
+        let parsed = MonmouthApiImpl::parse_pubkey(&hex_str).unwrap();
+        assert_eq!(parsed, key);
+    }
+
+    #[test]
+    fn parse_pubkey_valid_without_prefix() {
+        let key = [0xCD; 32];
+        let hex_str = hex::encode(key);
+        let parsed = MonmouthApiImpl::parse_pubkey(&hex_str).unwrap();
+        assert_eq!(parsed, key);
+    }
+
+    #[test]
+    fn parse_pubkey_invalid_hex() {
+        let err = MonmouthApiImpl::parse_pubkey("0xZZZZ").unwrap_err();
+        assert_eq!(err.code(), -32602);
+    }
+
+    #[test]
+    fn parse_pubkey_wrong_length() {
+        let err = MonmouthApiImpl::parse_pubkey("0xaabb").unwrap_err();
+        assert_eq!(err.code(), -32602);
     }
 }

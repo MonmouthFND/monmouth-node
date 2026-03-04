@@ -354,17 +354,17 @@ impl NodeRunner for ProductionRunner {
         }
 
         // Wire SVM executor if enabled (uses pre-created store shared with RPC)
-        if let Some(svm_cfg) = &self.svm_config {
-            if svm_cfg.enabled {
-                let svm_executor_config = SvmExecutorConfig {
-                    compute_budget: svm_cfg.compute_budget,
-                    ..Default::default()
-                };
-                let svm_executor = SvmExecutor::with_config(svm_executor_config);
-                let svm_store = self.svm_store.clone().unwrap_or_default();
-                app = app.with_svm(svm_executor, svm_store);
-                info!(compute_budget = svm_cfg.compute_budget, "SVM module enabled");
-            }
+        if let Some(svm_cfg) = &self.svm_config
+            && svm_cfg.enabled
+        {
+            let svm_executor_config = SvmExecutorConfig {
+                compute_budget: svm_cfg.compute_budget,
+                ..Default::default()
+            };
+            let svm_executor = SvmExecutor::with_config(svm_executor_config);
+            let svm_store = self.svm_store.clone().unwrap_or_default();
+            app = app.with_svm(svm_executor, svm_store);
+            info!(compute_budget = svm_cfg.compute_budget, "SVM module enabled");
         }
         let marshaled =
             Marshaled::new(context.with_label("marshaled"), app, marshal_mailbox.clone(), epocher);

@@ -167,7 +167,7 @@ fn recover_sender_and_hash(envelope: &TxEnvelope) -> Result<(Address, B256), TxP
     Ok((sender, hash))
 }
 
-fn effective_gas_price(envelope: &TxEnvelope) -> u128 {
+const fn effective_gas_price(envelope: &TxEnvelope) -> u128 {
     match envelope {
         TxEnvelope::Legacy(tx) => tx.tx().gas_price,
         TxEnvelope::Eip2930(tx) => tx.tx().gas_price,

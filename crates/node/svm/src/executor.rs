@@ -95,7 +95,7 @@ impl SvmExecutor {
     }
 
     /// Get the executor configuration.
-    pub fn config(&self) -> &SvmExecutorConfig {
+    pub const fn config(&self) -> &SvmExecutorConfig {
         &self.config
     }
 
