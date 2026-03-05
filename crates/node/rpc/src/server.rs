@@ -1,16 +1,21 @@
 //! HTTP and JSON-RPC server implementation.
 
-use std::{net::SocketAddr, sync::Arc, time::Duration};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    net::SocketAddr,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+    time::Duration,
+};
 
 use axum::{Router, extract::State, http::StatusCode, response::IntoResponse, routing::get};
 use jsonrpsee::server::{Server, ServerHandle};
+use monmouth_capabilities::CapabilityRegistry;
+use monmouth_svm::SvmStateStore;
 use tower::limit::ConcurrencyLimitLayer;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tracing::{error, info};
-
-use monmouth_capabilities::CapabilityRegistry;
-use monmouth_svm::SvmStateStore;
 
 use crate::{
     config::{CorsConfig, RateLimitConfig, RpcServerConfig},
@@ -258,15 +263,18 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
                     }
                 });
 
-                app = app.layer(axum::middleware::from_fn(move |req: axum::http::Request<axum::body::Body>, next: axum::middleware::Next| {
-                    let c = counter.clone();
-                    async move {
-                        if c.fetch_add(1, Ordering::Relaxed) >= max_rps {
-                            return StatusCode::TOO_MANY_REQUESTS.into_response();
+                app = app.layer(axum::middleware::from_fn(
+                    move |req: axum::http::Request<axum::body::Body>,
+                          next: axum::middleware::Next| {
+                        let c = counter.clone();
+                        async move {
+                            if c.fetch_add(1, Ordering::Relaxed) >= max_rps {
+                                return StatusCode::TOO_MANY_REQUESTS.into_response();
+                            }
+                            next.run(req).await
                         }
-                        next.run(req).await
-                    }
-                }));
+                    },
+                ));
                 info!(rps = max_rps, "HTTP rate limiting enabled");
             }
 

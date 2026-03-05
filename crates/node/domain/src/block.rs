@@ -119,11 +119,7 @@ impl Read for Block {
         let prevrandao = Idents::read_b256(buf)?;
         let state_root = StateRoot::read(buf)?;
         let svm_tag = u8::read(buf)?;
-        let svm_state_root = if svm_tag == 1 {
-            Some(StateRoot::read(buf)?)
-        } else {
-            None
-        };
+        let svm_state_root = if svm_tag == 1 { Some(StateRoot::read(buf)?) } else { None };
         let txs = Vec::<Tx>::read_cfg(buf, &(RangeCfg::new(0..=cfg.max_txs), cfg.tx))?;
         Ok(Self { parent, height, timestamp, prevrandao, state_root, svm_state_root, txs })
     }

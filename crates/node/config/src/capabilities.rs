@@ -74,7 +74,6 @@ pub struct CapabilitiesConfig {
     pub capabilities: Vec<CapabilityDefinition>,
 }
 
-
 fn default_version() -> String {
     "1.0.0".to_string()
 }
@@ -127,10 +126,7 @@ mod tests {
                 name: "Test".to_string(),
                 description: String::new(),
                 version: "1.0.0".to_string(),
-                schema: SchemaDef {
-                    input: serde_json::json!({}),
-                    output: serde_json::json!({}),
-                },
+                schema: SchemaDef { input: serde_json::json!({}), output: serde_json::json!({}) },
                 permissions: vec![],
                 rate_limit: None,
                 enabled: true,

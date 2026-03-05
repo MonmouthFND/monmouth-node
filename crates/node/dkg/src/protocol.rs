@@ -74,14 +74,10 @@ impl CeremonySession {
         let mut ceremony_id = [0u8; 32];
         ceremony_id.copy_from_slice(&bytes[0..32]);
         let chain_id = u64::from_le_bytes(
-            bytes[32..40]
-                .try_into()
-                .map_err(|_| commonware_codec::Error::EndOfBuffer)?,
+            bytes[32..40].try_into().map_err(|_| commonware_codec::Error::EndOfBuffer)?,
         );
         let round = u32::from_le_bytes(
-            bytes[40..44]
-                .try_into()
-                .map_err(|_| commonware_codec::Error::EndOfBuffer)?,
+            bytes[40..44].try_into().map_err(|_| commonware_codec::Error::EndOfBuffer)?,
         );
         Ok(Self { ceremony_id, chain_id, round })
     }
@@ -520,10 +516,7 @@ impl DkgParticipant {
                 }
             }
             None => {
-                warn!(
-                    ?from,
-                    "Rejecting legacy message without session ID"
-                );
+                warn!(?from, "Rejecting legacy message without session ID");
                 return Err(DkgError::InvalidMessage(
                     "message missing required session ID".to_string(),
                 ));
@@ -1018,18 +1011,16 @@ impl DkgParticipant {
         let mut participant = Self::new(config.clone(), timestamp_nanos)?;
         participant.current_phase = state.phase;
 
-        let nz_degree = core::num::NonZeroU32::new(config.t()).ok_or_else(|| {
-            DkgError::InvalidThreshold { threshold: config.t(), participants: 0 }
-        })?;
+        let nz_degree = core::num::NonZeroU32::new(config.t())
+            .ok_or_else(|| DkgError::InvalidThreshold { threshold: config.t(), participants: 0 })?;
 
         if state.dealer_finalized
             && let Some(log_bytes) = state.get_our_signed_log()
         {
             let mut reader = log_bytes.as_slice();
-            if let Ok(log) = SignedDealerLog::<MinSig, ed25519::PrivateKey>::read_cfg(
-                &mut reader,
-                &nz_degree,
-            ) && let Some((dealer_pk, dealer_log)) = log.clone().check(&participant.info)
+            if let Ok(log) =
+                SignedDealerLog::<MinSig, ed25519::PrivateKey>::read_cfg(&mut reader, &nz_degree)
+                && let Some((dealer_pk, dealer_log)) = log.clone().check(&participant.info)
             {
                 participant.dealer_logs.insert(dealer_pk.clone(), dealer_log);
                 participant.signed_logs.insert(dealer_pk, log.clone());
@@ -1039,10 +1030,9 @@ impl DkgParticipant {
 
         for (pk_hex, log_bytes) in state.get_received_logs() {
             let mut reader = log_bytes.as_slice();
-            if let Ok(log) = SignedDealerLog::<MinSig, ed25519::PrivateKey>::read_cfg(
-                &mut reader,
-                &nz_degree,
-            ) && let Some((dealer_pk, dealer_log)) = log.clone().check(&participant.info)
+            if let Ok(log) =
+                SignedDealerLog::<MinSig, ed25519::PrivateKey>::read_cfg(&mut reader, &nz_degree)
+                && let Some((dealer_pk, dealer_log)) = log.clone().check(&participant.info)
             {
                 let _ = pk_hex;
                 participant.dealer_logs.insert(dealer_pk.clone(), dealer_log);

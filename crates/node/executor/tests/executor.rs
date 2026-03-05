@@ -628,9 +628,8 @@ fn test_execute_real_transfer() {
 
     let header = Header { gas_limit: 30_000_000, ..Default::default() };
     let context = BlockContext::new(header, B256::ZERO, B256::ZERO);
-    let outcome = executor
-        .execute(&state, &context, &[tx.bytes])
-        .expect("execution should succeed");
+    let outcome =
+        executor.execute(&state, &context, &[tx.bytes]).expect("execution should succeed");
 
     assert_eq!(outcome.gas_used, 21_000);
     assert_eq!(outcome.receipts.len(), 1);
@@ -706,4 +705,3 @@ fn test_execute_multiple_transfers_from_different_senders() {
     assert!(outcome.receipts[0].success());
     assert!(outcome.receipts[1].success());
 }
-

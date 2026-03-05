@@ -1,6 +1,9 @@
 //! REVM-based consensus application implementation.
 
-use std::{collections::BTreeSet, time::{Instant, SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::BTreeSet,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 
 use alloy_consensus::Header;
 use alloy_primitives::{Address, B256, Bytes};
@@ -114,10 +117,7 @@ where
             warn!("height overflow at {}", parent.height);
             return None;
         };
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
         let context = self.block_context(height, timestamp, prevrandao);
 
         // Partition transactions by VM target
@@ -159,7 +159,13 @@ where
                             return None;
                         }
                     };
-                    match svm_executor.execute(&bridge, height, timestamp, &sanitized_txs, Some(prevrandao.0)) {
+                    match svm_executor.execute(
+                        &bridge,
+                        height,
+                        timestamp,
+                        &sanitized_txs,
+                        Some(prevrandao.0),
+                    ) {
                         Ok(svm_outcome) => {
                             let root = match svm_store.compute_root(&svm_outcome.changes) {
                                 Ok(r) => r,
@@ -253,28 +259,30 @@ where
         // in the far future (10-second tolerance), and must not precede the
         // parent block's timestamp (monotonicity).
         if block.height > 0 {
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs();
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
             if block.timestamp == 0 {
                 warn!(?digest, "block has zero timestamp");
                 return false;
             }
             if block.timestamp > now + 10 {
-                warn!(?digest, block_ts = block.timestamp, now, "block timestamp too far in future");
+                warn!(
+                    ?digest,
+                    block_ts = block.timestamp,
+                    now,
+                    "block timestamp too far in future"
+                );
                 return false;
             }
-            if let Some(parent_block) = self.ledger.query_block(parent_digest).await {
-                if block.timestamp < parent_block.timestamp {
-                    warn!(
-                        ?digest,
-                        block_ts = block.timestamp,
-                        parent_ts = parent_block.timestamp,
-                        "block timestamp precedes parent"
-                    );
-                    return false;
-                }
+            if let Some(parent_block) = self.ledger.query_block(parent_digest).await
+                && block.timestamp < parent_block.timestamp
+            {
+                warn!(
+                    ?digest,
+                    block_ts = block.timestamp,
+                    parent_ts = parent_block.timestamp,
+                    "block timestamp precedes parent"
+                );
+                return false;
             }
         }
 
@@ -325,9 +333,7 @@ where
 
         // Verify SVM state root if present in the block
         if let Some(expected_svm_root) = &block.svm_state_root {
-            if let (Some(svm_store), Some(svm_executor)) =
-                (&self.svm_store, &self.svm_executor)
-            {
+            if let (Some(svm_store), Some(svm_executor)) = (&self.svm_store, &self.svm_executor) {
                 // Deserialize SVM txs — any failure means the block is invalid
                 let mut sanitized_txs = Vec::new();
                 for (_, raw_bytes) in &partitioned.svm {
@@ -347,9 +353,13 @@ where
                         return false;
                     }
                 };
-                let svm_outcome = match svm_executor
-                    .execute(&bridge, block.height, block.timestamp, &sanitized_txs, Some(block.prevrandao.0))
-                {
+                let svm_outcome = match svm_executor.execute(
+                    &bridge,
+                    block.height,
+                    block.timestamp,
+                    &sanitized_txs,
+                    Some(block.prevrandao.0),
+                ) {
                     Ok(o) => o,
                     Err(e) => {
                         warn!(?digest, error = ?e, "SVM execution failed during verify");

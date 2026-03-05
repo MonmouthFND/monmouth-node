@@ -3,9 +3,7 @@
 use std::sync::Arc;
 
 use jsonrpsee::{core::RpcResult, proc_macros::rpc, types::ErrorObject};
-use monmouth_capabilities::{
-    Capability, CapabilityRegistry, CapabilitySchema, CapabilitySummary,
-};
+use monmouth_capabilities::{Capability, CapabilityRegistry, CapabilitySchema, CapabilitySummary};
 use monmouth_svm::SvmStateStore;
 
 use crate::state::{NodeState, NodeStatus};
@@ -153,9 +151,10 @@ impl MonmouthApiServer for MonmouthApiImpl {
     }
 
     async fn svm_get_account(&self, pubkey: String) -> RpcResult<Option<SvmAccountInfo>> {
-        let store = self.svm_store.as_ref().ok_or_else(|| {
-            ErrorObject::owned(-32890, "SVM module is not enabled", None::<()>)
-        })?;
+        let store = self
+            .svm_store
+            .as_ref()
+            .ok_or_else(|| ErrorObject::owned(-32890, "SVM module is not enabled", None::<()>))?;
         let key = Self::parse_pubkey(&pubkey)?;
         Ok(store.get_account(&key).map(|acct| SvmAccountInfo {
             pubkey: format!("0x{}", hex::encode(key)),
@@ -168,9 +167,10 @@ impl MonmouthApiServer for MonmouthApiImpl {
     }
 
     async fn svm_get_program_info(&self, pubkey: String) -> RpcResult<SvmProgramInfo> {
-        let store = self.svm_store.as_ref().ok_or_else(|| {
-            ErrorObject::owned(-32890, "SVM module is not enabled", None::<()>)
-        })?;
+        let store = self
+            .svm_store
+            .as_ref()
+            .ok_or_else(|| ErrorObject::owned(-32890, "SVM module is not enabled", None::<()>))?;
         let key = Self::parse_pubkey(&pubkey)?;
         match store.get_account(&key) {
             Some(acct) => Ok(SvmProgramInfo {
@@ -191,9 +191,10 @@ impl MonmouthApiServer for MonmouthApiImpl {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use monmouth_capabilities::{Capability, CapabilitySchema, Permission, PermissionKind};
     use monmouth_svm::{SvmAccountUpdate, SvmChangeSet};
+
+    use super::*;
 
     fn test_capability(id: &str) -> Capability {
         Capability {
@@ -205,10 +206,7 @@ mod tests {
                 input: serde_json::json!({"type": "object"}),
                 output: serde_json::json!({"type": "string"}),
             },
-            permissions: vec![Permission {
-                kind: PermissionKind::Execute,
-                scope: "*".to_string(),
-            }],
+            permissions: vec![Permission { kind: PermissionKind::Execute, scope: "*".to_string() }],
             rate_limit: None,
             enabled: true,
         }
@@ -226,10 +224,7 @@ mod tests {
         MonmouthApiImpl::new(state, capabilities)
     }
 
-    fn make_svm_store_with_account(
-        pubkey: [u8; 32],
-        update: SvmAccountUpdate,
-    ) -> SvmStateStore {
+    fn make_svm_store_with_account(pubkey: [u8; 32], update: SvmAccountUpdate) -> SvmStateStore {
         let store = SvmStateStore::new();
         let mut changes = SvmChangeSet::new();
         changes.insert(pubkey, update);
@@ -259,10 +254,8 @@ mod tests {
 
     #[tokio::test]
     async fn list_capabilities_with_entries() {
-        let api = make_api_with_caps(vec![
-            test_capability("cap.alpha"),
-            test_capability("cap.beta"),
-        ]);
+        let api =
+            make_api_with_caps(vec![test_capability("cap.alpha"), test_capability("cap.beta")]);
         let list = api.list_capabilities().await.unwrap();
         assert_eq!(list.len(), 2);
         assert_eq!(list[0].id, "cap.alpha");
@@ -291,24 +284,15 @@ mod tests {
     #[tokio::test]
     async fn get_capability_schema_found() {
         let api = make_api_with_caps(vec![test_capability("cap.schema")]);
-        let schema = api
-            .get_capability_schema("cap.schema".to_string())
-            .await
-            .unwrap();
+        let schema = api.get_capability_schema("cap.schema".to_string()).await.unwrap();
         assert!(schema.is_some());
-        assert_eq!(
-            schema.unwrap().input,
-            serde_json::json!({"type": "object"})
-        );
+        assert_eq!(schema.unwrap().input, serde_json::json!({"type": "object"}));
     }
 
     #[tokio::test]
     async fn get_capability_schema_not_found() {
         let api = make_api();
-        let schema = api
-            .get_capability_schema("missing".to_string())
-            .await
-            .unwrap();
+        let schema = api.get_capability_schema("missing".to_string()).await.unwrap();
         assert!(schema.is_none());
     }
 

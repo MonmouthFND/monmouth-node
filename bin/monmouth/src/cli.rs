@@ -161,10 +161,7 @@ impl Cli {
         let metrics_addr: std::net::SocketAddr = "0.0.0.0:9002".parse()?;
 
         let capability_registry = build_capability_registry(&config.capabilities)?;
-        tracing::info!(
-            count = capability_registry.len(),
-            "Built capability registry from config"
-        );
+        tracing::info!(count = capability_registry.len(), "Built capability registry from config");
 
         let mut runner = ProductionRunner::new(
             scheme,
@@ -222,15 +219,12 @@ fn build_capability_registry(config: &CapabilitiesConfig) -> eyre::Result<Capabi
             })
             .collect::<eyre::Result<_>>()?;
 
-        let schema = CapabilitySchema {
-            input: def.schema.input.clone(),
-            output: def.schema.output.clone(),
-        };
+        let schema =
+            CapabilitySchema { input: def.schema.input.clone(), output: def.schema.output.clone() };
 
-        let rate_limit = def.rate_limit.map(|rl| RateLimit {
-            max_requests: rl.max_requests,
-            window_secs: rl.window_secs,
-        });
+        let rate_limit = def
+            .rate_limit
+            .map(|rl| RateLimit { max_requests: rl.max_requests, window_secs: rl.window_secs });
 
         capabilities.push(Capability {
             id: def.id.clone(),

@@ -72,7 +72,7 @@ fn sol_transfer_produces_tx_result() {
 
     // Create a transfer transaction with matching blockhash (sha256-based derivation)
     let blockhash = {
-        use sha2::{Sha256, Digest};
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(b"monmouth-svm-blockhash-v1");
         hasher.update(1u64.to_le_bytes());

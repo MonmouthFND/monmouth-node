@@ -15,12 +15,14 @@ use solana_svm::transaction_processor::{
 };
 use solana_svm_transaction::svm_transaction::SVMTransaction;
 
-use crate::account_bridge::SvmAccountBridge;
-use crate::builtins::register_builtins;
-use crate::changeset::{SvmAccountUpdate, SvmChangeSet};
-use crate::fork_graph::MonmouthForkGraph;
-use crate::sysvars;
-use crate::SvmError;
+use crate::{
+    SvmError,
+    account_bridge::SvmAccountBridge,
+    builtins::register_builtins,
+    changeset::{SvmAccountUpdate, SvmChangeSet},
+    fork_graph::MonmouthForkGraph,
+    sysvars,
+};
 
 /// Configuration for the SVM executor.
 #[derive(Clone, Debug)]
@@ -152,7 +154,7 @@ impl SvmExecutor {
         // Derive a deterministic blockhash from block height, timestamp, and prevrandao.
         // Mixing prevrandao ensures the blockhash is unpredictable before the block is built.
         let blockhash = {
-            use sha2::{Sha256, Digest};
+            use sha2::{Digest, Sha256};
             let mut hasher = Sha256::new();
             hasher.update(b"monmouth-svm-blockhash-v1");
             hasher.update(block_height.to_le_bytes());
@@ -192,14 +194,13 @@ impl SvmExecutor {
         let limits =
             solana_program_runtime::execution_budget::SVMTransactionExecutionAndFeeBudgetLimits {
                 budget,
-                loaded_accounts_data_size_limit: solana_program_runtime::execution_budget::MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES,
+                loaded_accounts_data_size_limit:
+                    solana_program_runtime::execution_budget::MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES,
                 fee_details: solana_fee_structure::FeeDetails::default(),
             };
         let check_results: Vec<solana_svm::account_loader::TransactionCheckResult> = txs
             .iter()
-            .map(|_| {
-                Ok(solana_svm::account_loader::CheckedTransactionDetails::new(None, limits))
-            })
+            .map(|_| Ok(solana_svm::account_loader::CheckedTransactionDetails::new(None, limits)))
             .collect();
 
         // Execute the batch
@@ -228,17 +229,13 @@ impl SvmExecutor {
 
         // Clock sysvar
         let clock_data = bincode::serialize(clock).unwrap_or_default();
-        sysvar_bridge.set_account(
-            solana_sdk_ids::sysvar::clock::id(),
-            create_sysvar_account(&clock_data),
-        );
+        sysvar_bridge
+            .set_account(solana_sdk_ids::sysvar::clock::id(), create_sysvar_account(&clock_data));
 
         // Rent sysvar
         let rent_data = bincode::serialize(rent).unwrap_or_default();
-        sysvar_bridge.set_account(
-            solana_sdk_ids::sysvar::rent::id(),
-            create_sysvar_account(&rent_data),
-        );
+        sysvar_bridge
+            .set_account(solana_sdk_ids::sysvar::rent::id(), create_sysvar_account(&rent_data));
 
         // EpochSchedule sysvar
         let schedule_data = bincode::serialize(epoch_schedule).unwrap_or_default();
@@ -289,9 +286,7 @@ impl SvmExecutor {
                             });
 
                             // Extract account changes from loaded accounts
-                            for (pubkey, loaded_account) in
-                                &executed.loaded_transaction.accounts
-                            {
+                            for (pubkey, loaded_account) in &executed.loaded_transaction.accounts {
                                 let acct: &AccountSharedData = loaded_account;
                                 let update = SvmAccountUpdate {
                                     lamports: acct.lamports(),
@@ -397,7 +392,7 @@ mod tests {
     #[test]
     fn executor_is_clone() {
         let executor = SvmExecutor::new();
-        let _cloned = executor.clone();
+        let _cloned = executor;
     }
 
     #[test]

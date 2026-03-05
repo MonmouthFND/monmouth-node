@@ -43,7 +43,6 @@ impl ForkGraph for MonmouthForkGraph {
             std::cmp::Ordering::Greater => BlockRelation::Descendant,
         }
     }
-
 }
 
 #[cfg(test)]

@@ -5,7 +5,11 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-use std::{collections::{BTreeMap, BTreeSet}, fmt, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt,
+    sync::Arc,
+};
 
 use alloy_primitives::{Address, B256, U256};
 use commonware_cryptography::Committable as _;

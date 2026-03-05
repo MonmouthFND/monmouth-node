@@ -314,10 +314,17 @@ impl PolicyRegistry {
     ) -> PolicyDecision {
         let mut inner = self.inner.write();
 
-        let decision = self.evaluate_inner(&inner, agent, capability_id, target, value_wei, timestamp);
+        let decision =
+            self.evaluate_inner(&inner, agent, capability_id, target, value_wei, timestamp);
 
         if decision.action == PolicyAction::Allow {
-            self.record_inner(&mut inner, agent, capability_id.map(String::from), value_wei, timestamp);
+            self.record_inner(
+                &mut inner,
+                agent,
+                capability_id.map(String::from),
+                value_wei,
+                timestamp,
+            );
         }
 
         decision

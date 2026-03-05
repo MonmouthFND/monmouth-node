@@ -39,7 +39,10 @@ impl StateObserver {
     /// # Errors
     ///
     /// Returns an error if the provider fails or the query is unsupported.
-    pub async fn query(&self, query: &StateQuery) -> Result<StateQueryResult, StateObservationError> {
+    pub async fn query(
+        &self,
+        query: &StateQuery,
+    ) -> Result<StateQueryResult, StateObservationError> {
         debug!(?query, "Executing state query");
         self.provider.execute(query).await
     }
@@ -131,7 +134,9 @@ mod tests {
     async fn query_balance() {
         let obs = mock_observer();
         let result = obs.query(&StateQuery::Balance { address: Address::ZERO }).await.unwrap();
-        assert!(matches!(result, StateQueryResult::Balance { balance } if balance == U256::from(1_000_000u64)));
+        assert!(
+            matches!(result, StateQueryResult::Balance { balance } if balance == U256::from(1_000_000u64))
+        );
     }
 
     #[tokio::test]
@@ -208,9 +213,6 @@ mod tests {
         assert_eq!(StateObservationError::ProviderError("x".into()).code(), -32850);
         assert_eq!(StateObservationError::AccountNotFound(Address::ZERO).code(), -32851);
         assert_eq!(StateObservationError::UnsupportedQuery("x".into()).code(), -32852);
-        assert_eq!(
-            StateObservationError::BatchTooLarge { size: 10, max: 5 }.code(),
-            -32853
-        );
+        assert_eq!(StateObservationError::BatchTooLarge { size: 10, max: 5 }.code(), -32853);
     }
 }

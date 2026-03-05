@@ -15,10 +15,7 @@ pub struct MemoryAnchoringConfig {
 
 impl Default for MemoryAnchoringConfig {
     fn default() -> Self {
-        Self {
-            enabled: default_enabled(),
-            max_anchors_per_agent: default_max_anchors_per_agent(),
-        }
+        Self { enabled: default_enabled(), max_anchors_per_agent: default_max_anchors_per_agent() }
     }
 }
 

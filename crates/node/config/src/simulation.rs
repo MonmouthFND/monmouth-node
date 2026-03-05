@@ -61,7 +61,12 @@ mod tests {
 
     #[test]
     fn json_roundtrip() {
-        let config = SimulationConfig { enabled: false, max_bundle_size: 5, max_gas: 15_000_000, timeout_ms: 2000 };
+        let config = SimulationConfig {
+            enabled: false,
+            max_bundle_size: 5,
+            max_gas: 15_000_000,
+            timeout_ms: 2000,
+        };
         let json = serde_json::to_string(&config).unwrap();
         let parsed: SimulationConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(config, parsed);

@@ -1,6 +1,8 @@
 //! SVM integration tests — cross-block persistence, state root computation,
 //! and end-to-end SVM pipeline validation.
 
+use std::collections::BTreeMap;
+
 use monmouth_svm::{
     SvmAccountBridge, SvmAccountUpdate, SvmChangeSet, SvmExecutor, SvmExecutorConfig,
     SvmStateStore, deserialize_svm_tx,
@@ -13,7 +15,6 @@ use solana_pubkey::Pubkey;
 use solana_signer::Signer;
 use solana_system_transaction as system_transaction;
 use solana_transaction::sanitized::SanitizedTransaction;
-use std::collections::BTreeMap;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,7 +49,7 @@ fn funded_bridge(accounts: Vec<(Pubkey, u64)>) -> SvmAccountBridge {
 }
 
 fn block_hash(height: u64, timestamp: u64) -> Hash {
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(b"monmouth-svm-blockhash-v1");
     hasher.update(height.to_le_bytes());
@@ -59,14 +60,8 @@ fn block_hash(height: u64, timestamp: u64) -> Hash {
     Hash::new_from_array(h)
 }
 
-fn dummy_update(lamports: u64) -> SvmAccountUpdate {
-    SvmAccountUpdate {
-        lamports,
-        data: vec![],
-        owner: [0u8; 32],
-        executable: false,
-        rent_epoch: 0,
-    }
+const fn dummy_update(lamports: u64) -> SvmAccountUpdate {
+    SvmAccountUpdate { lamports, data: vec![], owner: [0u8; 32], executable: false, rent_epoch: 0 }
 }
 
 fn program_update(data_len: usize) -> SvmAccountUpdate {
@@ -321,10 +316,7 @@ fn cloned_stores_share_underlying_state() {
 
     // Roots computed from either clone should match
     let empty = SvmChangeSet::new();
-    assert_eq!(
-        store.compute_root(&empty).unwrap(),
-        rpc_store.compute_root(&empty).unwrap()
-    );
+    assert_eq!(store.compute_root(&empty).unwrap(), rpc_store.compute_root(&empty).unwrap());
 }
 
 // ---------------------------------------------------------------------------
@@ -391,7 +383,11 @@ fn full_pipeline_deserialize_execute_store() {
     let outcome = executor.execute(&bridge, height, ts, &[sanitized], None).unwrap();
 
     assert_eq!(outcome.tx_results.len(), 1);
-    assert!(outcome.tx_results[0].success, "transfer should succeed: {:?}", outcome.tx_results[0].error);
+    assert!(
+        outcome.tx_results[0].success,
+        "transfer should succeed: {:?}",
+        outcome.tx_results[0].error
+    );
 
     // 5. Apply changes to store and verify non-zero root
     let store = SvmStateStore::new();

@@ -7,9 +7,7 @@ use std::collections::HashSet;
 
 use solana_message::SimpleAddressLoader;
 use solana_pubkey::Pubkey;
-use solana_transaction::{
-    sanitized::SanitizedTransaction, versioned::VersionedTransaction,
-};
+use solana_transaction::{sanitized::SanitizedTransaction, versioned::VersionedTransaction};
 
 use crate::SvmError;
 

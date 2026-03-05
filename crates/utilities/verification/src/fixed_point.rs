@@ -29,10 +29,7 @@ impl std::fmt::Display for VerificationError {
                 write!(f, "invalid dimensions: {d} (must be 1..={MAX_VECTOR_DIMENSIONS})")
             }
             Self::LengthMismatch { expected, actual_a, actual_b } => {
-                write!(
-                    f,
-                    "length mismatch: expected {expected}, got A={actual_a}, B={actual_b}"
-                )
+                write!(f, "length mismatch: expected {expected}, got A={actual_a}, B={actual_b}")
             }
         }
     }
@@ -117,10 +114,7 @@ mod tests {
 
     #[test]
     fn rejects_zero_dimensions() {
-        assert_eq!(
-            dot_product_q8_24(0, &[], &[]),
-            Err(VerificationError::InvalidDimensions(0))
-        );
+        assert_eq!(dot_product_q8_24(0, &[], &[]), Err(VerificationError::InvalidDimensions(0)));
     }
 
     #[test]

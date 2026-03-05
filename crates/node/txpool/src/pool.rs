@@ -71,10 +71,7 @@ impl TransactionPool {
         // Enforce hard pool limits before mutating any state.
         // Replacements (same nonce) don't increase pool size, so only
         // check when the tx would be a net-new addition.
-        let is_replacement = inner
-            .by_sender
-            .get(&sender)
-            .map_or(false, |q| q.has_nonce(tx.nonce));
+        let is_replacement = inner.by_sender.get(&sender).is_some_and(|q| q.has_nonce(tx.nonce));
         if !is_replacement {
             let max_total = self.config.max_pending_txs + self.config.max_queued_txs;
             if inner.by_hash.len() >= max_total {
@@ -389,8 +386,8 @@ mod tests {
         let tx0 = make_ordered_tx(sender, 0, 100);
         let tx1 = make_ordered_tx(sender, 1, 100);
 
-        pool.add(tx0.clone()).unwrap();
-        pool.add(tx1.clone()).unwrap();
+        pool.add(tx0).unwrap();
+        pool.add(tx1).unwrap();
 
         assert_eq!(pool.pending_count(), 2);
         assert_eq!(pool.len(), 2);

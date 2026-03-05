@@ -103,11 +103,8 @@ impl CapabilityRegistry {
     #[must_use]
     pub fn list_enabled(&self) -> Vec<CapabilitySummary> {
         let inner = self.inner.read();
-        let mut summaries: Vec<CapabilitySummary> = inner
-            .values()
-            .filter(|c| c.enabled)
-            .map(CapabilitySummary::from)
-            .collect();
+        let mut summaries: Vec<CapabilitySummary> =
+            inner.values().filter(|c| c.enabled).map(CapabilitySummary::from).collect();
         summaries.sort_by(|a, b| a.id.cmp(&b.id));
         summaries
     }
@@ -139,12 +136,9 @@ impl CapabilityRegistry {
     pub fn remove(&self, id: &str) -> Result<Capability, CapabilityError> {
         let mut inner = self.inner.write();
 
-        inner
-            .remove(id)
-            .ok_or_else(|| CapabilityError::NotFound(id.to_string()))
-            .inspect(|cap| {
-                info!(id = %cap.id, "Removed capability");
-            })
+        inner.remove(id).ok_or_else(|| CapabilityError::NotFound(id.to_string())).inspect(|cap| {
+            info!(id = %cap.id, "Removed capability");
+        })
     }
 
     /// Returns the number of registered capabilities.
@@ -169,9 +163,7 @@ fn validate_capability_id(id: &str) -> Result<(), CapabilityError> {
 
     for segment in id.split('.') {
         if segment.is_empty() {
-            return Err(CapabilityError::InvalidId(format!(
-                "empty segment in ID: {id}"
-            )));
+            return Err(CapabilityError::InvalidId(format!("empty segment in ID: {id}")));
         }
         if segment.starts_with('-') || segment.ends_with('-') {
             return Err(CapabilityError::InvalidId(format!(
@@ -203,10 +195,7 @@ mod tests {
                 input: serde_json::json!({"type": "object"}),
                 output: serde_json::json!({"type": "string"}),
             },
-            permissions: vec![Permission {
-                kind: PermissionKind::Execute,
-                scope: "*".to_string(),
-            }],
+            permissions: vec![Permission { kind: PermissionKind::Execute, scope: "*".to_string() }],
             rate_limit: None,
             enabled: true,
         }

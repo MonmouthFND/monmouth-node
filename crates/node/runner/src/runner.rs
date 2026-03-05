@@ -16,9 +16,9 @@ use commonware_parallel::Sequential;
 use commonware_runtime::{Metrics as _, Spawner, buffer::PoolRef, tokio};
 use commonware_utils::{NZU64, NZUsize, acknowledgement::Exact};
 use futures::StreamExt;
+use monmouth_capabilities::CapabilityRegistry;
 use monmouth_domain::{Block, BlockCfg, BootstrapConfig, ConsensusDigest, LedgerEvent, TxCfg};
 use monmouth_executor::{BlockContext, RevmExecutor};
-use monmouth_svm::{SvmExecutor, SvmExecutorConfig, SvmStateStore};
 use monmouth_ledger::{LedgerService, LedgerView};
 use monmouth_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
 use monmouth_reporters::{
@@ -26,10 +26,9 @@ use monmouth_reporters::{
 };
 use monmouth_service::{NodeRunContext, NodeRunner};
 use monmouth_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool};
+use monmouth_svm::{SvmExecutor, SvmExecutorConfig, SvmStateStore};
 use monmouth_transport::NetworkTransport;
 use tracing::{debug, info, trace};
-
-use monmouth_capabilities::CapabilityRegistry;
 
 use crate::{RevmApplication, RunnerError, scheme::ThresholdScheme};
 
@@ -357,10 +356,8 @@ impl NodeRunner for ProductionRunner {
         if let Some(svm_cfg) = &self.svm_config
             && svm_cfg.enabled
         {
-            let svm_executor_config = SvmExecutorConfig {
-                compute_budget: svm_cfg.compute_budget,
-                ..Default::default()
-            };
+            let svm_executor_config =
+                SvmExecutorConfig { compute_budget: svm_cfg.compute_budget, ..Default::default() };
             let svm_executor = SvmExecutor::with_config(svm_executor_config);
             let svm_store = self.svm_store.clone().unwrap_or_default();
             app = app.with_svm(svm_executor, svm_store);

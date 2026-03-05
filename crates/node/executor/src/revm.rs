@@ -225,9 +225,8 @@ impl<S: StateDb> BlockExecutor<S> for RevmExecutor {
                 blk.prevrandao = Some(context.prevrandao);
             });
 
-        let mut evm = ctx
-            .build_mainnet()
-            .with_precompiles(EthPrecompiles::new(self.config.spec_id));
+        let mut evm =
+            ctx.build_mainnet().with_precompiles(EthPrecompiles::new(self.config.spec_id));
 
         let mut outcome = ExecutionOutcome::new();
         let mut cumulative_gas = 0u64;

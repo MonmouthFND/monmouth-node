@@ -1,9 +1,6 @@
 //! Thread-safe attestation registry.
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use alloy_primitives::{Address, B256};
 use monmouth_agent_types::{Attestation, AttestationId};
@@ -126,11 +123,7 @@ impl AttestationRegistry {
         inner
             .by_attester
             .get(&attester)
-            .map(|ids| {
-                ids.iter()
-                    .filter_map(|id| inner.attestations.get(id).cloned())
-                    .collect()
-            })
+            .map(|ids| ids.iter().filter_map(|id| inner.attestations.get(id).cloned()).collect())
             .unwrap_or_default()
     }
 
@@ -141,11 +134,7 @@ impl AttestationRegistry {
         inner
             .by_subject
             .get(&subject_hash)
-            .map(|ids| {
-                ids.iter()
-                    .filter_map(|id| inner.attestations.get(id).cloned())
-                    .collect()
-            })
+            .map(|ids| ids.iter().filter_map(|id| inner.attestations.get(id).cloned()).collect())
             .unwrap_or_default()
     }
 
@@ -159,10 +148,7 @@ impl AttestationRegistry {
     pub fn verify(&self, id: AttestationId) -> Result<bool, AttestationError> {
         let mut inner = self.inner.write();
 
-        let attestation = inner
-            .attestations
-            .get_mut(&id)
-            .ok_or(AttestationError::NotFound(id))?;
+        let attestation = inner.attestations.get_mut(&id).ok_or(AttestationError::NotFound(id))?;
 
         let verified = verify_attestation(attestation)?;
         attestation.verified = verified;
@@ -379,17 +365,10 @@ mod tests {
         assert_eq!(AttestationError::NotFound(att_id(1)).code(), -32880);
         assert_eq!(AttestationError::Duplicate(att_id(1)).code(), -32881);
         assert_eq!(
-            AttestationError::VerificationFailed {
-                id: att_id(1),
-                reason: "x".into(),
-            }
-            .code(),
+            AttestationError::VerificationFailed { id: att_id(1), reason: "x".into() }.code(),
             -32882
         );
-        assert_eq!(
-            AttestationError::UnsupportedType(AttestationType::ZkProof).code(),
-            -32883
-        );
+        assert_eq!(AttestationError::UnsupportedType(AttestationType::ZkProof).code(), -32883);
         assert_eq!(AttestationError::CapacityExceeded(10).code(), -32885);
     }
 }

@@ -34,13 +34,13 @@ pub fn partition_by_vm_target(txs: &[Tx]) -> PartitionedTxs {
             match decode_agent_envelope(&tx.bytes) {
                 Ok(envelope) => match envelope.vm_target {
                     monmouth_agent_types::VmTarget::Svm => {
-                            result.svm.push((i, Bytes::from(envelope.inner_tx)));
-                        }
-                        monmouth_agent_types::VmTarget::Evm => {
+                        result.svm.push((i, Bytes::from(envelope.inner_tx)));
+                    }
+                    monmouth_agent_types::VmTarget::Evm => {
                         // EVM-targeted envelope — pass original bytes to EVM.
                         result.evm.push((i, tx.clone()));
                     }
-                }
+                },
                 Err(_) => {
                     // Failed to decode envelope — treat as EVM tx.
                     result.evm.push((i, tx.clone()));
@@ -158,15 +158,8 @@ mod tests {
 
     #[test]
     fn large_mixed_batch() {
-        let txs: Vec<Tx> = (0..100)
-            .map(|i| {
-                if i % 2 == 0 {
-                    plain_evm_tx()
-                } else {
-                    svm_envelope_tx()
-                }
-            })
-            .collect();
+        let txs: Vec<Tx> =
+            (0..100).map(|i| if i % 2 == 0 { plain_evm_tx() } else { svm_envelope_tx() }).collect();
         let result = partition_by_vm_target(&txs);
         assert_eq!(result.evm.len(), 50);
         assert_eq!(result.svm.len(), 50);
@@ -188,7 +181,8 @@ mod tests {
             intent: None,
             inner_tx: vec![0xaa, 0xbb],
             raw: Vec::new(),
-        }).unwrap();
+        })
+        .unwrap();
         // Outer envelope targeting EVM wrapping the inner envelope
         let outer = monmouth_envelope::AgentTxEnvelope {
             vm_target: VmTarget::Evm,

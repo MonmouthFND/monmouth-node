@@ -22,10 +22,7 @@ pub struct ExecutionConfig {
 
 impl Default for ExecutionConfig {
     fn default() -> Self {
-        Self {
-            gas_limit: DEFAULT_GAS_LIMIT,
-            block_time: DEFAULT_BLOCK_TIME,
-        }
+        Self { gas_limit: DEFAULT_GAS_LIMIT, block_time: DEFAULT_BLOCK_TIME }
     }
 }
 
@@ -50,10 +47,7 @@ mod tests {
 
     #[test]
     fn test_execution_config_serde_roundtrip() {
-        let config = ExecutionConfig {
-            gas_limit: 50_000_000,
-            block_time: 5,
-        };
+        let config = ExecutionConfig { gas_limit: 50_000_000, block_time: 5 };
         let serialized = serde_json::to_string(&config).expect("serialize");
         let deserialized: ExecutionConfig = serde_json::from_str(&serialized).expect("deserialize");
         assert_eq!(config, deserialized);
@@ -61,10 +55,7 @@ mod tests {
 
     #[test]
     fn test_execution_config_toml_roundtrip() {
-        let config = ExecutionConfig {
-            gas_limit: 15_000_000,
-            block_time: 1,
-        };
+        let config = ExecutionConfig { gas_limit: 15_000_000, block_time: 1 };
         let serialized = toml::to_string(&config).expect("serialize toml");
         let deserialized: ExecutionConfig = toml::from_str(&serialized).expect("deserialize toml");
         assert_eq!(config, deserialized);
@@ -92,10 +83,7 @@ mod tests {
 
     #[test]
     fn test_execution_config_clone_and_eq() {
-        let config = ExecutionConfig {
-            gas_limit: 999,
-            block_time: 42,
-        };
+        let config = ExecutionConfig { gas_limit: 999, block_time: 42 };
         assert_eq!(config, config.clone());
         assert_ne!(config, ExecutionConfig::default());
     }

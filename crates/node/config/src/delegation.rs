@@ -52,7 +52,8 @@ mod tests {
 
     #[test]
     fn json_roundtrip() {
-        let config = DelegationConfig { enabled: false, max_sessions: 100, max_session_duration_secs: 3600 };
+        let config =
+            DelegationConfig { enabled: false, max_sessions: 100, max_session_duration_secs: 3600 };
         let json = serde_json::to_string(&config).unwrap();
         let parsed: DelegationConfig = serde_json::from_str(&json).unwrap();
         assert_eq!(config, parsed);

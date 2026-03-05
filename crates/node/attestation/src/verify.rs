@@ -63,9 +63,8 @@ fn verify_secp256k1(attestation: &Attestation) -> Result<(), AttestationError> {
         )));
     }
 
-    let sig = Signature::from_slice(&payload[..64]).map_err(|e| {
-        AttestationError::MalformedPayload(format!("invalid signature bytes: {e}"))
-    })?;
+    let sig = Signature::from_slice(&payload[..64])
+        .map_err(|e| AttestationError::MalformedPayload(format!("invalid signature bytes: {e}")))?;
 
     let recovery_id = RecoveryId::from_byte(payload[64]).ok_or_else(|| {
         AttestationError::MalformedPayload("invalid recovery id byte".to_string())
@@ -220,7 +219,10 @@ mod tests {
         };
 
         let err = verify_attestation(&attestation).unwrap_err();
-        assert!(matches!(err, AttestationError::UnsupportedType(AttestationType::Ed25519Signature)));
+        assert!(matches!(
+            err,
+            AttestationError::UnsupportedType(AttestationType::Ed25519Signature)
+        ));
     }
 
     #[test]

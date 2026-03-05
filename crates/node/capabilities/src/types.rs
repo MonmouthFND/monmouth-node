@@ -115,10 +115,7 @@ mod tests {
                 input: serde_json::json!({"type": "object"}),
                 output: serde_json::json!({"type": "string"}),
             },
-            permissions: vec![Permission {
-                kind: PermissionKind::Execute,
-                scope: "*".to_string(),
-            }],
+            permissions: vec![Permission { kind: PermissionKind::Execute, scope: "*".to_string() }],
             rate_limit: Some(RateLimit { max_requests: 100, window_secs: 60 }),
             enabled: true,
         };

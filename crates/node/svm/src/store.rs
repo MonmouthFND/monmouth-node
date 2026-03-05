@@ -11,8 +11,10 @@ use std::{
 
 use alloy_primitives::{B256, keccak256};
 
-use crate::SvmError;
-use crate::changeset::{SvmAccountUpdate, SvmChangeSet};
+use crate::{
+    SvmError,
+    changeset::{SvmAccountUpdate, SvmChangeSet},
+};
 
 /// Default maximum number of accounts the SVM store will hold.
 pub const DEFAULT_MAX_ACCOUNTS: usize = 1_000_000;
@@ -78,7 +80,11 @@ impl SvmStateStore {
             }
         }
         if dropped > 0 {
-            tracing::warn!(dropped, max = self.max_accounts, "apply_changes: new accounts dropped (at capacity)");
+            tracing::warn!(
+                dropped,
+                max = self.max_accounts,
+                "apply_changes: new accounts dropped (at capacity)"
+            );
         }
         Ok(written)
     }
@@ -143,10 +149,8 @@ impl SvmStateStore {
         use solana_account::{Account, AccountSharedData};
         use solana_pubkey::Pubkey;
 
-        let accounts = self
-            .accounts
-            .read()
-            .map_err(|e| SvmError::LockPoisoned(format!("to_bridge: {e}")))?;
+        let accounts =
+            self.accounts.read().map_err(|e| SvmError::LockPoisoned(format!("to_bridge: {e}")))?;
         let mut map = BTreeMap::new();
 
         for (key, update) in accounts.iter() {
@@ -280,10 +284,7 @@ mod tests {
         let mut changes2 = SvmChangeSet::new();
         changes2.insert([1u8; 32], dummy_update(200));
 
-        assert_ne!(
-            store.compute_root(&changes1).unwrap(),
-            store.compute_root(&changes2).unwrap()
-        );
+        assert_ne!(store.compute_root(&changes1).unwrap(), store.compute_root(&changes2).unwrap());
     }
 
     #[test]

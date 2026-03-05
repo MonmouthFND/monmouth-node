@@ -1,9 +1,6 @@
 //! Thread-safe coordination registry with job lifecycle and escrow.
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use alloy_primitives::B256;
 use monmouth_agent_types::{AgentId, EscrowEntry, Job, JobId, JobStatus};
@@ -105,17 +102,10 @@ impl CoordinationRegistry {
     ///
     /// Returns an error if the job is not found, not in `Proposed` status,
     /// or the executor is the proposer.
-    pub fn accept(
-        &self,
-        job_id: JobId,
-        executor: AgentId,
-    ) -> Result<(), CoordinationError> {
+    pub fn accept(&self, job_id: JobId, executor: AgentId) -> Result<(), CoordinationError> {
         let mut inner = self.inner.write();
 
-        let job = inner
-            .jobs
-            .get_mut(&job_id)
-            .ok_or(CoordinationError::JobNotFound(job_id))?;
+        let job = inner.jobs.get_mut(&job_id).ok_or(CoordinationError::JobNotFound(job_id))?;
 
         if job.status != JobStatus::Proposed {
             return Err(CoordinationError::InvalidTransition {
@@ -131,12 +121,8 @@ impl CoordinationRegistry {
         job.executor = Some(executor);
 
         // Create escrow entry.
-        let escrow = EscrowEntry {
-            job_id,
-            holder: job.proposer,
-            amount: job.payment_wei,
-            released: false,
-        };
+        let escrow =
+            EscrowEntry { job_id, holder: job.proposer, amount: job.payment_wei, released: false };
         job.escrow_held = job.payment_wei;
 
         inner.by_executor.entry(executor).or_default().push(job_id);
@@ -160,10 +146,7 @@ impl CoordinationRegistry {
     ) -> Result<(), CoordinationError> {
         let mut inner = self.inner.write();
 
-        let job = inner
-            .jobs
-            .get_mut(&job_id)
-            .ok_or(CoordinationError::JobNotFound(job_id))?;
+        let job = inner.jobs.get_mut(&job_id).ok_or(CoordinationError::JobNotFound(job_id))?;
 
         if job.status != JobStatus::Accepted {
             return Err(CoordinationError::InvalidTransition {
@@ -199,10 +182,7 @@ impl CoordinationRegistry {
     ) -> Result<(), CoordinationError> {
         let mut inner = self.inner.write();
 
-        let job = inner
-            .jobs
-            .get_mut(&job_id)
-            .ok_or(CoordinationError::JobNotFound(job_id))?;
+        let job = inner.jobs.get_mut(&job_id).ok_or(CoordinationError::JobNotFound(job_id))?;
 
         if job.status != JobStatus::Executing {
             return Err(CoordinationError::InvalidTransition {
@@ -231,17 +211,10 @@ impl CoordinationRegistry {
     ///
     /// Returns an error if the job is not in `Completed` status or the caller
     /// is not the proposer.
-    pub fn dispute(
-        &self,
-        job_id: JobId,
-        proposer: AgentId,
-    ) -> Result<(), CoordinationError> {
+    pub fn dispute(&self, job_id: JobId, proposer: AgentId) -> Result<(), CoordinationError> {
         let mut inner = self.inner.write();
 
-        let job = inner
-            .jobs
-            .get_mut(&job_id)
-            .ok_or(CoordinationError::JobNotFound(job_id))?;
+        let job = inner.jobs.get_mut(&job_id).ok_or(CoordinationError::JobNotFound(job_id))?;
 
         if job.status != JobStatus::Completed {
             return Err(CoordinationError::InvalidTransition {
@@ -269,17 +242,10 @@ impl CoordinationRegistry {
     /// # Errors
     ///
     /// Returns an error if the job is not in a settleable state.
-    pub fn settle(
-        &self,
-        job_id: JobId,
-        caller: AgentId,
-    ) -> Result<EscrowEntry, CoordinationError> {
+    pub fn settle(&self, job_id: JobId, caller: AgentId) -> Result<EscrowEntry, CoordinationError> {
         let mut inner = self.inner.write();
 
-        let job = inner
-            .jobs
-            .get_mut(&job_id)
-            .ok_or(CoordinationError::JobNotFound(job_id))?;
+        let job = inner.jobs.get_mut(&job_id).ok_or(CoordinationError::JobNotFound(job_id))?;
 
         if job.status != JobStatus::Completed && job.status != JobStatus::Disputed {
             return Err(CoordinationError::InvalidTransition {
@@ -306,12 +272,7 @@ impl CoordinationRegistry {
             return Ok(escrow.clone());
         }
 
-        Ok(EscrowEntry {
-            job_id,
-            holder: proposer,
-            amount: escrow_held,
-            released: true,
-        })
+        Ok(EscrowEntry { job_id, holder: proposer, amount: escrow_held, released: true })
     }
 
     /// Cancel a proposed or accepted job.
@@ -321,17 +282,10 @@ impl CoordinationRegistry {
     /// # Errors
     ///
     /// Returns an error if the job is past the cancellable states.
-    pub fn cancel(
-        &self,
-        job_id: JobId,
-        proposer: AgentId,
-    ) -> Result<(), CoordinationError> {
+    pub fn cancel(&self, job_id: JobId, proposer: AgentId) -> Result<(), CoordinationError> {
         let mut inner = self.inner.write();
 
-        let job = inner
-            .jobs
-            .get_mut(&job_id)
-            .ok_or(CoordinationError::JobNotFound(job_id))?;
+        let job = inner.jobs.get_mut(&job_id).ok_or(CoordinationError::JobNotFound(job_id))?;
 
         if job.status != JobStatus::Proposed && job.status != JobStatus::Accepted {
             return Err(CoordinationError::InvalidTransition {

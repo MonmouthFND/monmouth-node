@@ -1,9 +1,6 @@
 //! Thread-safe subscription registry with trigger evaluation.
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use alloy_primitives::{Address, B256, U256};
 use monmouth_agent_types::{AgentId, ConditionalSubscription, SubscriptionId, TriggerCondition};
@@ -55,10 +52,7 @@ pub struct SubscriptionRegistry {
 impl Default for SubscriptionRegistry {
     fn default() -> Self {
         Self {
-            inner: Arc::new(RwLock::new(Inner {
-                subs: HashMap::new(),
-                by_owner: HashMap::new(),
-            })),
+            inner: Arc::new(RwLock::new(Inner { subs: HashMap::new(), by_owner: HashMap::new() })),
             max_subscriptions: DEFAULT_MAX_SUBSCRIPTIONS,
         }
     }
@@ -84,10 +78,7 @@ impl SubscriptionRegistry {
     ///
     /// Returns an error if the registry is at capacity or the subscription
     /// ID is a duplicate.
-    pub fn subscribe(
-        &self,
-        sub: ConditionalSubscription,
-    ) -> Result<(), SubscriptionError> {
+    pub fn subscribe(&self, sub: ConditionalSubscription) -> Result<(), SubscriptionError> {
         let mut inner = self.inner.write();
 
         if inner.subs.len() >= self.max_subscriptions {
@@ -127,16 +118,10 @@ impl SubscriptionRegistry {
     ) -> Result<(), SubscriptionError> {
         let mut inner = self.inner.write();
 
-        let sub = inner
-            .subs
-            .get_mut(&sub_id)
-            .ok_or(SubscriptionError::NotFound(sub_id))?;
+        let sub = inner.subs.get_mut(&sub_id).ok_or(SubscriptionError::NotFound(sub_id))?;
 
         if sub.owner != caller {
-            return Err(SubscriptionError::Unauthorized {
-                subscription_id: sub_id,
-                agent: caller,
-            });
+            return Err(SubscriptionError::Unauthorized { subscription_id: sub_id, agent: caller });
         }
 
         debug!(sub_id = %sub_id, "Subscription deactivated");
@@ -185,14 +170,10 @@ impl SubscriptionRegistry {
     fn matches_condition(condition: &TriggerCondition, ctx: &BlockContext) -> bool {
         match condition {
             TriggerCondition::BalanceBelow { address, threshold } => {
-                ctx.balances
-                    .get(address)
-                    .is_some_and(|balance| balance < threshold)
+                ctx.balances.get(address).is_some_and(|balance| balance < threshold)
             }
             TriggerCondition::BalanceAbove { address, threshold } => {
-                ctx.balances
-                    .get(address)
-                    .is_some_and(|balance| balance > threshold)
+                ctx.balances.get(address).is_some_and(|balance| balance > threshold)
             }
             TriggerCondition::StorageChanged { address, slot } => {
                 ctx.storage_changes.iter().any(|(a, s)| a == address && s == slot)
@@ -225,13 +206,7 @@ impl SubscriptionRegistry {
     /// List all active subscriptions.
     #[must_use]
     pub fn list_active(&self) -> Vec<ConditionalSubscription> {
-        self.inner
-            .read()
-            .subs
-            .values()
-            .filter(|s| s.active)
-            .cloned()
-            .collect()
+        self.inner.read().subs.values().filter(|s| s.active).cloned().collect()
     }
 
     /// Returns the total number of subscriptions.
@@ -300,12 +275,7 @@ mod tests {
     #[test]
     fn subscribe_and_get() {
         let reg = SubscriptionRegistry::new();
-        let sub = test_sub(
-            sub_id(1),
-            owner_a(),
-            TriggerCondition::BlockNumber { block: 100 },
-            5,
-        );
+        let sub = test_sub(sub_id(1), owner_a(), TriggerCondition::BlockNumber { block: 100 }, 5);
         reg.subscribe(sub.clone()).unwrap();
 
         let retrieved = reg.get(sub_id(1)).unwrap();
@@ -316,12 +286,7 @@ mod tests {
     #[test]
     fn duplicate_rejected() {
         let reg = SubscriptionRegistry::new();
-        let sub = test_sub(
-            sub_id(1),
-            owner_a(),
-            TriggerCondition::BlockNumber { block: 100 },
-            5,
-        );
+        let sub = test_sub(sub_id(1), owner_a(), TriggerCondition::BlockNumber { block: 100 }, 5);
         reg.subscribe(sub.clone()).unwrap();
 
         let err = reg.subscribe(sub).unwrap_err();
@@ -364,10 +329,7 @@ mod tests {
         reg.subscribe(test_sub(
             sub_id(1),
             owner_a(),
-            TriggerCondition::BalanceBelow {
-                address: addr(0x01),
-                threshold: U256::from(1000u64),
-            },
+            TriggerCondition::BalanceBelow { address: addr(0x01), threshold: U256::from(1000u64) },
             3,
         ))
         .unwrap();
@@ -393,10 +355,7 @@ mod tests {
         reg.subscribe(test_sub(
             sub_id(1),
             owner_a(),
-            TriggerCondition::BalanceAbove {
-                address: addr(0x01),
-                threshold: U256::from(1000u64),
-            },
+            TriggerCondition::BalanceAbove { address: addr(0x01), threshold: U256::from(1000u64) },
             3,
         ))
         .unwrap();

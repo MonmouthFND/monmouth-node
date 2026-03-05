@@ -46,21 +46,13 @@ pub fn register_builtins(processor: &TransactionBatchProcessor<MonmouthForkGraph
     // BPF Loader (Upgradeable) — uses declare_builtin_function! macro
     processor.add_builtin(
         bpf_loader_upgradeable_id(),
-        ProgramCacheEntry::new_builtin(
-            0,
-            0,
-            solana_bpf_loader_program::Entrypoint::vm,
-        ),
+        ProgramCacheEntry::new_builtin(0, 0, solana_bpf_loader_program::Entrypoint::vm),
     );
 
     // Compute Budget Program
     processor.add_builtin(
         compute_budget_program_id(),
-        ProgramCacheEntry::new_builtin(
-            0,
-            0,
-            solana_compute_budget_program::Entrypoint::vm,
-        ),
+        ProgramCacheEntry::new_builtin(0, 0, solana_compute_budget_program::Entrypoint::vm),
     );
 }
 
