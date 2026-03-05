@@ -1,3 +1,6 @@
+// solana-svm 3.1.9 marks all public APIs as #[deprecated] pending agave-unstable-api feature in v4.0.
+#![allow(deprecated)]
+
 //! Monmouth SVM Module — native Solana Virtual Machine execution.
 //!
 //! Provides a second execution environment alongside REVM, enabling

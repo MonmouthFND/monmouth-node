@@ -69,10 +69,7 @@ impl SvmStateStore {
         let mut written = 0usize;
         let mut dropped = 0usize;
         for (pubkey, update) in &changes.accounts {
-            if accounts.contains_key(pubkey) {
-                accounts.insert(*pubkey, update.clone());
-                written += 1;
-            } else if accounts.len() < self.max_accounts {
+            if accounts.contains_key(pubkey) || accounts.len() < self.max_accounts {
                 accounts.insert(*pubkey, update.clone());
                 written += 1;
             } else {
