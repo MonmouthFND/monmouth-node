@@ -26,6 +26,10 @@ pub enum ConsensusError {
     #[error("validation failed: {0}")]
     Validation(String),
 
+    /// Block height would overflow u64.
+    #[error("block height overflow")]
+    HeightOverflow,
+
     /// State root mismatch.
     #[error("state root mismatch: expected {expected:?}, got {actual:?}")]
     StateRootMismatch {

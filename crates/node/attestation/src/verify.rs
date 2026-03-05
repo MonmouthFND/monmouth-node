@@ -8,6 +8,7 @@ use alloy_primitives::Address;
 use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 use monmouth_agent_types::{Attestation, AttestationType};
 use sha3::{Digest, Keccak256};
+use tracing::warn;
 
 use crate::AttestationError;
 
@@ -18,26 +19,35 @@ use crate::AttestationError;
 /// 65-byte recoverable signature `[r (32) | s (32) | v (1)]` over the
 /// subject hash.
 ///
-/// For other attestation types, returns `Ok(false)` indicating the
-/// attestation was accepted but not cryptographically verified.
+/// For other attestation types, returns `Err(UnsupportedType)` —
+/// unverified attestations are rejected until a verifier plugin is registered.
 ///
 /// # Returns
 ///
-/// `Ok(true)` if verified, `Ok(false)` if accepted but unverifiable.
+/// `Ok(true)` if cryptographically verified.
 ///
 /// # Errors
 ///
-/// Returns an error if the payload is malformed or verification fails.
+/// Returns an error if the type is unsupported, the payload is malformed,
+/// or verification fails.
 pub fn verify_attestation(attestation: &Attestation) -> Result<bool, AttestationError> {
     match attestation.attestation_type {
         AttestationType::Secp256k1Signature => {
             verify_secp256k1(attestation)?;
             Ok(true)
         }
-        // Accept but don't verify — these need external verifier plugins.
-        AttestationType::Ed25519Signature
+        // Reject unverified types — these need external verifier plugins.
+        typ @ (AttestationType::Ed25519Signature
         | AttestationType::TeeQuote
-        | AttestationType::ZkProof => Ok(false),
+        | AttestationType::ZkProof) => {
+            warn!(
+                id = ?attestation.id,
+                attester = ?attestation.attester,
+                attestation_type = ?typ,
+                "rejecting attestation — no verifier for this type"
+            );
+            Err(AttestationError::UnsupportedType(typ))
+        }
     }
 }
 
@@ -198,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn ed25519_accepted_unverified() {
+    fn ed25519_rejected_unsupported() {
         let attestation = Attestation {
             id: AttestationId(B256::repeat_byte(1)),
             attestation_type: AttestationType::Ed25519Signature,
@@ -209,12 +219,12 @@ mod tests {
             verified: false,
         };
 
-        // Accepted but not verified.
-        assert!(!verify_attestation(&attestation).unwrap());
+        let err = verify_attestation(&attestation).unwrap_err();
+        assert!(matches!(err, AttestationError::UnsupportedType(AttestationType::Ed25519Signature)));
     }
 
     #[test]
-    fn tee_quote_accepted_unverified() {
+    fn tee_quote_rejected_unsupported() {
         let attestation = Attestation {
             id: AttestationId(B256::repeat_byte(1)),
             attestation_type: AttestationType::TeeQuote,
@@ -225,11 +235,12 @@ mod tests {
             verified: false,
         };
 
-        assert!(!verify_attestation(&attestation).unwrap());
+        let err = verify_attestation(&attestation).unwrap_err();
+        assert!(matches!(err, AttestationError::UnsupportedType(AttestationType::TeeQuote)));
     }
 
     #[test]
-    fn zk_proof_accepted_unverified() {
+    fn zk_proof_rejected_unsupported() {
         let attestation = Attestation {
             id: AttestationId(B256::repeat_byte(1)),
             attestation_type: AttestationType::ZkProof,
@@ -240,6 +251,7 @@ mod tests {
             verified: false,
         };
 
-        assert!(!verify_attestation(&attestation).unwrap());
+        let err = verify_attestation(&attestation).unwrap_err();
+        assert!(matches!(err, AttestationError::UnsupportedType(AttestationType::ZkProof)));
     }
 }

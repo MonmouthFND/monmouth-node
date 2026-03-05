@@ -137,6 +137,7 @@ mod tests {
             Ok(Block {
                 parent: monmouth_domain::BlockId(alloy_primitives::B256::ZERO),
                 height: 0,
+                timestamp: 0,
                 prevrandao: alloy_primitives::B256::ZERO,
                 state_root: monmouth_domain::StateRoot(alloy_primitives::B256::ZERO),
                 svm_state_root: None,
@@ -168,6 +169,7 @@ mod tests {
         let block = Block {
             parent: monmouth_domain::BlockId(alloy_primitives::B256::ZERO),
             height: 0,
+            timestamp: 0,
             prevrandao: alloy_primitives::B256::ZERO,
             state_root: monmouth_domain::StateRoot(alloy_primitives::B256::ZERO),
             svm_state_root: None,

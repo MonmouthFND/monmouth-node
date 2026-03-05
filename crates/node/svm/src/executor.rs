@@ -106,6 +106,7 @@ impl SvmExecutor {
     /// * `block_height` - Current block height (maps to Solana slot)
     /// * `block_timestamp` - Block timestamp (unix seconds)
     /// * `txs` - Sanitized transactions to execute
+    /// * `prevrandao` - Optional 32-byte randomness mixed into the blockhash
     ///
     /// # Returns
     /// Execution outcome containing state changes and per-tx results.
@@ -115,6 +116,7 @@ impl SvmExecutor {
         block_height: u64,
         block_timestamp: u64,
         txs: &[T],
+        prevrandao: Option<[u8; 32]>,
     ) -> Result<SvmExecutionOutcome, SvmError> {
         if txs.is_empty() {
             return Ok(SvmExecutionOutcome::default());
@@ -133,7 +135,7 @@ impl SvmExecutor {
         processor
             .global_program_cache
             .write()
-            .unwrap()
+            .map_err(|e| SvmError::LockPoisoned(format!("program cache: {e}")))?
             .set_fork_graph(Arc::downgrade(&self.fork_graph));
 
         // Register built-in programs
@@ -147,12 +149,22 @@ impl SvmExecutor {
 
         self.fill_sysvar_cache(&processor, &clock, &rent, &epoch_schedule);
 
-        // Derive a deterministic blockhash from the block height.
-        // Use the raw height bytes padded to 32 bytes — simple and deterministic.
-        let mut hash_bytes = [0u8; 32];
-        hash_bytes[..8].copy_from_slice(&block_height.to_le_bytes());
-        hash_bytes[8..16].copy_from_slice(&block_timestamp.to_le_bytes());
-        let blockhash = Hash::new_from_array(hash_bytes);
+        // Derive a deterministic blockhash from block height, timestamp, and prevrandao.
+        // Mixing prevrandao ensures the blockhash is unpredictable before the block is built.
+        let blockhash = {
+            use sha2::{Sha256, Digest};
+            let mut hasher = Sha256::new();
+            hasher.update(b"monmouth-svm-blockhash-v1");
+            hasher.update(block_height.to_le_bytes());
+            hasher.update(block_timestamp.to_le_bytes());
+            if let Some(rand) = prevrandao {
+                hasher.update(rand);
+            }
+            let digest = hasher.finalize();
+            let mut hash_bytes = [0u8; 32];
+            hash_bytes.copy_from_slice(&digest);
+            Hash::new_from_array(hash_bytes)
+        };
 
         let environment = TransactionProcessingEnvironment {
             blockhash,
@@ -376,7 +388,7 @@ mod tests {
         let executor = SvmExecutor::new();
         let bridge = SvmAccountBridge::empty();
         let empty: Vec<solana_transaction::sanitized::SanitizedTransaction> = vec![];
-        let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
+        let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty, None).unwrap();
         assert!(outcome.changes.is_empty());
         assert!(outcome.tx_results.is_empty());
         assert_eq!(outcome.compute_units_used, 0);

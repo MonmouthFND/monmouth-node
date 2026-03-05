@@ -75,7 +75,7 @@ mod tests {
             inner_tx: vec![0xaa, 0xbb, 0xcc],
             raw: Vec::new(),
         };
-        Tx::new(Bytes::from(encode_agent_envelope(&envelope)))
+        Tx::new(Bytes::from(encode_agent_envelope(&envelope).unwrap()))
     }
 
     fn evm_envelope_tx() -> Tx {
@@ -87,7 +87,7 @@ mod tests {
             inner_tx: vec![0x02, 0xf8],
             raw: Vec::new(),
         };
-        Tx::new(Bytes::from(encode_agent_envelope(&envelope)))
+        Tx::new(Bytes::from(encode_agent_envelope(&envelope).unwrap()))
     }
 
     #[test]
@@ -188,7 +188,7 @@ mod tests {
             intent: None,
             inner_tx: vec![0xaa, 0xbb],
             raw: Vec::new(),
-        });
+        }).unwrap();
         // Outer envelope targeting EVM wrapping the inner envelope
         let outer = monmouth_envelope::AgentTxEnvelope {
             vm_target: VmTarget::Evm,
@@ -198,7 +198,7 @@ mod tests {
             inner_tx: inner_bytes,
             raw: Vec::new(),
         };
-        let tx = Tx::new(Bytes::from(encode_agent_envelope(&outer)));
+        let tx = Tx::new(Bytes::from(encode_agent_envelope(&outer).unwrap()));
         let result = partition_by_vm_target(&[tx]);
         // Outer says EVM, so it goes to EVM regardless of inner
         assert_eq!(result.evm.len(), 1);

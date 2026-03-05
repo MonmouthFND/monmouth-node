@@ -10,7 +10,7 @@ use alloy_eips::eip2718::Decodable2718;
 use alloy_primitives::{Address, B256, Bytes};
 use monmouth_domain::{Tx, TxId};
 use parking_lot::RwLock;
-use tracing::{debug, trace, warn};
+use tracing::{debug, trace};
 
 use crate::{
     config::PoolConfig,
@@ -67,6 +67,21 @@ impl TransactionPool {
         }
 
         let sender = tx.sender;
+
+        // Enforce hard pool limits before mutating any state.
+        // Replacements (same nonce) don't increase pool size, so only
+        // check when the tx would be a net-new addition.
+        let is_replacement = inner
+            .by_sender
+            .get(&sender)
+            .map_or(false, |q| q.has_nonce(tx.nonce));
+        if !is_replacement {
+            let max_total = self.config.max_pending_txs + self.config.max_queued_txs;
+            if inner.by_hash.len() >= max_total {
+                return Err(TxPoolError::PoolFull);
+            }
+        }
+
         let queue =
             inner.by_sender.entry(sender).or_insert_with(|| SenderQueue::new(sender, tx.nonce));
 
@@ -84,22 +99,6 @@ impl TransactionPool {
 
         inner.by_hash.insert(tx.hash, tx);
         inner.update_counts();
-
-        if inner.pending_count > self.config.max_pending_txs {
-            warn!(
-                count = inner.pending_count,
-                max = self.config.max_pending_txs,
-                "pool exceeds pending limit"
-            );
-        }
-
-        if inner.queued_count > self.config.max_queued_txs {
-            warn!(
-                count = inner.queued_count,
-                max = self.config.max_queued_txs,
-                "pool exceeds queued limit"
-            );
-        }
 
         Ok(())
     }

@@ -5,7 +5,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 
-use std::{collections::BTreeSet, fmt, sync::Arc};
+use std::{collections::{BTreeMap, BTreeSet}, fmt, sync::Arc};
 
 use alloy_primitives::{Address, B256, U256};
 use commonware_cryptography::Committable as _;
@@ -70,6 +70,8 @@ struct LedgerState {
     snapshots: InMemorySnapshotStore<OverlayState<QmdbState>>,
     /// Cached seeds for each digest used to compute prevrandao.
     seeds: InMemorySeedTracker,
+    /// Recent blocks indexed by digest for validation lookups.
+    blocks: BTreeMap<ConsensusDigest, Block>,
     /// Underlying QMDB ledger service for persistence.
     qmdb: QmdbLedger,
 }
@@ -98,6 +100,7 @@ impl LedgerView {
         let genesis_block = Block {
             parent: BlockId(B256::ZERO),
             height: 0,
+            timestamp: 0,
             prevrandao: B256::ZERO,
             state_root: genesis_root,
             svm_state_root: None,
@@ -116,11 +119,15 @@ impl LedgerView {
         snapshots.insert(genesis_digest, genesis_snapshot);
         snapshots.mark_persisted(&[genesis_digest]);
 
+        let mut blocks = BTreeMap::new();
+        blocks.insert(genesis_digest, genesis_block.clone());
+
         Ok(Self {
             inner: Arc::new(Mutex::new(LedgerState {
                 mempool: InMemoryMempool::new(),
                 snapshots,
                 seeds: InMemorySeedTracker::new(genesis_digest),
+                blocks,
                 qmdb,
             })),
             genesis_block,
@@ -169,6 +176,18 @@ impl LedgerView {
     pub async fn set_seed(&self, digest: ConsensusDigest, seed_hash: B256) {
         let inner = self.inner.lock().await;
         inner.seeds.insert(digest, seed_hash);
+    }
+
+    /// Store a block by its digest for later lookup.
+    pub async fn store_block(&self, digest: ConsensusDigest, block: Block) {
+        let mut inner = self.inner.lock().await;
+        inner.blocks.insert(digest, block);
+    }
+
+    /// Retrieve a previously stored block by digest.
+    pub async fn query_block(&self, digest: ConsensusDigest) -> Option<Block> {
+        let inner = self.inner.lock().await;
+        inner.blocks.get(&digest).cloned()
     }
 
     /// Fetch the parent snapshot for a given digest.
@@ -340,6 +359,16 @@ impl LedgerService {
     pub async fn set_seed(&self, digest: ConsensusDigest, seed_hash: B256) {
         self.view.set_seed(digest, seed_hash).await;
         self.publish(LedgerEvent::SeedUpdated(digest, seed_hash));
+    }
+
+    /// Store a block by its digest.
+    pub async fn store_block(&self, digest: ConsensusDigest, block: Block) {
+        self.view.store_block(digest, block).await;
+    }
+
+    /// Retrieve a previously stored block by digest.
+    pub async fn query_block(&self, digest: ConsensusDigest) -> Option<Block> {
+        self.view.query_block(digest).await
     }
 
     /// Fetch the snapshot of a parent digest.
@@ -533,6 +562,7 @@ mod tests {
         let block = Block {
             parent: parent.id(),
             height,
+            timestamp: height, // test: use height as timestamp
             prevrandao: PREVRANDAO,
             state_root: root,
             svm_state_root: None,

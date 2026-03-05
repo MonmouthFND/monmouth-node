@@ -48,9 +48,14 @@ fn funded_bridge(accounts: Vec<(Pubkey, u64)>) -> SvmAccountBridge {
 }
 
 fn block_hash(height: u64, timestamp: u64) -> Hash {
+    use sha2::{Sha256, Digest};
+    let mut hasher = Sha256::new();
+    hasher.update(b"monmouth-svm-blockhash-v1");
+    hasher.update(height.to_le_bytes());
+    hasher.update(timestamp.to_le_bytes());
+    let digest = hasher.finalize();
     let mut h = [0u8; 32];
-    h[..8].copy_from_slice(&height.to_le_bytes());
-    h[8..16].copy_from_slice(&timestamp.to_le_bytes());
+    h.copy_from_slice(&digest);
     Hash::new_from_array(h)
 }
 
@@ -86,15 +91,15 @@ fn state_store_persists_across_blocks() {
     let mut block1_changes = SvmChangeSet::new();
     block1_changes.insert([1u8; 32], dummy_update(1_000));
     block1_changes.insert([2u8; 32], dummy_update(2_000));
-    let root1 = store.compute_root(&block1_changes);
-    store.apply_changes(&block1_changes);
+    let root1 = store.compute_root(&block1_changes).unwrap();
+    store.apply_changes(&block1_changes).unwrap();
 
     // Block 2: modify one account, add a new one
     let mut block2_changes = SvmChangeSet::new();
     block2_changes.insert([1u8; 32], dummy_update(1_500)); // modified
     block2_changes.insert([3u8; 32], dummy_update(3_000)); // new
-    let root2 = store.compute_root(&block2_changes);
-    store.apply_changes(&block2_changes);
+    let root2 = store.compute_root(&block2_changes).unwrap();
+    store.apply_changes(&block2_changes).unwrap();
 
     // Roots must differ (state changed)
     assert_ne!(root1, root2);
@@ -113,17 +118,17 @@ fn state_root_includes_all_accumulated_state() {
     // Apply block 1
     let mut cs1 = SvmChangeSet::new();
     cs1.insert([1u8; 32], dummy_update(100));
-    store.apply_changes(&cs1);
+    store.apply_changes(&cs1).unwrap();
 
     // Root after block 2 should include block 1's account even if block 2
     // only modifies a different account.
     let mut cs2 = SvmChangeSet::new();
     cs2.insert([2u8; 32], dummy_update(200));
-    let root_with_both = store.compute_root(&cs2);
+    let root_with_both = store.compute_root(&cs2).unwrap();
 
     // A fresh store with only account 2 should produce a different root.
     let fresh = SvmStateStore::new();
-    let root_only_two = fresh.compute_root(&cs2);
+    let root_only_two = fresh.compute_root(&cs2).unwrap();
 
     assert_ne!(root_with_both, root_only_two);
 }
@@ -136,7 +141,7 @@ fn program_account_persists_across_blocks() {
     let program_key = [42u8; 32];
     let mut deploy = SvmChangeSet::new();
     deploy.insert(program_key, program_update(256));
-    store.apply_changes(&deploy);
+    store.apply_changes(&deploy).unwrap();
 
     // Block N+1: verify the program is still there
     let acct = store.get_account(&program_key).unwrap();
@@ -159,8 +164,8 @@ fn same_changes_produce_same_root_on_independent_stores() {
     let store_a = SvmStateStore::new();
     let store_b = SvmStateStore::new();
 
-    let root_a = store_a.compute_root(&changes);
-    let root_b = store_b.compute_root(&changes);
+    let root_a = store_a.compute_root(&changes).unwrap();
+    let root_b = store_b.compute_root(&changes).unwrap();
 
     assert_eq!(root_a, root_b);
 }
@@ -178,15 +183,15 @@ fn order_of_application_produces_same_final_root() {
     cs2.insert([2u8; 32], dummy_update(200));
 
     // Store A: apply cs1 then cs2
-    store_a.apply_changes(&cs1);
-    store_a.apply_changes(&cs2);
+    store_a.apply_changes(&cs1).unwrap();
+    store_a.apply_changes(&cs2).unwrap();
 
     // Store B: apply cs2 then cs1
-    store_b.apply_changes(&cs2);
-    store_b.apply_changes(&cs1);
+    store_b.apply_changes(&cs2).unwrap();
+    store_b.apply_changes(&cs1).unwrap();
 
-    let root_a = store_a.compute_root(&SvmChangeSet::new());
-    let root_b = store_b.compute_root(&SvmChangeSet::new());
+    let root_a = store_a.compute_root(&SvmChangeSet::new()).unwrap();
+    let root_b = store_b.compute_root(&SvmChangeSet::new()).unwrap();
 
     assert_eq!(root_a, root_b);
 }
@@ -199,8 +204,8 @@ fn identical_executor_runs_produce_identical_outcomes() {
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
 
-    let out_a = exec_a.execute(&bridge, 10, 1_700_000_000, &empty).unwrap();
-    let out_b = exec_b.execute(&bridge, 10, 1_700_000_000, &empty).unwrap();
+    let out_a = exec_a.execute(&bridge, 10, 1_700_000_000, &empty, None).unwrap();
+    let out_b = exec_b.execute(&bridge, 10, 1_700_000_000, &empty, None).unwrap();
 
     assert_eq!(out_a.compute_units_used, out_b.compute_units_used);
     assert_eq!(out_a.changes, out_b.changes);
@@ -222,8 +227,8 @@ fn deterministic_transfer_results() {
     let exec_a = SvmExecutor::new();
     let exec_b = SvmExecutor::new();
 
-    let out_a = exec_a.execute(&make_bridge(), height, ts, &[stx.clone()]).unwrap();
-    let out_b = exec_b.execute(&make_bridge(), height, ts, &[stx]).unwrap();
+    let out_a = exec_a.execute(&make_bridge(), height, ts, &[stx.clone()], None).unwrap();
+    let out_b = exec_b.execute(&make_bridge(), height, ts, &[stx], None).unwrap();
 
     assert_eq!(out_a.tx_results.len(), out_b.tx_results.len());
     assert_eq!(out_a.tx_results[0].success, out_b.tx_results[0].success);
@@ -249,7 +254,7 @@ fn zero_compute_budget_does_not_panic() {
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
     // Should not panic even with 0 budget on empty batch
-    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
+    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty, None).unwrap();
     assert!(outcome.tx_results.is_empty());
 }
 
@@ -261,7 +266,7 @@ fn large_compute_budget_accepted() {
 
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
-    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
+    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty, None).unwrap();
     assert_eq!(outcome.compute_units_used, 0);
 }
 
@@ -282,15 +287,15 @@ fn executor_changes_applied_to_store_produce_nonzero_root() {
     let stx = SanitizedTransaction::from_transaction_for_tests(tx);
 
     let executor = SvmExecutor::new();
-    let outcome = executor.execute(&bridge, height, ts, &[stx]).unwrap();
+    let outcome = executor.execute(&bridge, height, ts, &[stx], None).unwrap();
 
     // Whether the transfer succeeded or not, feed changes to store
     if !outcome.changes.is_empty() {
         let store = SvmStateStore::new();
-        let root = store.compute_root(&outcome.changes);
+        let root = store.compute_root(&outcome.changes).unwrap();
         assert_ne!(root, alloy_primitives::B256::ZERO);
 
-        store.apply_changes(&outcome.changes);
+        store.apply_changes(&outcome.changes).unwrap();
         assert!(!store.is_empty());
     }
 }
@@ -307,7 +312,7 @@ fn cloned_stores_share_underlying_state() {
     // Consensus applies changes
     let mut changes = SvmChangeSet::new();
     changes.insert([10u8; 32], dummy_update(5_000));
-    store.apply_changes(&changes);
+    store.apply_changes(&changes).unwrap();
 
     // RPC should see the same data
     let acct = rpc_store.get_account(&[10u8; 32]).unwrap();
@@ -316,7 +321,10 @@ fn cloned_stores_share_underlying_state() {
 
     // Roots computed from either clone should match
     let empty = SvmChangeSet::new();
-    assert_eq!(store.compute_root(&empty), rpc_store.compute_root(&empty));
+    assert_eq!(
+        store.compute_root(&empty).unwrap(),
+        rpc_store.compute_root(&empty).unwrap()
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -380,17 +388,17 @@ fn full_pipeline_deserialize_execute_store() {
 
     // 4. Execute via SvmExecutor
     let executor = SvmExecutor::new();
-    let outcome = executor.execute(&bridge, height, ts, &[sanitized]).unwrap();
+    let outcome = executor.execute(&bridge, height, ts, &[sanitized], None).unwrap();
 
     assert_eq!(outcome.tx_results.len(), 1);
     assert!(outcome.tx_results[0].success, "transfer should succeed: {:?}", outcome.tx_results[0].error);
 
     // 5. Apply changes to store and verify non-zero root
     let store = SvmStateStore::new();
-    let root = store.compute_root(&outcome.changes);
+    let root = store.compute_root(&outcome.changes).unwrap();
     assert_ne!(root, alloy_primitives::B256::ZERO, "root should be non-zero after execution");
 
-    store.apply_changes(&outcome.changes);
+    store.apply_changes(&outcome.changes).unwrap();
     assert!(!store.is_empty(), "store should have accounts after applying changes");
 
     // Verify the recipient got funded
@@ -411,10 +419,10 @@ fn store_to_bridge_round_trip() {
     let mut changes = SvmChangeSet::new();
     let pubkey_bytes = [42u8; 32];
     changes.insert(pubkey_bytes, dummy_update(5_000_000));
-    store.apply_changes(&changes);
+    store.apply_changes(&changes).unwrap();
 
     // Convert to bridge
-    let bridge = store.to_bridge();
+    let bridge = store.to_bridge().unwrap();
 
     // Bridge should contain the seeded account + builtin programs
     let pk = Pubkey::new_from_array(pubkey_bytes);
@@ -428,7 +436,7 @@ fn store_to_bridge_round_trip() {
 #[test]
 fn store_to_bridge_empty_has_builtins() {
     let store = SvmStateStore::new();
-    let bridge = store.to_bridge();
+    let bridge = store.to_bridge().unwrap();
 
     // Even an empty store should have builtin program accounts
     assert!(bridge.get_account(&solana_system_program::id()).is_some());
@@ -455,7 +463,7 @@ fn multi_transfer_single_block() {
     let stx_b = SanitizedTransaction::from_transaction_for_tests(tx_b);
 
     let executor = SvmExecutor::new();
-    let outcome = executor.execute(&bridge, height, ts, &[stx_a, stx_b]).unwrap();
+    let outcome = executor.execute(&bridge, height, ts, &[stx_a, stx_b], None).unwrap();
 
     assert_eq!(outcome.tx_results.len(), 2);
     // At least one should succeed (both may succeed depending on SVM scheduling).
@@ -479,7 +487,7 @@ fn transfer_insufficient_lamports_fails() {
     let stx = SanitizedTransaction::from_transaction_for_tests(tx);
 
     let executor = SvmExecutor::new();
-    let outcome = executor.execute(&bridge, height, ts, &[stx]).unwrap();
+    let outcome = executor.execute(&bridge, height, ts, &[stx], None).unwrap();
 
     assert_eq!(outcome.tx_results.len(), 1);
     assert!(!outcome.tx_results[0].success, "transfer should fail due to insufficient funds");
@@ -499,25 +507,25 @@ fn cross_block_transfer_chain() {
     let bh1 = block_hash(height1, ts1);
     let tx1 = system_transaction::transfer(&alice, &bob.pubkey(), LAMPORTS_PER_SOL, bh1);
     let stx1 = SanitizedTransaction::from_transaction_for_tests(tx1);
-    let out1 = executor.execute(&bridge1, height1, ts1, &[stx1]).unwrap();
+    let out1 = executor.execute(&bridge1, height1, ts1, &[stx1], None).unwrap();
     assert!(out1.tx_results[0].success, "block 1 transfer should succeed");
 
     // Apply changes to store
     let store = SvmStateStore::new();
-    store.apply_changes(&out1.changes);
+    store.apply_changes(&out1.changes).unwrap();
 
     // Block 2: Bob → Carol (0.5 SOL) using Bob's new balance
     let height2 = 2u64;
     let ts2 = 1_700_000_002u64;
-    let bridge2 = store.to_bridge();
+    let bridge2 = store.to_bridge().unwrap();
     let bh2 = block_hash(height2, ts2);
     let tx2 = system_transaction::transfer(&bob, &carol, LAMPORTS_PER_SOL / 2, bh2);
     let stx2 = SanitizedTransaction::from_transaction_for_tests(tx2);
-    let out2 = executor.execute(&bridge2, height2, ts2, &[stx2]).unwrap();
+    let out2 = executor.execute(&bridge2, height2, ts2, &[stx2], None).unwrap();
     assert!(out2.tx_results[0].success, "block 2 transfer should succeed");
 
     // Apply and verify final state
-    store.apply_changes(&out2.changes);
+    store.apply_changes(&out2.changes).unwrap();
     let carol_acct = store.get_account(&carol.to_bytes());
     assert!(carol_acct.is_some(), "carol should exist after receiving funds");
     assert_eq!(carol_acct.unwrap().lamports, LAMPORTS_PER_SOL / 2);
@@ -543,19 +551,19 @@ fn executor_with_store_bridge_round_trip() {
             rent_epoch: 0,
         },
     );
-    store.apply_changes(&seed_changes);
+    store.apply_changes(&seed_changes).unwrap();
 
     // Convert store → bridge → execute → apply back to store
-    let bridge = store.to_bridge();
+    let bridge = store.to_bridge().unwrap();
     let bh = block_hash(height, ts);
     let tx = system_transaction::transfer(&sender, &recipient, LAMPORTS_PER_SOL, bh);
     let stx = SanitizedTransaction::from_transaction_for_tests(tx);
 
     let executor = SvmExecutor::new();
-    let outcome = executor.execute(&bridge, height, ts, &[stx]).unwrap();
+    let outcome = executor.execute(&bridge, height, ts, &[stx], None).unwrap();
     assert!(outcome.tx_results[0].success, "store→bridge transfer should succeed");
 
-    store.apply_changes(&outcome.changes);
+    store.apply_changes(&outcome.changes).unwrap();
 
     // Verify recipient got funds in the store
     let recipient_acct = store.get_account(&recipient.to_bytes());
@@ -576,7 +584,7 @@ fn empty_batch_produces_zero_cu() {
     let executor = SvmExecutor::new();
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
-    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
+    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty, None).unwrap();
     assert_eq!(outcome.compute_units_used, 0);
     assert!(outcome.tx_results.is_empty());
     assert!(outcome.changes.is_empty());

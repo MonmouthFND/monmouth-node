@@ -160,7 +160,19 @@ impl PolicyRegistry {
         timestamp: u64,
     ) -> PolicyDecision {
         let inner = self.inner.read();
+        self.evaluate_inner(&inner, agent, capability_id, target, value_wei, timestamp)
+    }
 
+    /// Inner evaluation logic operating on a borrowed `Inner`.
+    fn evaluate_inner(
+        &self,
+        inner: &Inner,
+        agent: AgentId,
+        capability_id: Option<&str>,
+        target: Option<VmTarget>,
+        value_wei: U256,
+        timestamp: u64,
+    ) -> PolicyDecision {
         // Collect matching rules: agent-specific first, then global.
         let matching: Vec<&PolicyRule> = inner
             .rules
@@ -283,6 +295,34 @@ impl PolicyRegistry {
         }
     }
 
+    /// Atomically evaluate policy and record execution if allowed.
+    ///
+    /// This combines `evaluate()` and `record_execution()` under a single
+    /// write lock to prevent race conditions where concurrent operations
+    /// could bypass spending or rate limits.
+    ///
+    /// Returns the policy decision. If the action is `Allow`, spending and
+    /// rate trackers are updated atomically within the same lock acquisition.
+    #[must_use]
+    pub fn evaluate_and_record(
+        &self,
+        agent: AgentId,
+        capability_id: Option<&str>,
+        target: Option<VmTarget>,
+        value_wei: U256,
+        timestamp: u64,
+    ) -> PolicyDecision {
+        let mut inner = self.inner.write();
+
+        let decision = self.evaluate_inner(&inner, agent, capability_id, target, value_wei, timestamp);
+
+        if decision.action == PolicyAction::Allow {
+            self.record_inner(&mut inner, agent, capability_id.map(String::from), value_wei, timestamp);
+        }
+
+        decision
+    }
+
     /// Record that an agent executed an action, updating spending and rate
     /// trackers.
     ///
@@ -295,6 +335,18 @@ impl PolicyRegistry {
         timestamp: u64,
     ) {
         let mut inner = self.inner.write();
+        self.record_inner(&mut inner, agent, capability_id, value_wei, timestamp);
+    }
+
+    /// Inner recording logic operating on a mutably borrowed `Inner`.
+    fn record_inner(
+        &self,
+        inner: &mut Inner,
+        agent: AgentId,
+        capability_id: Option<String>,
+        value_wei: U256,
+        timestamp: u64,
+    ) {
         let key = (agent, capability_id);
 
         // Determine the applicable spending window duration from matching rules.
@@ -685,6 +737,31 @@ mod tests {
         }
 
         assert_eq!(registry.len(), 10);
+    }
+
+    #[test]
+    fn evaluate_and_record_atomic() {
+        let registry = PolicyRegistry::new();
+
+        let rule = PolicyRule {
+            id: rule_id(1),
+            agent: Some(agent_a()),
+            capability_id: None,
+            action: PolicyAction::Allow,
+            spending_cap: None,
+            rate_limit: Some(RateLimitRule { max_ops: 2, window_secs: 60 }),
+        };
+        registry.add_rule(rule).unwrap();
+
+        // First two should be allowed and recorded atomically.
+        let d1 = registry.evaluate_and_record(agent_a(), None, None, U256::ZERO, 100);
+        assert_eq!(d1.action, PolicyAction::Allow);
+        let d2 = registry.evaluate_and_record(agent_a(), None, None, U256::ZERO, 101);
+        assert_eq!(d2.action, PolicyAction::Allow);
+
+        // Third should be denied (2 ops already recorded).
+        let d3 = registry.evaluate_and_record(agent_a(), None, None, U256::ZERO, 102);
+        assert_eq!(d3.action, PolicyAction::Deny);
     }
 
     #[test]

@@ -25,8 +25,13 @@ impl MonmouthForkGraph {
     }
 
     /// Update the current slot.
+    ///
+    /// Silently ignores a poisoned lock — if the lock is poisoned the node
+    /// is in an unrecoverable state and will crash elsewhere.
     pub fn set_slot(&self, slot: u64) {
-        *self.current_slot.write().unwrap() = slot;
+        if let Ok(mut guard) = self.current_slot.write() {
+            *guard = slot;
+        }
     }
 }
 

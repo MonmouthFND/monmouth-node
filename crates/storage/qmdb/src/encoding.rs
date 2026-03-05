@@ -32,7 +32,9 @@ impl StorageKey {
     /// Decode from bytes.
     pub fn from_bytes(bytes: &[u8; 60]) -> Self {
         let address = Address::from_slice(&bytes[0..20]);
-        let generation = u64::from_be_bytes(bytes[20..28].try_into().unwrap());
+        let mut gen_bytes = [0u8; 8];
+        gen_bytes.copy_from_slice(&bytes[20..28]);
+        let generation = u64::from_be_bytes(gen_bytes);
         let slot = U256::from_be_slice(&bytes[28..60]);
         Self { address, generation, slot }
     }

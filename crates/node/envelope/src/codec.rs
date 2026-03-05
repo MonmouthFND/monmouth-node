@@ -25,6 +25,13 @@ pub const MONMOUTH_MAGIC: u8 = 0x4d;
 /// Minimum valid envelope size: 1 (magic) + 4 (header length) = 5 bytes.
 const MIN_ENVELOPE_SIZE: usize = 5;
 
+/// Maximum allowed header size (64 KiB).
+///
+/// Headers are JSON-encoded metadata and should never approach this limit
+/// in normal operation. This prevents a malicious envelope from declaring
+/// an enormous header that causes excessive memory allocation.
+const MAX_HEADER_SIZE: usize = 64 * 1024;
+
 /// Check whether a raw byte slice begins with the Monmouth magic byte.
 ///
 /// This is a cheap check that can be used to decide whether to attempt
@@ -62,6 +69,12 @@ pub fn decode_agent_envelope(raw: &[u8]) -> Result<AgentTxEnvelope, EnvelopeErro
 
     // Read 4-byte big-endian header length.
     let header_len = u32::from_be_bytes([raw[1], raw[2], raw[3], raw[4]]) as usize;
+
+    if header_len > MAX_HEADER_SIZE {
+        return Err(EnvelopeError::DecodeFailed(format!(
+            "header length {header_len} exceeds maximum of {MAX_HEADER_SIZE} bytes"
+        )));
+    }
 
     let header_end = 5 + header_len;
     if raw.len() < header_end {
@@ -102,8 +115,7 @@ pub fn decode_agent_envelope(raw: &[u8]) -> Result<AgentTxEnvelope, EnvelopeErro
 /// - Bytes 1..5: `u32` big-endian length of the JSON header
 /// - Bytes 5..5+len: JSON-encoded header
 /// - Remaining bytes: inner transaction bytes
-#[must_use]
-pub fn encode_agent_envelope(envelope: &AgentTxEnvelope) -> Vec<u8> {
+pub fn encode_agent_envelope(envelope: &AgentTxEnvelope) -> Result<Vec<u8>, EnvelopeError> {
     let header = EnvelopeHeader {
         vm_target: envelope.vm_target,
         module_hint: envelope.module_hint.clone(),
@@ -111,9 +123,8 @@ pub fn encode_agent_envelope(envelope: &AgentTxEnvelope) -> Vec<u8> {
         intent: envelope.intent.clone(),
     };
 
-    // Serialise header to JSON. This should never fail for our types.
-    let header_json =
-        serde_json::to_vec(&header).expect("EnvelopeHeader serialisation is infallible");
+    let header_json = serde_json::to_vec(&header)
+        .map_err(|e| EnvelopeError::EncodeFailed(format!("header serialisation failed: {e}")))?;
     let header_len = header_json.len() as u32;
 
     let mut buf = Vec::with_capacity(1 + 4 + header_json.len() + envelope.inner_tx.len());
@@ -129,7 +140,7 @@ pub fn encode_agent_envelope(envelope: &AgentTxEnvelope) -> Vec<u8> {
         "Encoded Monmouth agent envelope"
     );
 
-    buf
+    Ok(buf)
 }
 
 #[cfg(test)]
@@ -168,7 +179,7 @@ mod tests {
     #[test]
     fn encode_decode_roundtrip() {
         let original = sample_envelope();
-        let encoded = encode_agent_envelope(&original);
+        let encoded = encode_agent_envelope(&original).unwrap();
         let decoded = decode_agent_envelope(&encoded).unwrap();
 
         assert_eq!(decoded.vm_target, original.vm_target);
@@ -182,7 +193,7 @@ mod tests {
     #[test]
     fn encode_decode_minimal() {
         let original = minimal_envelope();
-        let encoded = encode_agent_envelope(&original);
+        let encoded = encode_agent_envelope(&original).unwrap();
         let decoded = decode_agent_envelope(&encoded).unwrap();
 
         assert_eq!(decoded.vm_target, VmTarget::Evm);
@@ -196,7 +207,7 @@ mod tests {
     fn encode_decode_svm_target() {
         let mut envelope = minimal_envelope();
         envelope.vm_target = VmTarget::Svm;
-        let encoded = encode_agent_envelope(&envelope);
+        let encoded = encode_agent_envelope(&envelope).unwrap();
         let decoded = decode_agent_envelope(&encoded).unwrap();
         assert_eq!(decoded.vm_target, VmTarget::Svm);
     }
@@ -204,7 +215,7 @@ mod tests {
     #[test]
     fn magic_byte_is_first() {
         let envelope = minimal_envelope();
-        let encoded = encode_agent_envelope(&envelope);
+        let encoded = encode_agent_envelope(&envelope).unwrap();
         assert_eq!(encoded[0], MONMOUTH_MAGIC);
         assert_eq!(encoded[0], 0x4d);
     }
@@ -212,7 +223,7 @@ mod tests {
     #[test]
     fn is_monmouth_envelope_check() {
         let envelope = minimal_envelope();
-        let encoded = encode_agent_envelope(&envelope);
+        let encoded = encode_agent_envelope(&envelope).unwrap();
         assert!(is_monmouth_envelope(&encoded));
 
         // Standard EIP-1559 tx starts with 0x02.
@@ -268,7 +279,7 @@ mod tests {
             inner_tx: vec![],
             raw: Vec::new(),
         };
-        let encoded = encode_agent_envelope(&envelope);
+        let encoded = encode_agent_envelope(&envelope).unwrap();
         let decoded = decode_agent_envelope(&encoded).unwrap();
         assert!(decoded.inner_tx.is_empty());
     }
@@ -276,7 +287,7 @@ mod tests {
     #[test]
     fn header_length_encoding() {
         let envelope = sample_envelope();
-        let encoded = encode_agent_envelope(&envelope);
+        let encoded = encode_agent_envelope(&envelope).unwrap();
 
         // Extract the header length from bytes 1..5.
         let header_len =
@@ -292,10 +303,23 @@ mod tests {
     }
 
     #[test]
+    fn oversized_header_rejected() {
+        // Declare a header of 128 KiB (exceeds MAX_HEADER_SIZE of 64 KiB).
+        let huge_len = 128 * 1024u32;
+        let mut raw = vec![MONMOUTH_MAGIC];
+        raw.extend_from_slice(&huge_len.to_be_bytes());
+        raw.extend(vec![0u8; huge_len as usize]); // filler bytes
+        let err = decode_agent_envelope(&raw).unwrap_err();
+        assert!(matches!(err, EnvelopeError::DecodeFailed(_)));
+        assert!(err.to_string().contains("exceeds maximum"));
+    }
+
+    #[test]
     fn error_codes() {
         assert_eq!(EnvelopeError::InvalidMagicByte(0).code(), -32600);
         assert_eq!(EnvelopeError::DecodeFailed(String::new()).code(), -32601);
         assert_eq!(EnvelopeError::MissingField(String::new()).code(), -32602);
         assert_eq!(EnvelopeError::InvalidVmTarget(String::new()).code(), -32603);
+        assert_eq!(EnvelopeError::EncodeFailed(String::new()).code(), -32604);
     }
 }

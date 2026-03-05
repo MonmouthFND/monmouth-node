@@ -117,6 +117,7 @@ impl EthPubSubApiServer for EthPubSubApiImpl {
                     loop {
                         match rx.recv().await {
                             Ok(block) => {
+                                // SAFETY: RpcBlock derives Serialize; JSON encoding cannot fail.
                                 let msg = SubscriptionMessage::from_json(&*block)
                                     .expect("RpcBlock is serializable");
                                 if sink.send(msg).await.is_err() {
@@ -147,6 +148,7 @@ impl EthPubSubApiServer for EthPubSubApiImpl {
                                 if !matches_log_filter(&log, filter.as_ref()) {
                                     continue;
                                 }
+                                // SAFETY: RpcLog derives Serialize; JSON encoding cannot fail.
                                 let msg = SubscriptionMessage::from_json(&*log)
                                     .expect("RpcLog is serializable");
                                 if sink.send(msg).await.is_err() {
@@ -171,6 +173,7 @@ impl EthPubSubApiServer for EthPubSubApiImpl {
                         match rx.recv().await {
                             Ok(hash) => {
                                 let hex = format!("0x{}", hex::encode(hash));
+                                // SAFETY: String is trivially serializable to JSON.
                                 let msg = SubscriptionMessage::from_json(&hex)
                                     .expect("string is serializable");
                                 if sink.send(msg).await.is_err() {
@@ -190,6 +193,7 @@ impl EthPubSubApiServer for EthPubSubApiImpl {
             "syncing" => {
                 // Syncing is a simple boolean for now (not syncing).
                 let sink = pending.accept().await?;
+                // SAFETY: bool is trivially serializable to JSON.
                 let msg = SubscriptionMessage::from_json(&false).expect("bool is serializable");
                 // Send initial status, then the subscription stays open but idle.
                 let _ = sink.send(msg).await;

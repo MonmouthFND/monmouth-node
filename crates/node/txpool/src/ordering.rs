@@ -154,6 +154,12 @@ impl SenderQueue {
     pub const fn is_empty(&self) -> bool {
         self.pending.is_empty() && self.queued.is_empty()
     }
+
+    /// Returns true if the queue already contains a transaction at the given nonce.
+    pub fn has_nonce(&self, nonce: u64) -> bool {
+        self.pending.iter().any(|tx| tx.nonce == nonce)
+            || self.queued.iter().any(|tx| tx.nonce == nonce)
+    }
 }
 
 #[cfg(test)]

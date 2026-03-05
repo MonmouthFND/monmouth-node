@@ -37,6 +37,10 @@ pub enum SvmError {
     /// Internal processor error.
     #[error("svm: internal error: {0}")]
     Internal(String),
+
+    /// A shared lock was poisoned (a thread panicked while holding it).
+    #[error("svm: lock poisoned: {0}")]
+    LockPoisoned(String),
 }
 
 /// JSON-RPC error codes for SVM-specific errors.
@@ -52,7 +56,7 @@ impl SvmError {
             Self::Sysvar(_) => -32893,
             Self::ComputeBudgetExceeded { .. } => -32894,
             Self::ProgramNotFound(_) => -32895,
-            Self::Internal(_) => -32899,
+            Self::Internal(_) | Self::LockPoisoned(_) => -32899,
         }
     }
 }
@@ -85,6 +89,7 @@ mod tests {
             SvmError::ComputeBudgetExceeded { used: 0, limit: 0 },
             SvmError::ProgramNotFound("".into()),
             SvmError::Internal("".into()),
+            SvmError::LockPoisoned("".into()),
         ];
         for err in &errors {
             let code = err.rpc_code();

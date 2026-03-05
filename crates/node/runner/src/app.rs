@@ -1,6 +1,6 @@
 //! REVM-based consensus application implementation.
 
-use std::{collections::BTreeSet, time::Instant};
+use std::{collections::BTreeSet, time::{Instant, SystemTime, UNIX_EPOCH}};
 
 use alloy_consensus::Header;
 use alloy_primitives::{Address, B256, Bytes};
@@ -81,10 +81,10 @@ where
         self
     }
 
-    fn block_context(&self, height: u64, prevrandao: B256) -> BlockContext {
+    fn block_context(&self, height: u64, timestamp: u64, prevrandao: B256) -> BlockContext {
         let header = Header {
             number: height,
-            timestamp: height,
+            timestamp,
             gas_limit: self.gas_limit,
             beneficiary: Address::ZERO,
             base_fee_per_gas: Some(0),
@@ -110,8 +110,15 @@ where
         let txs = mempool.build(self.max_txs, &excluded);
 
         let prevrandao = self.get_prevrandao(parent_digest).await;
-        let height = parent.height + 1;
-        let context = self.block_context(height, prevrandao);
+        let Some(height) = parent.height.checked_add(1) else {
+            warn!("height overflow at {}", parent.height);
+            return None;
+        };
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let context = self.block_context(height, timestamp, prevrandao);
 
         // Partition transactions by VM target
         let partitioned = partition_by_vm_target(&txs);
@@ -145,11 +152,26 @@ where
                 if sanitized_txs.is_empty() {
                     None
                 } else {
-                    let bridge = svm_store.to_bridge();
-                    match svm_executor.execute(&bridge, height, height, &sanitized_txs) {
+                    let bridge = match svm_store.to_bridge() {
+                        Ok(b) => b,
+                        Err(e) => {
+                            warn!(error = ?e, "SVM bridge creation failed in build_block");
+                            return None;
+                        }
+                    };
+                    match svm_executor.execute(&bridge, height, timestamp, &sanitized_txs, Some(prevrandao.0)) {
                         Ok(svm_outcome) => {
-                            let root = svm_store.compute_root(&svm_outcome.changes);
-                            svm_store.apply_changes(&svm_outcome.changes);
+                            let root = match svm_store.compute_root(&svm_outcome.changes) {
+                                Ok(r) => r,
+                                Err(e) => {
+                                    warn!(error = ?e, "SVM root computation failed in build_block");
+                                    return None;
+                                }
+                            };
+                            if let Err(e) = svm_store.apply_changes(&svm_outcome.changes) {
+                                warn!(error = ?e, "SVM apply_changes failed in build_block");
+                                return None;
+                            }
                             if root == B256::ZERO { None } else { Some(StateRoot(root)) }
                         }
                         Err(e) => {
@@ -171,8 +193,15 @@ where
             .ok()?;
         let root_elapsed = root_start.elapsed();
 
-        let block =
-            Block { parent: parent.id(), height, prevrandao, state_root, svm_state_root, txs };
+        let block = Block {
+            parent: parent.id(),
+            height,
+            timestamp,
+            prevrandao,
+            state_root,
+            svm_state_root,
+            txs,
+        };
 
         let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
         let next_state = OverlayState::new(parent_snapshot.state.base(), merged_changes);
@@ -188,6 +217,7 @@ where
                 &block.txs,
             )
             .await;
+        self.ledger.store_block(block_digest, block.clone()).await;
 
         let total_elapsed = start.elapsed();
         info!(
@@ -219,7 +249,36 @@ where
         };
         let snapshot_elapsed = start.elapsed();
 
-        let context = self.block_context(block.height, block.prevrandao);
+        // Validate timestamp: must not be zero (except genesis), must not be
+        // in the far future (10-second tolerance), and must not precede the
+        // parent block's timestamp (monotonicity).
+        if block.height > 0 {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            if block.timestamp == 0 {
+                warn!(?digest, "block has zero timestamp");
+                return false;
+            }
+            if block.timestamp > now + 10 {
+                warn!(?digest, block_ts = block.timestamp, now, "block timestamp too far in future");
+                return false;
+            }
+            if let Some(parent_block) = self.ledger.query_block(parent_digest).await {
+                if block.timestamp < parent_block.timestamp {
+                    warn!(
+                        ?digest,
+                        block_ts = block.timestamp,
+                        parent_ts = parent_block.timestamp,
+                        "block timestamp precedes parent"
+                    );
+                    return false;
+                }
+            }
+        }
+
+        let context = self.block_context(block.height, block.timestamp, block.prevrandao);
 
         // Partition transactions — only EVM txs go to the EVM executor.
         // Passing SVM-targeted envelope bytes to REVM would cause RLP decode errors.
@@ -281,9 +340,15 @@ where
                     }
                 }
 
-                let bridge = svm_store.to_bridge();
+                let bridge = match svm_store.to_bridge() {
+                    Ok(b) => b,
+                    Err(e) => {
+                        warn!(?digest, error = ?e, "SVM bridge creation failed during verify");
+                        return false;
+                    }
+                };
                 let svm_outcome = match svm_executor
-                    .execute(&bridge, block.height, block.height, &sanitized_txs)
+                    .execute(&bridge, block.height, block.timestamp, &sanitized_txs, Some(block.prevrandao.0))
                 {
                     Ok(o) => o,
                     Err(e) => {
@@ -292,8 +357,13 @@ where
                     }
                 };
 
-                let computed_svm_root =
-                    StateRoot(svm_store.compute_root(&svm_outcome.changes));
+                let computed_svm_root = match svm_store.compute_root(&svm_outcome.changes) {
+                    Ok(r) => StateRoot(r),
+                    Err(e) => {
+                        warn!(?digest, error = ?e, "SVM root computation failed during verify");
+                        return false;
+                    }
+                };
                 if computed_svm_root != *expected_svm_root {
                     warn!(
                         ?digest,
@@ -303,7 +373,10 @@ where
                     );
                     return false;
                 }
-                svm_store.apply_changes(&svm_outcome.changes);
+                if let Err(e) = svm_store.apply_changes(&svm_outcome.changes) {
+                    warn!(?digest, error = ?e, "SVM apply_changes failed during verify");
+                    return false;
+                }
             } else {
                 warn!(?digest, "block has svm_state_root but SVM is not enabled");
                 return false;
@@ -323,6 +396,7 @@ where
                 &block.txs,
             )
             .await;
+        self.ledger.store_block(digest, block.clone()).await;
 
         let total_elapsed = start.elapsed();
         info!(

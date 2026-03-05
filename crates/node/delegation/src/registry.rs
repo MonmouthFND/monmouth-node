@@ -380,7 +380,7 @@ mod tests {
     #[test]
     fn create_and_get_session() {
         let (registry, ok, delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
 
         let session_id = registry.create_session(grant.clone(), &sig, 1_000_000).unwrap();
         let info = registry.get_session(session_id).unwrap();
@@ -396,7 +396,7 @@ mod tests {
     #[test]
     fn validate_session_success() {
         let (registry, ok, delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant, &sig, 1_000_000).unwrap();
 
         registry
@@ -413,7 +413,7 @@ mod tests {
     #[test]
     fn validate_expired_session() {
         let (registry, ok, delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant.clone(), &sig, 1_000_000).unwrap();
 
         let err = registry
@@ -432,7 +432,7 @@ mod tests {
     #[test]
     fn validate_wrong_delegate() {
         let (registry, ok, _delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant, &sig, 1_000_000).unwrap();
 
         let wrong_addr = Address::repeat_byte(0xff);
@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn validate_capability_not_granted() {
         let (registry, ok, delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant, &sig, 1_000_000).unwrap();
 
         let err = registry
@@ -459,7 +459,7 @@ mod tests {
     #[test]
     fn validate_spending_limit_exceeded() {
         let (registry, ok, delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant.clone(), &sig, 1_000_000).unwrap();
 
         let err = registry
@@ -478,7 +478,7 @@ mod tests {
     #[test]
     fn record_spend_and_check_cumulative() {
         let (registry, ok, _delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant.clone(), &sig, 1_000_000).unwrap();
 
         // Spend half the limit.
@@ -501,7 +501,7 @@ mod tests {
     #[test]
     fn revoke_session_by_owner() {
         let (registry, ok, _delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let owner_addr = grant.owner;
         let session_id = registry.create_session(grant, &sig, 1_000_000).unwrap();
 
@@ -512,7 +512,7 @@ mod tests {
     #[test]
     fn revoke_session_unauthorized() {
         let (registry, ok, _delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         let session_id = registry.create_session(grant, &sig, 1_000_000).unwrap();
 
         let wrong_owner = Address::repeat_byte(0xee);
@@ -545,7 +545,7 @@ mod tests {
     #[test]
     fn duplicate_session() {
         let (registry, ok, _delegate_addr, grant) = setup();
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
 
         registry.create_session(grant.clone(), &sig, 1_000_000).unwrap();
 
@@ -568,7 +568,7 @@ mod tests {
             expires_at: 2_000_000_000,
             nonce: 1,
         };
-        let sig1 = sign_session_grant(&grant1, &ok);
+        let sig1 = sign_session_grant(&grant1, &ok).unwrap();
         registry.create_session(grant1, &sig1, 0).unwrap();
 
         let grant2 = SessionGrant {
@@ -579,7 +579,7 @@ mod tests {
             expires_at: 2_000_000_000,
             nonce: 2, // Different nonce => different session ID.
         };
-        let sig2 = sign_session_grant(&grant2, &ok);
+        let sig2 = sign_session_grant(&grant2, &ok).unwrap();
         let err = registry.create_session(grant2, &sig2, 0).unwrap_err();
         assert!(matches!(err, DelegationError::CapacityExceeded(1)));
     }
@@ -602,7 +602,7 @@ mod tests {
                 expires_at: 2_000_000_000,
                 nonce,
             };
-            let sig = sign_session_grant(&grant, &ok);
+            let sig = sign_session_grant(&grant, &ok).unwrap();
             registry.create_session(grant, &sig, 0).unwrap();
         }
 
@@ -623,7 +623,7 @@ mod tests {
         assert!(registry.is_empty());
         assert_eq!(registry.len(), 0);
 
-        let sig = sign_session_grant(&grant, &ok);
+        let sig = sign_session_grant(&grant, &ok).unwrap();
         registry.create_session(grant, &sig, 0).unwrap();
         assert!(!registry.is_empty());
         assert_eq!(registry.len(), 1);
@@ -644,7 +644,7 @@ mod tests {
 
         // Sign with delegate key instead of owner key.
         let dk = delegate_key();
-        let sig = sign_session_grant(&grant, &dk);
+        let sig = sign_session_grant(&grant, &dk).unwrap();
 
         let err = registry.create_session(grant, &sig, 0).unwrap_err();
         assert!(matches!(err, DelegationError::InvalidSignature(_)));
@@ -689,7 +689,7 @@ mod tests {
                     expires_at: 2_000_000_000,
                     nonce: i + 100,
                 };
-                let sig = sign_session_grant(&grant, &ok_clone);
+                let sig = sign_session_grant(&grant, &ok_clone).unwrap();
                 reg.create_session(grant, &sig, 0).unwrap();
             }));
         }

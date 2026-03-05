@@ -233,7 +233,7 @@ mod tests {
         let store = SvmStateStore::new();
         let mut changes = SvmChangeSet::new();
         changes.insert(pubkey, update);
-        store.apply_changes(&changes);
+        store.apply_changes(&changes).expect("test store apply");
         store
     }
 

@@ -94,7 +94,7 @@ where
         let excluded = self.collect_pending_tx_ids(parent_digest)?;
         let txs = self.mempool.build(self.max_txs, &excluded);
 
-        let height = parent.height + 1;
+        let height = parent.height.checked_add(1).ok_or(ConsensusError::HeightOverflow)?;
         let context = block_context(height, prevrandao);
         let txs_bytes: Vec<Bytes> = txs.iter().map(|tx| tx.bytes.clone()).collect();
         let outcome = self
@@ -108,8 +108,15 @@ where
             .map_err(ConsensusError::StateDb)?;
         let state_root = StateRoot(state_root);
 
-        let block =
-            Block { parent: parent.id(), height, prevrandao, state_root, svm_state_root: None, txs };
+        let block = Block {
+            parent: parent.id(),
+            height,
+            timestamp: height,
+            prevrandao,
+            state_root,
+            svm_state_root: None,
+            txs,
+        };
         let tx_ids = self.tx_ids_from_block(&block);
         let snapshot = Snapshot::new(
             Some(parent_digest),
@@ -137,7 +144,7 @@ where
         let excluded = self.collect_pending_tx_ids(parent_digest)?;
         let txs = self.mempool.build(self.max_txs, &excluded);
 
-        let height = parent.height + 1;
+        let height = parent.height.checked_add(1).ok_or(ConsensusError::HeightOverflow)?;
         let context = block_context(height, prevrandao);
         let txs_bytes: Vec<Bytes> = txs.iter().map(|tx| tx.bytes.clone()).collect();
         let outcome = self
@@ -151,8 +158,15 @@ where
             self.state.compute_root(&merged_changes).await.map_err(ConsensusError::StateDb)?;
         let state_root = StateRoot(state_root);
 
-        let block =
-            Block { parent: parent.id(), height, prevrandao, state_root, svm_state_root: None, txs };
+        let block = Block {
+            parent: parent.id(),
+            height,
+            timestamp: height,
+            prevrandao,
+            state_root,
+            svm_state_root: None,
+            txs,
+        };
         let tx_ids = self.tx_ids_from_block(&block);
         let snapshot = Snapshot::new(
             Some(parent_digest),
@@ -408,6 +422,7 @@ mod tests {
             prevrandao: B256::ZERO,
             state_root: StateRoot(B256::ZERO),
             svm_state_root: None,
+            timestamp: 0,
             txs: Vec::new(),
         }
     }
@@ -627,6 +642,7 @@ mod tests {
             prevrandao: B256::ZERO,
             state_root: StateRoot(B256::ZERO),
             svm_state_root: None,
+            timestamp: 0,
             txs: vec![tx.clone()],
         };
         let parent_digest = parent.commitment();

@@ -35,7 +35,7 @@ fn execute_empty_batch_returns_empty_outcome() {
     let executor = SvmExecutor::new();
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
-    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
+    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &empty, None).unwrap();
     assert!(outcome.changes.is_empty());
     assert!(outcome.tx_results.is_empty());
     assert_eq!(outcome.compute_units_used, 0);
@@ -70,18 +70,23 @@ fn sol_transfer_produces_tx_result() {
         }),
     );
 
-    // Create a transfer transaction with matching blockhash
-    let blockhash = Hash::new_from_array({
+    // Create a transfer transaction with matching blockhash (sha256-based derivation)
+    let blockhash = {
+        use sha2::{Sha256, Digest};
+        let mut hasher = Sha256::new();
+        hasher.update(b"monmouth-svm-blockhash-v1");
+        hasher.update(1u64.to_le_bytes());
+        hasher.update(1_700_000_000u64.to_le_bytes());
+        let digest = hasher.finalize();
         let mut h = [0u8; 32];
-        h[..8].copy_from_slice(&1u64.to_le_bytes());
-        h[8..16].copy_from_slice(&1_700_000_000u64.to_le_bytes());
-        h
-    });
+        h.copy_from_slice(&digest);
+        Hash::new_from_array(h)
+    };
 
     let tx = system_transaction::transfer(&sender, &recipient, LAMPORTS_PER_SOL, blockhash);
     let stx = SanitizedTransaction::from_transaction_for_tests(tx);
 
-    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &[stx]).unwrap();
+    let outcome = executor.execute(&bridge, 1, 1_700_000_000, &[stx], None).unwrap();
 
     // Should have exactly one transaction result
     assert_eq!(outcome.tx_results.len(), 1);
@@ -105,8 +110,8 @@ fn deterministic_execution_same_inputs_same_output() {
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
 
-    let outcome1 = executor.execute(&bridge, 42, 1_700_000_000, &empty).unwrap();
-    let outcome2 = executor.execute(&bridge, 42, 1_700_000_000, &empty).unwrap();
+    let outcome1 = executor.execute(&bridge, 42, 1_700_000_000, &empty, None).unwrap();
+    let outcome2 = executor.execute(&bridge, 42, 1_700_000_000, &empty, None).unwrap();
 
     assert_eq!(outcome1.compute_units_used, outcome2.compute_units_used);
     assert_eq!(outcome1.changes, outcome2.changes);
@@ -119,8 +124,8 @@ fn different_block_heights_produce_independent_results() {
     let bridge = SvmAccountBridge::empty();
     let empty: Vec<SanitizedTransaction> = vec![];
 
-    let outcome1 = executor.execute(&bridge, 1, 1_700_000_000, &empty).unwrap();
-    let outcome2 = executor.execute(&bridge, 2, 1_700_000_002, &empty).unwrap();
+    let outcome1 = executor.execute(&bridge, 1, 1_700_000_000, &empty, None).unwrap();
+    let outcome2 = executor.execute(&bridge, 2, 1_700_000_002, &empty, None).unwrap();
 
     // Both should succeed with empty results
     assert!(outcome1.changes.is_empty());

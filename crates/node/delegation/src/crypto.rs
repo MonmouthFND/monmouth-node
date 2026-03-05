@@ -17,20 +17,23 @@ use crate::error::DelegationError;
 /// The signature format is `[r (32 bytes) | s (32 bytes) | v (1 byte)]`,
 /// compatible with Ethereum's `ecrecover`.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if the signing key cannot produce a recoverable signature, which
-/// should never happen for a valid `SigningKey`.
-#[must_use]
-pub fn sign_session_grant(grant: &SessionGrant, key: &SigningKey) -> Vec<u8> {
+/// Returns [`DelegationError::InvalidSignature`] if the signing key fails
+/// to produce a recoverable signature (should not happen with valid keys).
+pub fn sign_session_grant(
+    grant: &SessionGrant,
+    key: &SigningKey,
+) -> Result<Vec<u8>, DelegationError> {
     let hash = hash_grant(grant);
-    let (signature, recovery_id): (Signature, RecoveryId) =
-        key.sign_prehash(&hash).expect("signing with a valid key is infallible");
+    let (signature, recovery_id): (Signature, RecoveryId) = key
+        .sign_prehash(&hash)
+        .map_err(|e| DelegationError::InvalidSignature(format!("signing failed: {e}")))?;
 
     let mut result = Vec::with_capacity(65);
     result.extend_from_slice(&signature.to_bytes());
     result.push(recovery_id.to_byte());
-    result
+    Ok(result)
 }
 
 /// Verify a session grant signature and recover the signer address.
@@ -132,7 +135,7 @@ mod tests {
         let grant = test_grant();
         let key = test_signing_key();
 
-        let signature = sign_session_grant(&grant, &key);
+        let signature = sign_session_grant(&grant, &key).unwrap();
         assert_eq!(signature.len(), 65);
 
         let recovered = verify_session_grant(&grant, &signature).unwrap();
@@ -150,7 +153,7 @@ mod tests {
     fn verify_wrong_grant_fails() {
         let grant = test_grant();
         let key = test_signing_key();
-        let signature = sign_session_grant(&grant, &key);
+        let signature = sign_session_grant(&grant, &key).unwrap();
 
         // Modify the grant.
         let mut wrong_grant = grant;

@@ -18,6 +18,10 @@ pub enum EnvelopeError {
     /// The specified VM target is not recognised.
     #[error("invalid VM target: {0}")]
     InvalidVmTarget(String),
+
+    /// Failed to encode the envelope (JSON serialisation failure).
+    #[error("encode failed: {0}")]
+    EncodeFailed(String),
 }
 
 impl EnvelopeError {
@@ -29,6 +33,7 @@ impl EnvelopeError {
             Self::DecodeFailed(_) => -32601,
             Self::MissingField(_) => -32602,
             Self::InvalidVmTarget(_) => -32603,
+            Self::EncodeFailed(_) => -32604,
         }
     }
 }

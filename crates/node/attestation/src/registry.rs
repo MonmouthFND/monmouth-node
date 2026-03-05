@@ -268,13 +268,13 @@ mod tests {
     }
 
     #[test]
-    fn submit_unverifiable_type() {
+    fn submit_unverifiable_type_rejected() {
         let reg = AttestationRegistry::new();
-        reg.submit(unverifiable_attestation(att_id(1)), true).unwrap();
+        let err = reg.submit(unverifiable_attestation(att_id(1)), true).unwrap_err();
 
-        // Accepted but not verified.
-        let att = reg.get(att_id(1)).unwrap();
-        assert!(!att.verified);
+        // Unsupported types are now rejected outright.
+        assert!(matches!(err, AttestationError::UnsupportedType(_)));
+        assert!(reg.get(att_id(1)).is_none());
     }
 
     #[test]
