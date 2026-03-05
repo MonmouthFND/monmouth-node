@@ -17,7 +17,8 @@ use commonware_runtime::{Metrics as _, Spawner, buffer::PoolRef, tokio};
 use commonware_utils::{NZU64, NZUsize, acknowledgement::Exact};
 use futures::StreamExt;
 use monmouth_domain::{Block, BlockCfg, BootstrapConfig, ConsensusDigest, LedgerEvent, TxCfg};
-use monmouth_executor::{BlockContext, ClassifierConfig, RevmExecutor, TransactionClassifier};
+use monmouth_executor::{BlockContext, RevmExecutor};
+use monmouth_svm::{SvmExecutor, SvmExecutorConfig, SvmStateStore};
 use monmouth_ledger::{LedgerService, LedgerView};
 use monmouth_marshal::{ArchiveInitializer, BroadcastInitializer, PeerInitializer};
 use monmouth_reporters::{
@@ -27,6 +28,8 @@ use monmouth_service::{NodeRunContext, NodeRunner};
 use monmouth_simplex::{DEFAULT_MAILBOX_SIZE as MAILBOX_SIZE, DefaultPool};
 use monmouth_transport::NetworkTransport;
 use tracing::{debug, info, trace};
+
+use monmouth_capabilities::CapabilityRegistry;
 
 use crate::{RevmApplication, RunnerError, scheme::ThresholdScheme};
 
@@ -125,10 +128,12 @@ pub struct ProductionRunner {
     pub rpc_config: Option<(monmouth_rpc::NodeState, std::net::SocketAddr)>,
     /// Optional Prometheus metrics server address.
     pub metrics_addr: Option<SocketAddr>,
-    /// Whether the agent transaction classifier is enabled.
-    pub enable_agent_pool: bool,
-    /// Confidence threshold for agent classification.
-    pub confidence_threshold: f64,
+    /// Optional capability registry for the RPC API.
+    pub capabilities: Option<CapabilityRegistry>,
+    /// Optional SVM configuration.
+    pub svm_config: Option<monmouth_config::SvmConfig>,
+    /// Shared SVM state store (created when SVM is enabled, shared between RPC and consensus).
+    pub svm_store: Option<SvmStateStore>,
 }
 
 impl ProductionRunner {
@@ -147,8 +152,9 @@ impl ProductionRunner {
             partition_prefix: PARTITION_PREFIX.to_string(),
             rpc_config: None,
             metrics_addr: None,
-            enable_agent_pool: false,
-            confidence_threshold: monmouth_config::DEFAULT_CONFIDENCE_THRESHOLD,
+            capabilities: None,
+            svm_config: None,
+            svm_store: None,
         }
     }
 
@@ -166,27 +172,30 @@ impl ProductionRunner {
         self
     }
 
-    /// Configure agent features from execution config.
+    /// Configure the capability registry for the RPC API.
     #[must_use]
-    pub const fn with_agent_config(mut self, enable: bool, confidence: f64) -> Self {
-        self.enable_agent_pool = enable;
-        self.confidence_threshold = confidence;
+    pub fn with_capabilities(mut self, capabilities: CapabilityRegistry) -> Self {
+        self.capabilities = Some(capabilities);
         self
     }
 
-    /// Build a `RevmExecutor`, optionally with the agent classifier.
-    #[allow(clippy::missing_const_for_fn)]
-    fn build_executor(&self) -> RevmExecutor {
-        let executor = RevmExecutor::new(self.chain_id);
-        if self.enable_agent_pool {
-            let classifier = TransactionClassifier::new(ClassifierConfig {
-                confidence_threshold: self.confidence_threshold,
-                enabled: true,
-            });
-            executor.with_classifier(classifier)
-        } else {
-            executor
+    /// Configure the SVM module.
+    ///
+    /// Pre-creates the shared `SvmStateStore` so it can be passed to both
+    /// the RPC server and the consensus application.
+    #[must_use]
+    pub fn with_svm(mut self, config: monmouth_config::SvmConfig) -> Self {
+        if config.enabled {
+            self.svm_store = Some(SvmStateStore::new());
         }
+        self.svm_config = Some(config);
+        self
+    }
+
+    /// Build a `RevmExecutor`.
+    #[must_use]
+    const fn build_executor(&self) -> RevmExecutor {
+        RevmExecutor::new(self.chain_id)
     }
 }
 
@@ -198,12 +207,20 @@ impl ProductionRunner {
 
         let rpc_config = self.rpc_config.clone();
         let metrics_addr = self.metrics_addr;
+        let capabilities = self.capabilities.clone();
+        let svm_store_for_rpc = self.svm_store.clone();
 
         let executor = tokio::Runner::default();
         executor.start(|context| async move {
             // Start RPC server if configured
             if let Some((state, addr)) = rpc_config {
-                let rpc = monmouth_rpc::RpcServer::new(state, addr);
+                let mut rpc = monmouth_rpc::RpcServer::new(state, addr);
+                if let Some(caps) = capabilities {
+                    rpc = rpc.with_capabilities(caps);
+                }
+                if let Some(store) = svm_store_for_rpc {
+                    rpc = rpc.with_svm_store(store);
+                }
                 drop(rpc.start());
             }
 
@@ -334,6 +351,20 @@ impl NodeRunner for ProductionRunner {
         );
         if let Some((state, _)) = &self.rpc_config {
             app = app.with_node_state(state.clone());
+        }
+
+        // Wire SVM executor if enabled (uses pre-created store shared with RPC)
+        if let Some(svm_cfg) = &self.svm_config
+            && svm_cfg.enabled
+        {
+            let svm_executor_config = SvmExecutorConfig {
+                compute_budget: svm_cfg.compute_budget,
+                ..Default::default()
+            };
+            let svm_executor = SvmExecutor::with_config(svm_executor_config);
+            let svm_store = self.svm_store.clone().unwrap_or_default();
+            app = app.with_svm(svm_executor, svm_store);
+            info!(compute_budget = svm_cfg.compute_budget, "SVM module enabled");
         }
         let marshaled =
             Marshaled::new(context.with_label("marshaled"), app, marshal_mailbox.clone(), epocher);

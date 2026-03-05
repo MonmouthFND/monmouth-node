@@ -76,7 +76,7 @@ impl DkgCeremony {
         // In production, this should be coordinated via the leader or a shared clock.
         // For now, we round down to 5-minute intervals for coordination tolerance.
         let timestamp_nanos = {
-            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos() as u64;
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_nanos() as u64;
             let interval = 5 * 60 * 1_000_000_000u64; // 5 minutes in nanos
             (now / interval) * interval
         };

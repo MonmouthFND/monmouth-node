@@ -13,6 +13,8 @@ pub use app::RevmApplication;
 mod error;
 pub use error::RunnerError;
 
+pub mod routing;
+
 mod runner;
 pub use runner::ProductionRunner;
 

@@ -1,0 +1,22 @@
+[package]
+name = "monmouth-memory-anchoring"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "On-chain memory anchor registry for Monmouth agent context commitments"
+
+[lints]
+workspace = true
+
+[dependencies]
+monmouth-agent-types = { path = "../agent-types" }
+alloy-primitives = { workspace = true, features = ["serde"] }
+parking_lot.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

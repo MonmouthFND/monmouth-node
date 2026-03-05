@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
-use monmouth_config::NodeConfig;
+use monmouth_capabilities::{
+    Capability, CapabilityRegistry, CapabilitySchema, Permission, PermissionKind, RateLimit,
+};
+use monmouth_config::{CapabilitiesConfig, NodeConfig};
 use monmouth_domain::BootstrapConfig;
 use monmouth_rpc::NodeState;
 use monmouth_runner::{ProductionRunner, load_threshold_scheme};
@@ -25,14 +28,6 @@ pub(crate) struct Cli {
 
     #[arg(long, global = true)]
     pub data_dir: Option<PathBuf>,
-
-    /// Enable the agent transaction pool and classifier.
-    #[arg(long, global = true)]
-    pub enable_agent_pool: bool,
-
-    /// Minimum confidence threshold for agent classification (0.0-1.0).
-    #[arg(long, global = true)]
-    pub confidence_threshold: Option<f64>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -67,12 +62,6 @@ impl Cli {
         }
         if let Some(ref data_dir) = self.data_dir {
             config.data_dir = data_dir.clone();
-        }
-        if self.enable_agent_pool {
-            config.execution.enable_agent_pool = true;
-        }
-        if let Some(confidence_threshold) = self.confidence_threshold {
-            config.execution.confidence_threshold = confidence_threshold;
         }
 
         Ok(config)
@@ -171,7 +160,13 @@ impl Cli {
 
         let metrics_addr: std::net::SocketAddr = "0.0.0.0:9002".parse()?;
 
-        let runner = ProductionRunner::new(
+        let capability_registry = build_capability_registry(&config.capabilities)?;
+        tracing::info!(
+            count = capability_registry.len(),
+            "Built capability registry from config"
+        );
+
+        let mut runner = ProductionRunner::new(
             scheme,
             config.chain_id,
             monmouth_config::DEFAULT_GAS_LIMIT,
@@ -179,10 +174,12 @@ impl Cli {
         )
         .with_rpc(node_state, rpc_addr)
         .with_metrics(metrics_addr)
-        .with_agent_config(
-            config.execution.enable_agent_pool,
-            config.execution.confidence_threshold,
-        );
+        .with_capabilities(capability_registry);
+
+        // Enable SVM if configured
+        if config.svm.enabled {
+            runner = runner.with_svm(config.svm.clone());
+        }
 
         runner.run_standalone(config).map_err(|e| eyre::eyre!("Runner failed: {}", e.0))
     }
@@ -202,6 +199,53 @@ struct PeersInfo {
     participants: Vec<commonware_cryptography::ed25519::PublicKey>,
     threshold: u32,
     bootstrappers: Vec<(commonware_cryptography::ed25519::PublicKey, String)>,
+}
+
+/// Convert capabilities config into a runtime `CapabilityRegistry`.
+fn build_capability_registry(config: &CapabilitiesConfig) -> eyre::Result<CapabilityRegistry> {
+    let mut capabilities = Vec::with_capacity(config.capabilities.len());
+
+    for def in &config.capabilities {
+        let permissions: Vec<Permission> = def
+            .permissions
+            .iter()
+            .map(|p| {
+                let kind = match p.kind.as_str() {
+                    "execute" => PermissionKind::Execute,
+                    "read" => PermissionKind::Read,
+                    "admin" => PermissionKind::Admin,
+                    other => {
+                        return Err(eyre::eyre!("unknown permission kind: {other}"));
+                    }
+                };
+                Ok(Permission { kind, scope: p.scope.clone() })
+            })
+            .collect::<eyre::Result<_>>()?;
+
+        let schema = CapabilitySchema {
+            input: def.schema.input.clone(),
+            output: def.schema.output.clone(),
+        };
+
+        let rate_limit = def.rate_limit.map(|rl| RateLimit {
+            max_requests: rl.max_requests,
+            window_secs: rl.window_secs,
+        });
+
+        capabilities.push(Capability {
+            id: def.id.clone(),
+            name: def.name.clone(),
+            description: def.description.clone(),
+            version: def.version.clone(),
+            schema,
+            permissions,
+            rate_limit,
+            enabled: def.enabled,
+        });
+    }
+
+    CapabilityRegistry::from_capabilities(capabilities)
+        .map_err(|e| eyre::eyre!("failed to build capability registry: {e}"))
 }
 
 fn load_peers(path: &PathBuf) -> eyre::Result<PeersInfo> {

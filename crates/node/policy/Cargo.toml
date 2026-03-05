@@ -1,0 +1,22 @@
+[package]
+name = "monmouth-policy"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Policy engine for Monmouth agent permissions and rate limiting"
+
+[lints]
+workspace = true
+
+[dependencies]
+monmouth-agent-types = { path = "../agent-types" }
+alloy-primitives = { workspace = true, features = ["serde"] }
+parking_lot.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

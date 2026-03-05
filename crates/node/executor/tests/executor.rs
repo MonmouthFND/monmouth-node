@@ -6,10 +6,10 @@ use std::{
 };
 
 use alloy_consensus::Header;
-use alloy_primitives::{Address, B256, Bytes, U256};
-use monmouth_executor::{
-    BlockContext, BlockExecutor, ClassifierConfig, RevmExecutor, TransactionClassifier,
-};
+use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256};
+use k256::ecdsa::SigningKey;
+use monmouth_domain::evm::Evm;
+use monmouth_executor::{BlockContext, BlockExecutor, RevmExecutor};
 use monmouth_qmdb::{AccountUpdate, ChangeSet};
 use monmouth_traits::{StateDb, StateDbError, StateDbRead, StateDbWrite};
 use rstest::rstest;
@@ -589,49 +589,121 @@ fn test_execute_with_populated_state() {
 }
 
 // ----------------------------------------------------------------------------
-// Tests for RevmExecutor with agent classifier
+// Helper for signing keys
+// ----------------------------------------------------------------------------
+
+fn signing_key_from_seed(seed: u8) -> SigningKey {
+    let mut secret = [0u8; 32];
+    secret[31] = seed;
+    SigningKey::from_bytes((&secret).into()).expect("valid key")
+}
+
+// ----------------------------------------------------------------------------
+// Tests for real signed EIP-1559 transaction execution
 // ----------------------------------------------------------------------------
 
 #[test]
-fn test_executor_with_classifier_default_config() {
-    let classifier = TransactionClassifier::new(ClassifierConfig::default());
-    let executor = RevmExecutor::new(7750).with_classifier(classifier);
-
-    // Classifier is attached — executor still functions normally.
+fn test_execute_real_transfer() {
+    let chain_id = 7750u64;
+    let executor = RevmExecutor::new(chain_id);
     let state = MockStateDb::new();
-    let context = BlockContext::new(Header::default(), B256::ZERO, B256::ZERO);
-    let txs: Vec<Bytes> = vec![];
 
-    let outcome = executor.execute(&state, &context, &txs).expect("execution should succeed");
-    assert!(outcome.changes.is_empty());
-    assert_eq!(outcome.gas_used, 0);
+    let alice_key = signing_key_from_seed(1);
+    let alice = Evm::address_from_key(&alice_key);
+    let bob = Address::from([0x02; 20]);
+
+    // Fund Alice with 10 ETH.
+    state.insert_account(
+        alice,
+        MockAccount {
+            nonce: 0,
+            balance: U256::from(10_000_000_000_000_000_000u128), // 10 ETH
+            code_hash: KECCAK256_EMPTY,
+            storage: std::collections::HashMap::new(),
+        },
+    );
+
+    let value = U256::from(1_000_000_000_000_000_000u128); // 1 ETH
+    let tx = Evm::sign_eip1559_transfer(&alice_key, chain_id, bob, value, 0, 21_000);
+
+    let header = Header { gas_limit: 30_000_000, ..Default::default() };
+    let context = BlockContext::new(header, B256::ZERO, B256::ZERO);
+    let outcome = executor
+        .execute(&state, &context, &[tx.bytes])
+        .expect("execution should succeed");
+
+    assert_eq!(outcome.gas_used, 21_000);
+    assert_eq!(outcome.receipts.len(), 1);
+    assert!(outcome.receipts[0].success());
+    assert!(!outcome.changes.is_empty());
 }
 
 #[test]
-fn test_executor_with_classifier_custom_threshold() {
-    let config = ClassifierConfig { confidence_threshold: 0.9, enabled: true };
-    let classifier = TransactionClassifier::new(config);
-    let executor = RevmExecutor::new(7750).with_classifier(classifier);
-
+fn test_execute_transfer_insufficient_balance() {
+    let chain_id = 7750u64;
+    let executor = RevmExecutor::new(chain_id);
     let state = MockStateDb::new();
-    let context = BlockContext::new(Header::default(), B256::ZERO, B256::ZERO);
-    let txs: Vec<Bytes> = vec![];
 
-    let outcome = executor.execute(&state, &context, &txs).expect("execution should succeed");
-    assert!(outcome.changes.is_empty());
-    assert_eq!(outcome.gas_used, 0);
+    let alice_key = signing_key_from_seed(2);
+    let alice = Evm::address_from_key(&alice_key);
+    let bob = Address::from([0x03; 20]);
+
+    // Alice has only 100 wei — not enough for 1 ETH transfer.
+    state.insert_account(
+        alice,
+        MockAccount {
+            nonce: 0,
+            balance: U256::from(100),
+            code_hash: KECCAK256_EMPTY,
+            storage: std::collections::HashMap::new(),
+        },
+    );
+
+    let value = U256::from(1_000_000_000_000_000_000u128); // 1 ETH
+    let tx = Evm::sign_eip1559_transfer(&alice_key, chain_id, bob, value, 0, 21_000);
+
+    let header = Header { gas_limit: 30_000_000, ..Default::default() };
+    let context = BlockContext::new(header, B256::ZERO, B256::ZERO);
+    let result = executor.execute(&state, &context, &[tx.bytes]);
+    // REVM rejects the tx during validation (insufficient balance for value).
+    assert!(result.is_err());
 }
 
 #[test]
-fn test_executor_without_classifier_works() {
-    // Verify executor works fine without classifier attached.
-    let executor = RevmExecutor::new(7750);
-
+fn test_execute_multiple_transfers_from_different_senders() {
+    let chain_id = 7750u64;
+    let executor = RevmExecutor::new(chain_id);
     let state = MockStateDb::new();
-    let context = BlockContext::new(Header::default(), B256::ZERO, B256::ZERO);
-    let txs: Vec<Bytes> = vec![];
 
-    let outcome = executor.execute(&state, &context, &txs).expect("execution should succeed");
-    assert!(outcome.changes.is_empty());
-    assert_eq!(outcome.gas_used, 0);
+    let alice_key = signing_key_from_seed(3);
+    let alice = Evm::address_from_key(&alice_key);
+    let bob_key = signing_key_from_seed(4);
+    let bob = Evm::address_from_key(&bob_key);
+    let charlie = Address::from([0x05; 20]);
+
+    // Fund both senders with 10 ETH each.
+    let funded = MockAccount {
+        nonce: 0,
+        balance: U256::from(10_000_000_000_000_000_000u128),
+        code_hash: KECCAK256_EMPTY,
+        storage: std::collections::HashMap::new(),
+    };
+    state.insert_account(alice, funded.clone());
+    state.insert_account(bob, funded);
+
+    let value = U256::from(1_000_000_000_000_000_000u128); // 1 ETH each
+    let tx0 = Evm::sign_eip1559_transfer(&alice_key, chain_id, charlie, value, 0, 21_000);
+    let tx1 = Evm::sign_eip1559_transfer(&bob_key, chain_id, charlie, value, 0, 21_000);
+
+    let header = Header { gas_limit: 30_000_000, ..Default::default() };
+    let context = BlockContext::new(header, B256::ZERO, B256::ZERO);
+    let outcome = executor
+        .execute(&state, &context, &[tx0.bytes, tx1.bytes])
+        .expect("execution should succeed");
+
+    assert_eq!(outcome.gas_used, 42_000);
+    assert_eq!(outcome.receipts.len(), 2);
+    assert!(outcome.receipts[0].success());
+    assert!(outcome.receipts[1].success());
 }
+

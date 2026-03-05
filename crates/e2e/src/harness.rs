@@ -242,6 +242,7 @@ impl BlockContextProvider for TestContextProvider {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn start_all_nodes(
     context: &tokio::Context,
     sim_control: &Arc<Mutex<SimControl<ed25519::PublicKey>>>,
@@ -722,7 +723,19 @@ impl<S> TestApplication<S> {
             .await
             .ok()?;
 
-        let block = Block { parent: parent.id(), height, prevrandao, state_root, txs };
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let block = Block {
+            parent: parent.id(),
+            height,
+            timestamp,
+            prevrandao,
+            state_root,
+            svm_state_root: None,
+            txs,
+        };
 
         let merged_changes = parent_snapshot.state.merge_changes(outcome.changes.clone());
         let next_state = OverlayState::new(parent_snapshot.state.base(), merged_changes);
@@ -825,19 +838,17 @@ where
     type Context = Context<ConsensusDigest, S::PublicKey>;
     type Block = Block;
 
-    fn genesis(&mut self) -> impl std::future::Future<Output = Self::Block> + Send {
-        async move { self.ledger.genesis_block() }
+    async fn genesis(&mut self) -> Self::Block {
+        self.ledger.genesis_block()
     }
 
-    fn propose(
+    async fn propose(
         &mut self,
         _context: (Env, Self::Context),
         mut ancestry: AncestorStream<Self::SigningScheme, Self::Block>,
-    ) -> impl std::future::Future<Output = Option<Self::Block>> + Send {
-        async move {
-            let parent = ancestry.next().await?;
-            self.build_block(&parent).await
-        }
+    ) -> Option<Self::Block> {
+        let parent = ancestry.next().await?;
+        self.build_block(&parent).await
     }
 }
 
@@ -846,28 +857,26 @@ where
     Env: Rng + Spawner + Metrics + Clock,
     S: CertScheme + Send + Sync + 'static,
 {
-    fn verify(
+    async fn verify(
         &mut self,
         _context: (Env, Self::Context),
         mut ancestry: AncestorStream<Self::SigningScheme, Self::Block>,
-    ) -> impl std::future::Future<Output = bool> + Send {
-        async move {
-            let mut blocks_to_verify = Vec::new();
-            while let Some(block) = ancestry.next().await {
-                let digest = block.commitment();
-                if self.ledger.query_state_root(digest).await.is_some() {
-                    break;
-                }
-                blocks_to_verify.push(block);
+    ) -> bool {
+        let mut blocks_to_verify = Vec::new();
+        while let Some(block) = ancestry.next().await {
+            let digest = block.commitment();
+            if self.ledger.query_state_root(digest).await.is_some() {
+                break;
             }
-
-            for block in blocks_to_verify.into_iter().rev() {
-                if !self.verify_block(&block).await {
-                    return false;
-                }
-            }
-
-            true
+            blocks_to_verify.push(block);
         }
+
+        for block in blocks_to_verify.into_iter().rev() {
+            if !self.verify_block(&block).await {
+                return false;
+            }
+        }
+
+        true
     }
 }

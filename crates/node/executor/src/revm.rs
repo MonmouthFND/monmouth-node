@@ -18,13 +18,14 @@ use revm::{
         transaction::{AccessList, AccessListItem},
     },
     database::State,
+    handler::EthPrecompiles,
     primitives::{TxKind, hardfork::SpecId},
     state::{EvmState, EvmStorageSlot},
 };
 
 use crate::{
     BlockContext, BlockExecutor, ExecutionConfig, ExecutionError, ExecutionOutcome,
-    ExecutionReceipt, ParentBlock, StateDbAdapter, TransactionClassifier,
+    ExecutionReceipt, ParentBlock, StateDbAdapter,
 };
 
 /// REVM-based block executor.
@@ -35,28 +36,19 @@ use crate::{
 pub struct RevmExecutor {
     /// Execution configuration.
     config: ExecutionConfig,
-    /// Optional agent-aware transaction classifier.
-    classifier: Option<TransactionClassifier>,
 }
 
 impl RevmExecutor {
     /// Create a new REVM executor with the given chain ID.
     #[must_use]
     pub const fn new(chain_id: u64) -> Self {
-        Self { config: ExecutionConfig::new(chain_id), classifier: None }
+        Self { config: ExecutionConfig::new(chain_id) }
     }
 
     /// Create a new REVM executor with full configuration.
     #[must_use]
     pub const fn with_config(config: ExecutionConfig) -> Self {
-        Self { config, classifier: None }
-    }
-
-    /// Enable agent-aware transaction classification.
-    #[must_use]
-    pub const fn with_classifier(mut self, classifier: TransactionClassifier) -> Self {
-        self.classifier = Some(classifier);
-        self
+        Self { config }
     }
 
     /// Get the chain ID.
@@ -235,7 +227,7 @@ impl<S: StateDb> BlockExecutor<S> for RevmExecutor {
 
         let mut evm = ctx
             .build_mainnet()
-            .with_precompiles(crate::MonmouthPrecompiles::new(self.config.spec_id));
+            .with_precompiles(EthPrecompiles::new(self.config.spec_id));
 
         let mut outcome = ExecutionOutcome::new();
         let mut cumulative_gas = 0u64;
@@ -244,22 +236,6 @@ impl<S: StateDb> BlockExecutor<S> for RevmExecutor {
             let tx_hash = keccak256(tx_bytes);
 
             let tx_env = decode_tx_env(tx_bytes, self.config.chain_id)?;
-
-            // Pre-execution: classify the transaction if classifier is enabled
-            if let Some(ref classifier) = self.classifier {
-                let to = match tx_env.kind {
-                    TxKind::Call(addr) => Some(addr),
-                    TxKind::Create => None,
-                };
-                let result = classifier.classify(to, &tx_env.data);
-                tracing::info!(
-                    tx_hash = %tx_hash,
-                    classification = %result.classification,
-                    confidence = result.confidence,
-                    reason = %result.reason,
-                    "pre-execution classification"
-                );
-            }
 
             evm.set_tx(tx_env);
 

@@ -39,9 +39,12 @@ tracing.workspace = true
 # Misc
 parking_lot = "0.12"
 hex.workspace = true
+rand = "0.8"
 
 # Monmouth crates
+monmouth-capabilities.workspace = true
 monmouth-indexer = { path = "../../storage/indexer" }
+monmouth-svm.workspace = true
 monmouth-traits = { path = "../../storage/traits" }
 
 [dev-dependencies]

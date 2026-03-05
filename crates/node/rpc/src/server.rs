@@ -1,6 +1,7 @@
 //! HTTP and JSON-RPC server implementation.
 
 use std::{net::SocketAddr, sync::Arc, time::Duration};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use axum::{Router, extract::State, http::StatusCode, response::IntoResponse, routing::get};
 use jsonrpsee::server::{Server, ServerHandle};
@@ -8,8 +9,11 @@ use tower::limit::ConcurrencyLimitLayer;
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tracing::{error, info};
 
+use monmouth_capabilities::CapabilityRegistry;
+use monmouth_svm::SvmStateStore;
+
 use crate::{
-    config::{CorsConfig, RpcServerConfig},
+    config::{CorsConfig, RateLimitConfig, RpcServerConfig},
     eth::{
         EthApiImpl, EthApiServer, NetApiImpl, NetApiServer, TxSubmitCallback, Web3ApiImpl,
         Web3ApiServer,
@@ -78,8 +82,11 @@ pub struct RpcServer<S: StateProvider = NoopStateProvider> {
     tx_submit: Option<TxSubmitCallback>,
     state_provider: S,
     cors_config: CorsConfig,
+    rate_limit: RateLimitConfig,
     max_connections: u32,
     event_broadcaster: Option<EventBroadcaster>,
+    capabilities: CapabilityRegistry,
+    svm_store: Option<SvmStateStore>,
 }
 
 impl<S: StateProvider> std::fmt::Debug for RpcServer<S> {
@@ -103,8 +110,11 @@ impl RpcServer<NoopStateProvider> {
             tx_submit: None,
             state_provider: NoopStateProvider,
             cors_config: CorsConfig::default(),
+            rate_limit: RateLimitConfig::default(),
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -117,8 +127,11 @@ impl RpcServer<NoopStateProvider> {
             tx_submit: None,
             state_provider: NoopStateProvider,
             cors_config: CorsConfig::default(),
+            rate_limit: RateLimitConfig::default(),
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 }
@@ -138,8 +151,11 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             tx_submit: None,
             state_provider,
             cors_config: CorsConfig::default(),
+            rate_limit: RateLimitConfig::default(),
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -171,6 +187,20 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         self
     }
 
+    /// Set the capability registry for the Monmouth RPC API.
+    #[must_use]
+    pub fn with_capabilities(mut self, capabilities: CapabilityRegistry) -> Self {
+        self.capabilities = capabilities;
+        self
+    }
+
+    /// Set the SVM state store for SVM RPC queries.
+    #[must_use]
+    pub fn with_svm_store(mut self, store: SvmStateStore) -> Self {
+        self.svm_store = Some(store);
+        self
+    }
+
     /// Create from configuration.
     pub fn from_config(state: NodeState, config: RpcServerConfig, state_provider: S) -> Self {
         Self {
@@ -180,8 +210,11 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             tx_submit: None,
             state_provider,
             cors_config: config.cors,
+            rate_limit: config.rate_limit,
             max_connections: config.max_connections,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -196,17 +229,48 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         let chain_id = self.chain_id;
         let tx_submit = self.tx_submit;
         let cors_layer = build_cors_layer(&self.cors_config);
+        let rate_limit = self.rate_limit;
         let max_connections = self.max_connections;
         let state_provider = self.state_provider;
         let event_broadcaster = self.event_broadcaster;
+        let capabilities = self.capabilities;
+        let svm_store = self.svm_store;
 
         let http_handle = tokio::spawn(async move {
-            let app = Router::new()
+            let mut app = Router::new()
                 .route("/status", get(status_handler))
                 .route("/health", get(health_handler))
                 .layer(cors_layer)
-                .layer(ConcurrencyLimitLayer::new(max_connections as usize))
-                .with_state(node_state);
+                .layer(ConcurrencyLimitLayer::new(max_connections as usize));
+
+            // Apply rate limiting if configured (not disabled)
+            if rate_limit.requests_per_second > 0 && rate_limit.requests_per_second < u64::MAX {
+                let max_rps = rate_limit.requests_per_second;
+                let counter = Arc::new(AtomicU64::new(0));
+
+                // Reset counter every second
+                let reset_counter = counter.clone();
+                tokio::spawn(async move {
+                    let mut interval = tokio::time::interval(Duration::from_secs(1));
+                    loop {
+                        interval.tick().await;
+                        reset_counter.store(0, Ordering::Relaxed);
+                    }
+                });
+
+                app = app.layer(axum::middleware::from_fn(move |req: axum::http::Request<axum::body::Body>, next: axum::middleware::Next| {
+                    let c = counter.clone();
+                    async move {
+                        if c.fetch_add(1, Ordering::Relaxed) >= max_rps {
+                            return StatusCode::TOO_MANY_REQUESTS.into_response();
+                        }
+                        next.run(req).await
+                    }
+                }));
+                info!(rps = max_rps, "HTTP rate limiting enabled");
+            }
+
+            let app = app.with_state(node_state);
 
             info!(addr = %http_addr, "Starting HTTP server");
 
@@ -226,6 +290,9 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
         let jsonrpc_handle = tokio::spawn(async move {
             let server = match Server::builder()
                 .max_connections(max_connections)
+                .max_request_body_size(2 * 1024 * 1024) // 2 MB
+                .max_response_body_size(10 * 1024 * 1024) // 10 MB
+                .set_batch_request_config(jsonrpsee::server::BatchRequestConfig::Limit(50))
                 .build(jsonrpc_addr)
                 .await
             {
@@ -243,7 +310,10 @@ impl<S: StateProvider + Clone + 'static> RpcServer<S> {
             );
             let net_api = NetApiImpl::new(chain_id);
             let web3_api = Web3ApiImpl::new();
-            let monmouth_api = MonmouthApiImpl::new(node_state_for_jsonrpc);
+            let mut monmouth_api = MonmouthApiImpl::new(node_state_for_jsonrpc, capabilities);
+            if let Some(store) = svm_store {
+                monmouth_api = monmouth_api.with_svm_store(store);
+            }
             let filter_api = EthFilterApiImpl::new(state_provider_arc, FilterConfig::default());
 
             let mut module = jsonrpsee::RpcModule::new(());
@@ -328,6 +398,8 @@ pub struct JsonRpcServer<S: StateProvider = NoopStateProvider> {
     state_provider: S,
     max_connections: u32,
     event_broadcaster: Option<EventBroadcaster>,
+    capabilities: CapabilityRegistry,
+    svm_store: Option<SvmStateStore>,
 }
 
 impl<S: StateProvider> std::fmt::Debug for JsonRpcServer<S> {
@@ -350,6 +422,8 @@ impl JsonRpcServer<NoopStateProvider> {
             state_provider: NoopStateProvider,
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 }
@@ -364,6 +438,8 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
             state_provider,
             max_connections: 100,
             event_broadcaster: None,
+            capabilities: CapabilityRegistry::default(),
+            svm_store: None,
         }
     }
 
@@ -388,10 +464,27 @@ impl<S: StateProvider + Clone + 'static> JsonRpcServer<S> {
         self
     }
 
+    /// Set the capability registry.
+    #[must_use]
+    pub fn with_capabilities(mut self, capabilities: CapabilityRegistry) -> Self {
+        self.capabilities = capabilities;
+        self
+    }
+
+    /// Set the SVM state store for SVM RPC queries.
+    #[must_use]
+    pub fn with_svm_store(mut self, store: SvmStateStore) -> Self {
+        self.svm_store = Some(store);
+        self
+    }
+
     /// Start the JSON-RPC server.
     pub async fn start(self) -> Result<ServerHandle, ServerError> {
         let server = Server::builder()
             .max_connections(self.max_connections)
+            .max_request_body_size(2 * 1024 * 1024) // 2 MB
+            .max_response_body_size(10 * 1024 * 1024) // 10 MB
+            .set_batch_request_config(jsonrpsee::server::BatchRequestConfig::Limit(50))
             .build(self.addr)
             .await
             .map_err(|e| ServerError::Build(e.to_string()))?;

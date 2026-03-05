@@ -8,8 +8,11 @@ repository.workspace = true
 description = "Production node runner for Monmouth validators"
 
 [dependencies]
+monmouth-agent-types.workspace = true
+monmouth-capabilities.workspace = true
 monmouth-config.workspace = true
 monmouth-consensus.workspace = true
+monmouth-envelope.workspace = true
 monmouth-domain.workspace = true
 monmouth-dkg.workspace = true
 monmouth-executor.workspace = true
@@ -20,6 +23,7 @@ monmouth-qmdb-ledger.workspace = true
 monmouth-reporters.workspace = true
 monmouth-rpc.workspace = true
 monmouth-service.workspace = true
+monmouth-svm.workspace = true
 monmouth-simplex.workspace = true
 monmouth-transport.workspace = true
 

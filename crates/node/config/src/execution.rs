@@ -8,11 +8,8 @@ pub const DEFAULT_GAS_LIMIT: u64 = 30_000_000;
 /// Default block time in seconds.
 pub const DEFAULT_BLOCK_TIME: u64 = 2;
 
-/// Default confidence threshold for agent transaction classification.
-pub const DEFAULT_CONFIDENCE_THRESHOLD: f64 = 0.7;
-
 /// Execution layer configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ExecutionConfig {
     /// Maximum gas per block.
     #[serde(default = "default_gas_limit")]
@@ -21,14 +18,6 @@ pub struct ExecutionConfig {
     /// Target block time in seconds.
     #[serde(default = "default_block_time")]
     pub block_time: u64,
-
-    /// Enable the agent transaction pool and classifier.
-    #[serde(default)]
-    pub enable_agent_pool: bool,
-
-    /// Minimum confidence threshold for agent classification (0.0-1.0).
-    #[serde(default = "default_confidence_threshold")]
-    pub confidence_threshold: f64,
 }
 
 impl Default for ExecutionConfig {
@@ -36,8 +25,6 @@ impl Default for ExecutionConfig {
         Self {
             gas_limit: DEFAULT_GAS_LIMIT,
             block_time: DEFAULT_BLOCK_TIME,
-            enable_agent_pool: false,
-            confidence_threshold: DEFAULT_CONFIDENCE_THRESHOLD,
         }
     }
 }
@@ -50,10 +37,6 @@ const fn default_block_time() -> u64 {
     DEFAULT_BLOCK_TIME
 }
 
-const fn default_confidence_threshold() -> f64 {
-    DEFAULT_CONFIDENCE_THRESHOLD
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,8 +46,6 @@ mod tests {
         let config = ExecutionConfig::default();
         assert_eq!(config.gas_limit, DEFAULT_GAS_LIMIT);
         assert_eq!(config.block_time, DEFAULT_BLOCK_TIME);
-        assert!(!config.enable_agent_pool);
-        assert!((config.confidence_threshold - DEFAULT_CONFIDENCE_THRESHOLD).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -72,8 +53,6 @@ mod tests {
         let config = ExecutionConfig {
             gas_limit: 50_000_000,
             block_time: 5,
-            enable_agent_pool: true,
-            confidence_threshold: 0.85,
         };
         let serialized = serde_json::to_string(&config).expect("serialize");
         let deserialized: ExecutionConfig = serde_json::from_str(&serialized).expect("deserialize");
@@ -85,8 +64,6 @@ mod tests {
         let config = ExecutionConfig {
             gas_limit: 15_000_000,
             block_time: 1,
-            enable_agent_pool: true,
-            confidence_threshold: 0.9,
         };
         let serialized = toml::to_string(&config).expect("serialize toml");
         let deserialized: ExecutionConfig = toml::from_str(&serialized).expect("deserialize toml");
@@ -98,8 +75,6 @@ mod tests {
         let config: ExecutionConfig = serde_json::from_str("{}").expect("deserialize");
         assert_eq!(config.gas_limit, DEFAULT_GAS_LIMIT);
         assert_eq!(config.block_time, DEFAULT_BLOCK_TIME);
-        assert!(!config.enable_agent_pool);
-        assert!((config.confidence_threshold - DEFAULT_CONFIDENCE_THRESHOLD).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -116,21 +91,10 @@ mod tests {
     }
 
     #[test]
-    fn test_execution_config_agent_fields() {
-        let config: ExecutionConfig =
-            serde_json::from_str(r#"{"enable_agent_pool": true, "confidence_threshold": 0.5}"#)
-                .expect("deserialize");
-        assert!(config.enable_agent_pool);
-        assert!((config.confidence_threshold - 0.5).abs() < f64::EPSILON);
-    }
-
-    #[test]
     fn test_execution_config_clone_and_eq() {
         let config = ExecutionConfig {
             gas_limit: 999,
             block_time: 42,
-            enable_agent_pool: true,
-            confidence_threshold: 0.5,
         };
         assert_eq!(config, config.clone());
         assert_ne!(config, ExecutionConfig::default());

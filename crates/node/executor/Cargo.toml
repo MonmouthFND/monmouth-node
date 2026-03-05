@@ -17,11 +17,12 @@ monmouth-qmdb = { path = "../../storage/qmdb" }
 monmouth-traits = { path = "../../storage/traits" }
 revm.workspace = true
 thiserror.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
 tokio = { workspace = true, features = ["rt", "macros"] }
+monmouth-domain = { path = "../domain", features = ["evm"] }
+k256.workspace = true
 
 [lints]
 workspace = true

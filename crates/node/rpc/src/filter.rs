@@ -71,8 +71,19 @@ struct FilterRegistry {
 }
 
 impl FilterRegistry {
-    fn install(&self, kind: FilterKind, next_block: u64, max_filters: usize) -> Option<U256> {
+    fn install(
+        &self,
+        kind: FilterKind,
+        next_block: u64,
+        max_filters: usize,
+        ttl: Duration,
+    ) -> Option<U256> {
         let mut map = self.inner.lock();
+        // Proactively sweep expired filters when at capacity.
+        if map.len() >= max_filters {
+            let now = Instant::now();
+            map.retain(|_, f| now.duration_since(f.last_polled) < ttl);
+        }
         if map.len() >= max_filters {
             return None;
         }
@@ -113,17 +124,16 @@ impl FilterRegistry {
     }
 }
 
-/// Generate a random 128-bit filter ID as U256.
+/// Generate a cryptographically random filter ID as U256.
+///
+/// Uses the OS CSPRNG (`OsRng`) to produce 32 bytes of entropy,
+/// ensuring filter IDs are unpredictable and resistant to enumeration.
 fn generate_filter_id() -> U256 {
-    use std::time::SystemTime;
+    use rand::RngCore;
 
-    // Simple unique ID using timestamp + counter to avoid adding rand dependency.
-    // For production public nodes, replace with crypto-random.
-    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let ts = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_nanos()
-        as u64;
-    let count = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    U256::from(ts) << 64 | U256::from(count)
+    let mut bytes = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut bytes);
+    U256::from_be_bytes(bytes)
 }
 
 /// Format a U256 filter ID as hex string.
@@ -212,7 +222,12 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
             self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
         let id = self
             .registry
-            .install(FilterKind::Log(filter), head.saturating_add(1), self.config.max_filters)
+            .install(
+                FilterKind::Log(filter),
+                head.saturating_add(1),
+                self.config.max_filters,
+                self.config.filter_ttl,
+            )
             .ok_or_else(|| {
                 jsonrpsee::types::ErrorObjectOwned::owned(
                     codes::LIMIT_EXCEEDED,
@@ -228,7 +243,12 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
             self.current_head().await.map_err(Into::<jsonrpsee::types::ErrorObjectOwned>::into)?;
         let id = self
             .registry
-            .install(FilterKind::Block, head.saturating_add(1), self.config.max_filters)
+            .install(
+                FilterKind::Block,
+                head.saturating_add(1),
+                self.config.max_filters,
+                self.config.filter_ttl,
+            )
             .ok_or_else(|| {
                 jsonrpsee::types::ErrorObjectOwned::owned(
                     codes::LIMIT_EXCEEDED,
@@ -242,7 +262,12 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
     async fn new_pending_transaction_filter(&self) -> RpcResult<String> {
         let id = self
             .registry
-            .install(FilterKind::PendingTransaction, 0, self.config.max_filters)
+            .install(
+                FilterKind::PendingTransaction,
+                0,
+                self.config.max_filters,
+                self.config.filter_ttl,
+            )
             .ok_or_else(|| {
                 jsonrpsee::types::ErrorObjectOwned::owned(
                     codes::LIMIT_EXCEEDED,
@@ -294,6 +319,7 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
                     ));
                 }
 
+                // SAFETY: Vec<RpcLog> derives Serialize; JSON encoding cannot fail.
                 Ok(serde_json::to_value(logs).expect("RpcLog is serializable"))
             }
             FilterKind::Block => {
@@ -309,6 +335,7 @@ impl<S: StateProvider + 'static> EthFilterApiServer for EthFilterApiImpl<S> {
                         hashes.push(format!("{:#x}", block.hash));
                     }
                 }
+                // SAFETY: Vec<String> is trivially serializable to JSON.
                 Ok(serde_json::to_value(hashes).expect("Vec<String> is serializable"))
             }
             FilterKind::PendingTransaction => {
@@ -390,10 +417,12 @@ mod tests {
         assert!(parse_filter_id("not_hex").is_err());
     }
 
+    const TEST_TTL: Duration = Duration::from_secs(300);
+
     #[test]
     fn registry_install_and_uninstall() {
         let registry = FilterRegistry::default();
-        let id = registry.install(FilterKind::Block, 10, 100).unwrap();
+        let id = registry.install(FilterKind::Block, 10, 100, TEST_TTL).unwrap();
         assert!(registry.uninstall(id));
         assert!(!registry.uninstall(id)); // already removed
     }
@@ -403,16 +432,28 @@ mod tests {
         let registry = FilterRegistry::default();
         // Fill to max
         for _ in 0..3 {
-            registry.install(FilterKind::Block, 0, 3).unwrap();
+            registry.install(FilterKind::Block, 0, 3, TEST_TTL).unwrap();
         }
-        // Should fail
-        assert!(registry.install(FilterKind::Block, 0, 3).is_none());
+        // Should fail (none expired, so sweep doesn't free any)
+        assert!(registry.install(FilterKind::Block, 0, 3, TEST_TTL).is_none());
+    }
+
+    #[test]
+    fn registry_install_sweeps_expired_on_full() {
+        let registry = FilterRegistry::default();
+        // Fill to max
+        for _ in 0..3 {
+            registry.install(FilterKind::Block, 0, 3, TEST_TTL).unwrap();
+        }
+        // With 0 TTL, expired filters are swept to make room.
+        let id = registry.install(FilterKind::Block, 0, 3, Duration::ZERO);
+        assert!(id.is_some());
     }
 
     #[test]
     fn registry_advance_watermark() {
         let registry = FilterRegistry::default();
-        let id = registry.install(FilterKind::Block, 5, 100).unwrap();
+        let id = registry.install(FilterKind::Block, 5, 100, TEST_TTL).unwrap();
 
         let (_, old_next) = registry.advance_watermark(id, 10).unwrap();
         assert_eq!(old_next, 5);
@@ -430,7 +471,7 @@ mod tests {
     #[test]
     fn registry_sweep_expired() {
         let registry = FilterRegistry::default();
-        let id = registry.install(FilterKind::Block, 0, 100).unwrap();
+        let id = registry.install(FilterKind::Block, 0, 100, TEST_TTL).unwrap();
 
         // With 0 TTL, everything expires immediately
         registry.sweep_expired(Duration::ZERO);
@@ -440,7 +481,7 @@ mod tests {
     #[test]
     fn registry_get_kind() {
         let registry = FilterRegistry::default();
-        let id = registry.install(FilterKind::PendingTransaction, 0, 100).unwrap();
+        let id = registry.install(FilterKind::PendingTransaction, 0, 100, TEST_TTL).unwrap();
         let kind = registry.get_kind(id);
         assert!(matches!(kind, Some(FilterKind::PendingTransaction)));
     }

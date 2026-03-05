@@ -1,0 +1,18 @@
+[package]
+name = "monmouth-agent-types"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Shared types for Monmouth agent-native modules"
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy-primitives = { workspace = true, features = ["serde"] }
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
